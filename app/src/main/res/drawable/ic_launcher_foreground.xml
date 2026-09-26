@@ -1,0 +1,78 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.65"
+        android:scaleY="0.65"
+        android:translateX="18.9"
+        android:translateY="18.9">
+        
+        <!-- Book Base Covers (Background Dark Blue Rectangles) -->
+        <path
+            android:fillColor="#1C4075"
+            android:pathData="M 12,24 L 54,24 L 54,92 L 12,92 Z"/>
+        <path
+            android:fillColor="#1C4075"
+            android:pathData="M 96,24 L 54,24 L 54,92 L 96,92 Z"/>
+
+        <!-- Book Left Page Flaps -->
+        <path
+            android:fillColor="#1C4075"
+            android:pathData="M 54,88 L 10,75 L 10,20 L 54,32 Z"/>
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M 52,86 L 12,73 L 12,22 L 52,34 Z"/>
+        <path
+            android:fillColor="#1C4075"
+            android:pathData="M 50,84 L 14,71 L 14,24 L 50,36 Z"/>
+
+        <!-- Book Right Page Flaps -->
+        <path
+            android:fillColor="#1C4075"
+            android:pathData="M 54,88 L 98,75 L 98,20 L 54,32 Z"/>
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M 56,86 L 96,73 L 96,22 L 56,34 Z"/>
+        <path
+            android:fillColor="#1C4075"
+            android:pathData="M 58,84 L 94,71 L 94,24 L 58,36 Z"/>
+        
+        <!-- Clock Base (White Circle) -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M 54,14 C 31.9086,14 14,31.9086 14,54 C 14,76.0914 31.9086,94 54,94 C 76.0914,94 94,76.0914 94,54 C 94,31.9086 76.0914,14 54,14 Z" />
+        
+        <!-- Clock Outer Ring (Dark Blue) -->
+        <path
+            android:fillColor="#1C4075"
+            android:pathData="M 54,10 C 29.7,10 10,29.7 10,54 C 10,78.3 29.7,98 54,98 C 78.3,98 98,78.3 98,54 C 98,29.7 78.3,10 54,10 Z M 54,92 C 33.013,92 16,74.987 16,54 C 16,33.013 33.013,16 54,16 C 74.987,16 92,33.013 92,54 C 92,74.987 74.987,92 54,92 Z" />
+
+        <!-- Hour markers (12, 3, 6, 9) -->
+        <path android:fillColor="#1C4075" android:pathData="M 51,20 L 57,20 L 57,30 L 51,30 Z"/>
+        <path android:fillColor="#1C4075" android:pathData="M 51,78 L 57,78 L 57,88 L 51,88 Z"/>
+        <path android:fillColor="#1C4075" android:pathData="M 20,51 L 30,51 L 30,57 L 20,57 Z"/>
+        <path android:fillColor="#1C4075" android:pathData="M 78,51 L 88,51 L 88,57 L 78,57 Z"/>
+        
+        <!-- Diagonal hour markers -->
+        <path android:fillColor="#1C4075" android:pathData="M 31.37,28.54 L 37.02,34.20 L 34.20,37.02 L 28.54,31.37 Z"/>
+        <path android:fillColor="#1C4075" android:pathData="M 76.63,28.54 L 79.46,31.37 L 73.80,37.02 L 70.98,34.20 Z"/>
+        <path android:fillColor="#1C4075" android:pathData="M 28.54,76.63 L 31.37,79.46 L 37.02,73.80 L 34.20,70.98 Z"/>
+        <path android:fillColor="#1C4075" android:pathData="M 79.46,76.63 L 76.63,79.46 L 70.98,73.80 L 73.80,70.98 Z"/>
+
+        <!-- Hands -->
+        <path android:fillColor="#1C4075"
+            android:pathData="M 51,56 L 33,42 L 37,37 L 57,51 Z" />
+        <path android:fillColor="#1C4075"
+            android:pathData="M 53,56 L 77,32 L 73,28 L 49,52 Z" />
+
+        <!-- Center dot -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M 54,49 C 51.2386,49 49,51.2386 49,54 C 49,56.7614 51.2386,59 54,59 C 56.7614,59 59,56.7614 59,54 C 59,51.2386 56.7614,49 54,49 Z" />
+        <path
+            android:fillColor="#1C4075"
+            android:pathData="M 54,51 C 52.3431,51 51,52.3431 51,54 C 51,55.6569 52.3431,57 54,57 C 55.6569,57 57,55.6569 57,54 C 57,52.3431 55.6569,51 54,51 Z" />
+    </group>
+</vector>
