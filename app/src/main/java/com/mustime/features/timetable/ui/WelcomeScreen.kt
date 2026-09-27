@@ -1,5 +1,6 @@
 package com.mustime.features.timetable.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -19,9 +20,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mustime.R
 
 @Composable
 fun WelcomeScreen(
@@ -39,49 +42,23 @@ fun WelcomeScreen(
                 .weight(1f),
             contentAlignment = Alignment.Center
         ) {
-            // Circular holder with Lectures emblem
-            Box(
-                modifier = Modifier
-                    .size(170.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFF3B82F6),
-                                Color(0xFF1D4ED8),
-                                Color(0xFF1E40AF)
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center
+            Surface(
+                modifier = Modifier.size(140.dp),
+                shape = RoundedCornerShape(32.dp),
+                color = Color.White,
+                shadowElevation = 8.dp
             ) {
-                // Subtle decorative ring
                 Box(
-                    modifier = Modifier
-                        .size(150.dp)
-                        .clip(CircleShape)
-                        .border(2.dp, Color.White.copy(alpha = 0.3f), CircleShape),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.School,
-                            contentDescription = "Lectures Logo",
-                            tint = Color.White,
-                            modifier = Modifier.size(62.dp)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "LECTURES",
-                            color = Color.White,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 2.sp,
-                            fontSize = 15.sp
-                        )
-                    }
+                    Image(
+                        painter = painterResource(R.drawable.app_logo),
+                        contentDescription = "Lectures Logo Emblem",
+                        modifier = Modifier
+                            .size(116.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                    )
                 }
             }
         }

@@ -6,10 +6,13 @@ import androidx.lifecycle.viewModelScope
 import com.mustime.features.timetable.data.TimetableRepository
 import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.domain.TimetableEntry
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
 data class NotesUiState(
@@ -44,12 +47,20 @@ class NotesViewModel(
         }
 
         viewModelScope.launch {
-            combine(
-                repository.getAllNotes(),
-                repository.getAllEntries(),
-                repository.programmePref
-            ) { notesList, entries, programme ->
-                Triple(notesList, entries, programme ?: "")
+            @OptIn(ExperimentalCoroutinesApi::class)
+            repository.programmePref.flatMapLatest { prog ->
+                val currentProg = prog?.trim() ?: repository.getInitialProgramme()?.trim() ?: ""
+                val scheduleFlow = if (currentProg.isNotEmpty()) {
+                    repository.getLocalSchedule(currentProg)
+                } else {
+                    flowOf(emptyList())
+                }
+                combine(
+                    repository.getAllNotes(),
+                    scheduleFlow
+                ) { notesList, entries ->
+                    Triple(notesList, entries, currentProg)
+                }
             }.collect { (notesList, entries, programme) ->
                 val coursesMap = mutableMapOf<String, CourseOption>()
 

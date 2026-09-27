@@ -8,8 +8,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.outlined.MeetingRoom
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -110,7 +110,7 @@ fun LectureDetailSheet(
             // Details rows
             val roomVal = entry.room?.trim()
             if (!roomVal.isNullOrBlank() && roomVal.uppercase() !in listOf("TBA", "TBD", "NONE", "N/A")) {
-                DetailRow(icon = Icons.Outlined.Place, label = "Room", value = roomVal, isDark = isDark)
+                DetailRow(icon = Icons.Outlined.MeetingRoom, label = "Venue / Room", value = roomVal, isDark = isDark)
                 Spacer(modifier = Modifier.height(12.dp))
             }
             val lecturerVal = entry.lecturer?.trim()

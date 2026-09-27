@@ -164,8 +164,8 @@ fun ActivityCard(
                     if (event.location.isNotBlank()) {
                         Spacer(modifier = Modifier.width(16.dp))
                         Icon(
-                            imageVector = Icons.Outlined.Place,
-                            contentDescription = null,
+                            imageVector = Icons.Outlined.MeetingRoom,
+                            contentDescription = "Venue",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(15.dp)
                         )

@@ -21,7 +21,7 @@ import java.util.Locale
 
 data class SettingsUiState(
     val currentProgramme: String = "",
-    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val themeMode: ThemeMode = ThemeMode.LIGHT,
     val darkMode: Boolean = false,
     val notificationsEnabled: Boolean = true,
     val selectedAccent: Int = 0,

@@ -31,10 +31,10 @@ val SurfaceContainerLowLight = Color(0xFFF2F3FF)
 val SurfaceContainerHighLight = Color(0xFFE8EBFA)
 val SurfaceDimLight = Color(0xFFD2D9F4)
 
-val DarkSurfaceBase = Color(0xFF0B0F17)
-val DarkSurfaceCard = Color(0xFF161F30)
-val DarkSurfaceContainer = Color(0xFF1E293B)
-val DarkBorderSubtle = Color(0xFF2D3748)
+val DarkSurfaceBase = Color(0xFF101216)
+val DarkSurfaceCard = Color(0xFF181B22)
+val DarkSurfaceContainer = Color(0xFF20242D)
+val DarkBorderSubtle = Color(0xFF2B303C)
 
 val PrimaryBlue = Color(0xFF2563EB)
 val PrimaryBlueDark = Color(0xFF1D4ED8)
@@ -112,7 +112,7 @@ fun TimetableTopAppBar(
     hasUnreadNotifications: Boolean = true,
     onNotificationClick: () -> Unit,
     onProfileClick: () -> Unit = {},
-    onSettingsClick: () -> Unit,
+    onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isDark = LocalAppTheme.current.isDark
@@ -217,17 +217,6 @@ fun TimetableTopAppBar(
                 Icon(
                     imageVector = Icons.Outlined.Person,
                     contentDescription = "Academic Profile",
-                    tint = iconTint,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(2.dp))
-
-            IconButton(onClick = onSettingsClick, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    imageVector = Icons.Outlined.Settings,
-                    contentDescription = "Settings",
                     tint = iconTint,
                     modifier = Modifier.size(20.dp)
                 )
@@ -654,8 +643,8 @@ fun NextUpHeroCard(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Outlined.LocationOn,
-                                    contentDescription = null,
+                                    imageVector = Icons.Outlined.MeetingRoom,
+                                    contentDescription = "Venue",
                                     tint = Color.White,
                                     modifier = Modifier.size(14.dp)
                                 )
@@ -990,8 +979,8 @@ fun HappeningNowHeroCard(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Outlined.LocationOn,
-                                    contentDescription = null,
+                                    imageVector = Icons.Outlined.MeetingRoom,
+                                    contentDescription = "Venue",
                                     tint = Color.White,
                                     modifier = Modifier.size(14.dp)
                                 )
@@ -1336,22 +1325,43 @@ fun TimelineClassCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         if (hasVenue) {
-                            val venueIcon = if (session.venue!!.contains("Lab", ignoreCase = true)) "💻" else "🏛"
-                            Text(
-                                text = "$venueIcon ${session.venue}",
-                                fontSize = 12.sp,
-                                color = textSecondary
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.MeetingRoom,
+                                    contentDescription = "Venue",
+                                    tint = textSecondary,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = session.venue!!,
+                                    fontSize = 12.sp,
+                                    color = textSecondary
+                                )
+                            }
                         }
                         if (hasVenue && hasLecturer) {
                             Text("•", color = textTertiary)
                         }
                         if (hasLecturer) {
-                            Text(
-                                text = "👤 ${session.lecturer}",
-                                fontSize = 12.sp,
-                                color = textSecondary
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Person,
+                                    contentDescription = "Lecturer",
+                                    tint = textSecondary,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = session.lecturer!!,
+                                    fontSize = 12.sp,
+                                    color = textSecondary
+                                )
+                            }
                         }
                         if ((hasVenue || hasLecturer) && hasStartsIn) {
                             Text("•", color = textTertiary)

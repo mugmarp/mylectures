@@ -1002,8 +1002,8 @@ private fun GlobalNextUpHeroCard(
                         if (!roomText.isNullOrEmpty() && roomText.uppercase() !in listOf("TBA", "TBD", "NONE", "N/A")) {
                             Spacer(modifier = Modifier.width(14.dp))
                             Icon(
-                                imageVector = Icons.Outlined.Place,
-                                contentDescription = null,
+                                imageVector = Icons.Outlined.MeetingRoom,
+                                contentDescription = "Venue",
                                 tint = Color.White.copy(alpha = 0.85f),
                                 modifier = Modifier.size(15.dp)
                             )

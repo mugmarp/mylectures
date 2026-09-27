@@ -254,7 +254,7 @@ fun AddActivitySheet(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 leadingIcon = {
-                    Icon(Icons.Outlined.Place, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Outlined.MeetingRoom, contentDescription = "Venue", modifier = Modifier.size(18.dp))
                 }
             )
 

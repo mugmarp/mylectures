@@ -16,23 +16,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 
 val AccentColors = listOf(
-    Color(0xFF2563EB), // Royal Blue
-    Color(0xFF16A34A), // Forest Emerald Green
-    Color(0xFFD97706), // Academic Amber
-    Color(0xFFE11D48)  // Rose Crimson
+    Color(0xFF2563EB) // Royal Blue (Default)
 )
 
 val AccentColorNames = listOf(
-    "Royal Blue",
-    "Forest Emerald",
-    "Academic Amber",
-    "Rose Crimson"
+    "Royal Blue"
 )
 
 enum class ThemeMode(val title: String, val subtitle: String) {
-    SYSTEM("System", "Match device settings"),
     LIGHT("Light", "Clean & bright daylight"),
-    DARK("Dark", "OLED slate & eye comfort")
+    DARK("Dark", "Deep charcoal & eye comfort"),
+    SYSTEM("System", "Match device settings")
 }
 
 data class AppThemeState(
@@ -66,35 +60,36 @@ fun AppTheme(
         }
     }
 
-    val primaryColor = AccentColors.getOrElse(accentIndex) { AccentColors[0] }
+    val primaryColor = Color(0xFF2563EB) // Royal Blue default
+    val primaryDark = Color(0xFF3B82F6)  // Luminous blue for dark theme legibility
 
     val colorScheme: ColorScheme = if (isDark) {
         darkColorScheme(
-            primary = primaryColor,
+            primary = primaryDark,
             onPrimary = Color.White,
-            primaryContainer = primaryColor.copy(alpha = 0.25f),
-            onPrimaryContainer = Color(0xFF93C5FD),
-            secondary = primaryColor,
+            primaryContainer = Color(0xFF1E3A8A).copy(alpha = 0.5f),
+            onPrimaryContainer = Color(0xFFBFDBFE),
+            secondary = primaryDark,
             onSecondary = Color.White,
-            background = Color(0xFF0F172A),       // Slate 900
-            onBackground = Color(0xFFF8FAFC),     // Slate 50
-            surface = Color(0xFF1E293B),          // Slate 800
-            onSurface = Color(0xFFF8FAFC),        // Slate 50
-            surfaceVariant = Color(0xFF334155),   // Slate 700
-            onSurfaceVariant = Color(0xFF94A3B8), // Slate 400
-            outline = Color(0xFF475569),          // Slate 600
-            outlineVariant = Color(0xFF334155)
+            background = Color(0xFF101216),       // Neutral deep charcoal/obsidian
+            onBackground = Color(0xFFF8FAFC),     // Pure crisp text
+            surface = Color(0xFF181B22),          // Elevated crisp dark surface
+            onSurface = Color(0xFFF8FAFC),        // Pure crisp text
+            surfaceVariant = Color(0xFF20242D),   // Neutral elevated container
+            onSurfaceVariant = Color(0xFF94A3B8), // Readable secondary text
+            outline = Color(0xFF2E3442),          // Crisp subtle border
+            outlineVariant = Color(0xFF20242D)
         )
     } else {
         lightColorScheme(
             primary = primaryColor,
             onPrimary = Color.White,
             primaryContainer = primaryColor.copy(alpha = 0.12f),
-            onPrimaryContainer = primaryColor,
+            onPrimaryContainer = Color(0xFF1D4ED8),
             secondary = primaryColor,
             onSecondary = Color.White,
-            background = Color(0xFFF8FAFC),       // Slate 50
-            onBackground = Color(0xFF0F172A),     // Slate 900
+            background = Color(0xFFF8FAFC),       // Slate 50 daylight
+            onBackground = Color(0xFF0F172A),     // Slate 900 dark text
             surface = Color.White,
             onSurface = Color(0xFF0F172A),
             surfaceVariant = Color(0xFFF1F5F9),   // Slate 100

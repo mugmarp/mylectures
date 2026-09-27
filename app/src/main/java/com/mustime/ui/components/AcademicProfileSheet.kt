@@ -1,5 +1,6 @@
 package com.mustime.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,9 +17,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mustime.R
 import com.mustime.features.timetable.ui.*
 import com.mustime.ui.LocalAppTheme
 
@@ -66,15 +69,16 @@ fun AcademicProfileSheet(
                     modifier = Modifier
                         .size(56.dp)
                         .clip(CircleShape)
-                        .background(PrimaryBlue.copy(alpha = 0.15f))
-                        .border(2.dp, PrimaryBlue, CircleShape),
+                        .background(Color.White)
+                        .border(1.5.dp, PrimaryBlue.copy(alpha = 0.5f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.School,
-                        contentDescription = "Student Profile",
-                        tint = PrimaryBlue,
-                        modifier = Modifier.size(28.dp)
+                    Image(
+                        painter = painterResource(R.drawable.app_logo),
+                        contentDescription = "Academic Emblem",
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(CircleShape)
                     )
                 }
 
@@ -148,7 +152,7 @@ fun AcademicProfileSheet(
 
                     ProfileItemRow(icon = Icons.Outlined.LocationOn, label = "Campus", value = "Kihumuro / Main Campus", isDark = isDark)
                     Spacer(modifier = Modifier.height(10.dp))
-                    ProfileItemRow(icon = Icons.Outlined.CalendarMonth, label = "Academic Period", value = "2025/2026 Academic Year", isDark = isDark)
+                    ProfileItemRow(icon = Icons.Outlined.CalendarMonth, label = "Academic Period", value = "2026/2027 Academic Year (Semester 1)", isDark = isDark)
                     Spacer(modifier = Modifier.height(10.dp))
                     ProfileItemRow(icon = Icons.Outlined.AccessTime, label = "Timetable Mode", value = "Class Timetable Synced", isDark = isDark)
                 }

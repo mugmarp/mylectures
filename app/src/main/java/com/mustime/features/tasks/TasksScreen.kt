@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -122,104 +123,111 @@ fun TasksScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(bg)
-            .statusBarsPadding()
-    ) {
-        // Top Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (onBack != null) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = textPrimary
-                    )
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(primaryColor.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.TaskAlt,
-                        contentDescription = null,
-                        tint = primaryColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    "Tasks & Deadlines",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = textPrimary
+    Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        containerColor = bg,
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = primaryColor,
+                contentColor = Color.White,
+                shape = CircleShape,
+                modifier = Modifier
+                    .testTag("add_task_fab")
+                    .padding(bottom = 8.dp)
+            ) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Add Task",
+                    modifier = Modifier.size(24.dp)
                 )
-                Text(
-                    "Reminders & Deadlines",
-                    fontSize = 11.sp,
-                    color = textSecondary
-                )
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = { showNotificationSheet = true },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        Icons.Outlined.Notifications,
-                        contentDescription = "Notification Center",
-                        tint = textPrimary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(4.dp))
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(if (isDark) DarkSurfaceCard else Color(0xFFEFF6FF))
-                        .clickable { showProfileSheet = true },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = "Academic Profile",
-                        tint = primaryColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(6.dp))
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .background(primaryColor, CircleShape)
-                        .clickable { showAddDialog = true },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Add task",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
             }
         }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(bg)
+                .padding(innerPadding)
+                .statusBarsPadding()
+        ) {
+            // Top Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (onBack != null) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = textPrimary
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(primaryColor.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.TaskAlt,
+                            contentDescription = null,
+                            tint = primaryColor,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "Tasks & Deadlines",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = textPrimary
+                    )
+                    Text(
+                        "Reminders & Deadlines",
+                        fontSize = 11.sp,
+                        color = textSecondary
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = { showNotificationSheet = true },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Notifications,
+                            contentDescription = "Notification Center",
+                            tint = textPrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(if (isDark) DarkSurfaceCard else Color(0xFFEFF6FF))
+                            .clickable { showProfileSheet = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = "Academic Profile",
+                            tint = primaryColor,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
 
         // Notification Permission Prompt (if revoked on Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
@@ -314,7 +322,7 @@ fun TasksScreen(
                     .fillMaxSize()
                     .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(top = 4.dp, bottom = 32.dp)
+                contentPadding = PaddingValues(top = 4.dp, bottom = 88.dp)
             ) {
                 // 1. Visual Progress Dashboard for Total Tasks Completed vs Pending
                 item(key = "task_progress_dashboard_item") {
@@ -436,6 +444,7 @@ fun TasksScreen(
             }
         }
     }
+}
 
     if (showAddDialog) {
         AddTaskDialog(

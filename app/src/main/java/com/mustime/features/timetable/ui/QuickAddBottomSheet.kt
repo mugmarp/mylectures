@@ -419,7 +419,7 @@ fun QuickAddBottomSheet(
                         label = { Text("Location (Optional)") },
                         placeholder = { Text("e.g. Main Library, Room 204, Sports Field") },
                         leadingIcon = {
-                            Icon(Icons.Outlined.Place, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Outlined.MeetingRoom, contentDescription = "Venue", modifier = Modifier.size(18.dp))
                         },
                         modifier = Modifier
                             .fillMaxWidth()

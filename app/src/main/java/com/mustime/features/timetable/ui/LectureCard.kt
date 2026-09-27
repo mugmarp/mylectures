@@ -9,8 +9,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.outlined.MeetingRoom
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -101,7 +101,7 @@ fun LectureCard(entry: TimetableEntry, onClick: () -> Unit) {
                     val roomText = entry.room?.trim()
                     if (!roomText.isNullOrEmpty() && roomText.uppercase() !in listOf("TBA", "TBD", "NONE", "N/A")) {
                         Spacer(modifier = Modifier.width(16.dp))
-                        Icon(Icons.Outlined.Place, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Outlined.MeetingRoom, contentDescription = "Venue", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(roomText, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     }

@@ -8,8 +8,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.outlined.MeetingRoom
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -117,7 +117,7 @@ fun NextUpCard(entry: TimetableEntry, minutesUntil: Int, onClick: () -> Unit) {
                 val roomText = entry.room?.trim()
                 if (!roomText.isNullOrEmpty() && roomText.uppercase() !in listOf("TBA", "TBD", "NONE", "N/A")) {
                     Spacer(modifier = Modifier.width(16.dp))
-                    Icon(Icons.Outlined.Place, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Outlined.MeetingRoom, contentDescription = "Venue", tint = Color.White, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(roomText, color = Color.White, fontSize = 14.sp)
                 }

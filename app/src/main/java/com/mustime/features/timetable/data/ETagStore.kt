@@ -18,11 +18,7 @@ class ETagStore(context: Context) {
     private val LAST_SYNC_KEY = "last_sync_time"
     private val ONBOARDING_COMPLETED_KEY = "onboarding_completed"
 
-    private val initialMode = prefs.getString(THEME_MODE_KEY, null) ?: if (prefs.contains(THEME_DARK_KEY)) {
-        if (prefs.getBoolean(THEME_DARK_KEY, false)) "DARK" else "LIGHT"
-    } else {
-        "LIGHT"
-    }
+    private val initialMode = prefs.getString(THEME_MODE_KEY, "LIGHT") ?: "LIGHT"
 
     private val _programmePref = MutableStateFlow<String?>(
         prefs.getString(PROGRAMME_KEY, null)?.ifBlank { null }

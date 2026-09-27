@@ -68,15 +68,6 @@ fun SettingsScreen(
         viewModel.setThemeMode(mode)
         appTheme.onThemeModeChange(mode)
     }
-    val onToggleDark: (Boolean) -> Unit = { isDark ->
-        val targetMode = if (isDark) ThemeMode.DARK else ThemeMode.LIGHT
-        viewModel.setDarkMode(isDark)
-        appTheme.onThemeModeChange(targetMode)
-    }
-    val onSelectAccent: (Int) -> Unit = { index ->
-        viewModel.setSelectedAccent(index)
-        appTheme.onAccentChange(index)
-    }
 
     var showResetNotesDialog by remember { mutableStateOf(false) }
     var showResetTasksDialog by remember { mutableStateOf(false) }
@@ -419,12 +410,12 @@ fun SettingsScreen(
 
                         ThemeSelectionCard(
                             title = "Dark",
-                            subtitle = "OLED slate",
+                            subtitle = "Deep comfort",
                             icon = Icons.Default.DarkMode,
                             isSelected = activeMode == ThemeMode.DARK,
                             modifier = Modifier.weight(1f),
-                            previewBgColor = Color(0xFF0F172A),
-                            previewCardColor = Color(0xFF1E293B),
+                            previewBgColor = Color(0xFF101216),
+                            previewCardColor = Color(0xFF181B22),
                             previewTextColor = Color(0xFFF8FAFC),
                             onClick = { onSelectThemeMode(ThemeMode.DARK) }
                         )
@@ -435,131 +426,11 @@ fun SettingsScreen(
                             icon = Icons.Default.BrightnessAuto,
                             isSelected = activeMode == ThemeMode.SYSTEM,
                             modifier = Modifier.weight(1f),
-                            previewBgColor = if (appTheme.isDark) Color(0xFF0F172A) else Color(0xFFF8FAFC),
-                            previewCardColor = if (appTheme.isDark) Color(0xFF1E293B) else Color.White,
+                            previewBgColor = if (appTheme.isDark) Color(0xFF101216) else Color(0xFFF8FAFC),
+                            previewCardColor = if (appTheme.isDark) Color(0xFF181B22) else Color.White,
                             previewTextColor = if (appTheme.isDark) Color(0xFFF8FAFC) else Color(0xFF0F172A),
                             onClick = { onSelectThemeMode(ThemeMode.SYSTEM) }
                         )
-                    }
-
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    // Quick Dark Mode Switch Row
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(34.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                    CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                if (appTheme.isDark) Icons.Default.DarkMode else Icons.Default.LightMode,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                "Quick Dark Theme Switch",
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                if (appTheme.isDark) "Night mode enabled (Dark slate)" else "Day mode enabled (Clean light)",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = appTheme.isDark,
-                            onCheckedChange = { onToggleDark(it) },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = MaterialTheme.colorScheme.primary,
-                                uncheckedThumbColor = Color.White,
-                                uncheckedTrackColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
-                    }
-
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 18.dp),
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                    )
-
-                    // Accent Color selector
-                    val activeAccent = uiState.selectedAccent
-                    val activeAccentName = AccentColorNames.getOrElse(activeAccent) { "Royal Blue" }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    "Accent Palette",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    "• $activeAccentName",
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            Text(
-                                "Applied across timetables, badges, and buttons",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        // Swatches
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            AccentColors.forEachIndexed { index, color ->
-                                val isSelected = activeAccent == index
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(color)
-                                        .border(
-                                            width = if (isSelected) 3.dp else 1.dp,
-                                            color = if (isSelected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
-                                            shape = CircleShape
-                                        )
-                                        .clickable { onSelectAccent(index) },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (isSelected) {
-                                        Icon(
-                                            Icons.Default.Check,
-                                            contentDescription = "Selected",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -629,7 +500,7 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Academic Timetable Version", fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Text("Semester 2, 2025/2026 Academic Year", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Semester 1, 2026/2027 Academic Year", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Box(
                             modifier = Modifier
