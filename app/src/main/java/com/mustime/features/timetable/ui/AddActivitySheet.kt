@@ -308,7 +308,7 @@ fun AddActivitySheet(
             ) {
                 Icon(Icons.Outlined.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Save Activity", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("Add Activity", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

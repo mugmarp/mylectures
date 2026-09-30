@@ -1,6 +1,7 @@
 package com.mustime.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,18 +9,26 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TaskAlt
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Notes
+import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -127,13 +136,21 @@ fun MainScaffold() {
         }
         is AppNavState.MainApp -> {
             var isSettingsOpen by remember { mutableStateOf(false) }
+            var isVacantRoomsOpen by remember { mutableStateOf(false) }
 
+            val haptic = LocalHapticFeedback.current
             val tabs = listOf("Timetable", "Calendar", "Notes", "Tasks")
-            val icons = listOf(
-                Icons.Default.DateRange,
-                Icons.Default.CalendarMonth,
-                Icons.Default.Notes,
-                Icons.Default.TaskAlt
+            val filledIcons = listOf(
+                Icons.Filled.CalendarToday,
+                Icons.Filled.CalendarMonth,
+                Icons.Filled.Notes,
+                Icons.Filled.TaskAlt
+            )
+            val outlinedIcons = listOf(
+                Icons.Outlined.CalendarToday,
+                Icons.Outlined.CalendarMonth,
+                Icons.Outlined.Notes,
+                Icons.Outlined.TaskAlt
             )
 
             val isDark = com.mustime.ui.LocalAppTheme.current.isDark
@@ -142,7 +159,14 @@ fun MainScaffold() {
             val primaryBlue = com.mustime.features.timetable.ui.PrimaryBlue
             val textMuted = if (isDark) Color(0xFF94A3B8) else com.mustime.features.timetable.ui.TextMutedLight
 
-            if (isSettingsOpen) {
+            if (isVacantRoomsOpen) {
+                BackHandler {
+                    isVacantRoomsOpen = false
+                }
+                com.mustime.features.rooms.ui.VacantRoomsScreen(
+                    onBack = { isVacantRoomsOpen = false }
+                )
+            } else if (isSettingsOpen) {
                 BackHandler {
                     isSettingsOpen = false
                 }
@@ -165,62 +189,24 @@ fun MainScaffold() {
                 BackHandler(enabled = selectedTab != 0) {
                     selectedTab = 0
                 }
-                Scaffold(
-                    contentWindowInsets = WindowInsets.navigationBars,
-                    containerColor = MaterialTheme.colorScheme.background,
-                    bottomBar = {
-                        NavigationBar(
-                            containerColor = navBg,
-                            tonalElevation = 6.dp,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .drawBehind {
-                                    drawLine(
-                                        color = navBorder,
-                                        start = Offset(0f, 0f),
-                                        end = Offset(size.width, 0f),
-                                        strokeWidth = 1.dp.toPx()
-                                    )
-                                }
-                        ) {
-                            tabs.forEachIndexed { index, tab ->
-                                val isSelected = selectedTab == index
-                                NavigationBarItem(
-                                    selected = isSelected,
-                                    onClick = { selectedTab = index },
-                                    icon = {
-                                        Icon(
-                                            imageVector = icons[index],
-                                            contentDescription = tab,
-                                            modifier = Modifier.size(22.dp)
-                                        )
-                                    },
-                                    label = {
-                                        Text(
-                                            text = tab,
-                                            fontSize = 11.sp,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                        )
-                                    },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = primaryBlue,
-                                        selectedTextColor = primaryBlue,
-                                        indicatorColor = primaryBlue.copy(alpha = 0.14f),
-                                        unselectedIconColor = textMuted,
-                                        unselectedTextColor = textMuted
-                                    )
-                                )
-                            }
-                        }
-                    }
-                ) { innerPadding ->
-                    Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                ) {
+                    // Main Screen Content (flows edge-to-edge behind floating dock)
+                    Box(modifier = Modifier.fillMaxSize()) {
                         when (selectedTab) {
                             0 -> TimetableRoute(
                                 onSettingsClick = { isSettingsOpen = true },
                                 onNavigateToNotes = { selectedTab = 2 },
                                 onNavigateToCalendar = { selectedTab = 1 },
-                                onNavigateToTasks = { selectedTab = 3 }
+                                onNavigateToTasks = { selectedTab = 3 },
+                                onReconfigureAcademicProfile = {
+                                    isSettingsOpen = false
+                                    navState = AppNavState.FacultySelection
+                                },
+                                onOpenVacantRooms = { isVacantRoomsOpen = true }
                             )
                             1 -> CalendarScreen(
                                 onBack = null,
@@ -246,6 +232,80 @@ fun MainScaffold() {
                                     navState = AppNavState.FacultySelection
                                 }
                             )
+                        }
+                    }
+
+                    // Floating Pill Dock (overlaid above content, letting unoccupied space reveal content behind)
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(start = 14.dp, end = 14.dp, bottom = 6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(24.dp),
+                            color = navBg.copy(alpha = 0.96f),
+                            tonalElevation = 6.dp,
+                            shadowElevation = 8.dp,
+                            border = BorderStroke(1.dp, navBorder),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(60.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                tabs.forEachIndexed { index, tab ->
+                                    val isSelected = selectedTab == index
+                                    val icon = if (isSelected) filledIcons[index] else outlinedIcons[index]
+
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
+                                            .clip(RoundedCornerShape(20.dp))
+                                            .clickable {
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                selectedTab = index
+                                            }
+                                            .testTag("nav_${tab.lowercase()}"),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(14.dp))
+                                                    .background(if (isSelected) primaryBlue.copy(alpha = 0.12f) else Color.Transparent)
+                                                .padding(horizontal = 12.dp, vertical = 2.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = icon,
+                                                    contentDescription = tab,
+                                                    tint = if (isSelected) primaryBlue else textMuted,
+                                                    modifier = Modifier.size(21.dp)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(1.dp))
+                                            Text(
+                                                text = tab,
+                                                fontSize = 10.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                color = if (isSelected) primaryBlue else textMuted
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

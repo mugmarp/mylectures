@@ -24,7 +24,8 @@ fun TimetableRoute(
     onNavigateToNotes: () -> Unit = {},
     onNavigateToCalendar: () -> Unit = {},
     onNavigateToTasks: () -> Unit = {},
-    onReconfigureAcademicProfile: () -> Unit = {}
+    onReconfigureAcademicProfile: () -> Unit = {},
+    onOpenVacantRooms: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as? TimetableApplication
@@ -74,6 +75,7 @@ fun TimetableRoute(
         onReconfigureAcademicProfile = onReconfigureAcademicProfile,
         onNavigateToNotes = onNavigateToNotes,
         onNavigateToCalendar = onNavigateToCalendar,
-        onNavigateToTasks = onNavigateToTasks
+        onNavigateToTasks = onNavigateToTasks,
+        onOpenVacantRooms = onOpenVacantRooms
     )
 }

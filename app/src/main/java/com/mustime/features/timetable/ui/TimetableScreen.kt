@@ -77,7 +77,8 @@ fun TimetableScreen(
     onReconfigureAcademicProfile: () -> Unit = {},
     onNavigateToNotes: () -> Unit = {},
     onNavigateToCalendar: () -> Unit = {},
-    onNavigateToTasks: () -> Unit = {}
+    onNavigateToTasks: () -> Unit = {},
+    onOpenVacantRooms: () -> Unit = {}
 ) {
     val coroutineScope = rememberCoroutineScope()
     val isDark = LocalAppTheme.current.isDark
@@ -210,19 +211,34 @@ fun TimetableScreen(
                 onProfileClick = {
                     showAcademicProfileSheet = true
                 },
-                onSettingsClick = onSettingsClick
+                onSettingsClick = onSettingsClick,
+                onOpenVacantRooms = onOpenVacantRooms
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            ExtendedFloatingActionButton(
                 onClick = { showQuickAddSheet = true },
                 containerColor = PrimaryBlue,
                 contentColor = Color.White,
-                shape = FabShape,
-                modifier = Modifier.testTag("timetable_fab")
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Session", modifier = Modifier.size(24.dp))
-            }
+                shape = RoundedCornerShape(16.dp),
+                icon = {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Add Activity",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp
+                    )
+                },
+                modifier = Modifier
+                    .padding(bottom = 68.dp)
+                    .testTag("timetable_fab")
+            )
         }
     ) { innerPadding ->
         Box(
@@ -257,7 +273,7 @@ fun TimetableScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 88.dp)
+                contentPadding = PaddingValues(bottom = 150.dp)
             ) {
                 // Prompt to select programme if not yet chosen
                 if (programme.isBlank()) {
@@ -629,6 +645,11 @@ fun TimetableScreen(
                         }
                     }
                 }
+
+                // Dedicated bottom spacer so content scrolls completely above floating pill dock
+                item(key = "bottom_nav_spacer") {
+                    Spacer(modifier = Modifier.height(110.dp))
+                }
             }
         }
     }
@@ -725,9 +746,13 @@ fun TimetableScreen(
 
     // MODAL: Native QuickAddBottomSheet supporting Custom Events & Tasks
     if (showQuickAddSheet) {
+        val courseDetailsList = remember(entries) {
+            entries.map { it.courseCode to it.courseTitle }.distinctBy { it.first }
+        }
         QuickAddBottomSheet(
             initialDayOfWeek = selectedDay,
             availableCourses = entries.map { it.courseCode }.distinct(),
+            courseDetails = courseDetailsList,
             onDismiss = { showQuickAddSheet = false },
             onSaveActivity = { event ->
                 onAddActivity(event)

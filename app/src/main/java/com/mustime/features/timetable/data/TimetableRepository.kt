@@ -83,6 +83,15 @@ class TimetableRepository(
     val themeAccentPref: Flow<Int> = etagStore.themeAccentPref
     val notificationsEnabledPref: Flow<Boolean> = etagStore.notificationsEnabledPref
     val lastSyncPref: Flow<String?> = etagStore.lastSyncPref
+    val academicYearPref: Flow<String> = etagStore.academicYearPref
+    val semesterPref: Flow<String> = etagStore.semesterPref
+
+    fun getAcademicYear(): String = etagStore.getAcademicYear()
+    fun getSemester(): String = etagStore.getSemester()
+
+    suspend fun setAcademicSession(year: String, semester: String) {
+        etagStore.setAcademicSession(year, semester)
+    }
 
     suspend fun setProgrammePref(programme: String) {
         etagStore.setProgrammePref(programme)

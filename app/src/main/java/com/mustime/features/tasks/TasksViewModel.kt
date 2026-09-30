@@ -112,6 +112,23 @@ class TasksViewModel(
         }
     }
 
+    fun updateAssignment(task: Assignment) {
+        viewModelScope.launch {
+            repository.saveAssignment(task)
+            alarmScheduler?.cancelTaskReminder(task.id)
+            if (task.reminderMinutes != null && !task.completed) {
+                val scheduled = alarmScheduler?.scheduleTaskReminder(task) == true
+                if (scheduled) {
+                    _uiState.value = _uiState.value.copy(messageSnackbar = "Task updated • Alarm rescheduled")
+                } else {
+                    _uiState.value = _uiState.value.copy(messageSnackbar = "Task updated")
+                }
+            } else {
+                _uiState.value = _uiState.value.copy(messageSnackbar = "Task updated")
+            }
+        }
+    }
+
     fun triggerTestReminder(task: Assignment, delaySeconds: Int = 3) {
         alarmScheduler?.scheduleTestReminder(task, delaySeconds)
         _uiState.value = _uiState.value.copy(

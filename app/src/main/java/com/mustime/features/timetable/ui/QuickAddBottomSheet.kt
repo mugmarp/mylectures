@@ -14,8 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Assignment
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.EventNote
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,6 +32,9 @@ import com.mustime.core.util.TimeUtil
 import com.mustime.features.timetable.domain.ActivityCategory
 import com.mustime.features.timetable.domain.CustomEvent
 import com.mustime.features.timetable.domain.TaskCategory
+import com.mustime.ui.components.DedicatedCoursePickerDialog
+import com.mustime.ui.components.DedicatedDayPickerDialog
+import com.mustime.ui.components.DedicatedTimePickerDialog
 
 enum class QuickAddMode(val title: String, val subtitle: String) {
     ACTIVITY("Timetable Activity", "Scheduled session on timetable"),
@@ -45,6 +47,7 @@ fun QuickAddBottomSheet(
     initialDayOfWeek: String = TimeUtil.todayName(),
     initialMode: QuickAddMode = QuickAddMode.ACTIVITY,
     availableCourses: List<String> = emptyList(),
+    courseDetails: List<Pair<String, String>> = emptyList(),
     onDismiss: () -> Unit,
     onSaveActivity: (CustomEvent) -> Unit,
     onSaveTask: (
@@ -91,6 +94,13 @@ fun QuickAddBottomSheet(
     var taskCustomMinutesText by remember { mutableStateOf("") }
     var taskNotes by remember { mutableStateOf("") }
     var taskHasError by remember { mutableStateOf(false) }
+
+    var showStartTimePicker by remember { mutableStateOf(false) }
+    var showEndTimePicker by remember { mutableStateOf(false) }
+    var showCoursePicker by remember { mutableStateOf(false) }
+    var showDueDayPicker by remember { mutableStateOf(false) }
+    var showDueTimePicker by remember { mutableStateOf(false) }
+    var tempDueDay by remember { mutableStateOf(initialDayOfWeek) }
 
     val daysOfWeek = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 
@@ -368,6 +378,11 @@ fun QuickAddBottomSheet(
                             leadingIcon = {
                                 Icon(Icons.Outlined.AccessTime, contentDescription = null, modifier = Modifier.size(18.dp))
                             },
+                            trailingIcon = {
+                                IconButton(onClick = { showStartTimePicker = true }) {
+                                    Icon(Icons.Default.AccessTime, contentDescription = "Pick Start Time", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                }
+                            },
                             modifier = Modifier
                                 .weight(1f)
                                 .testTag("activity_start_time_input"),
@@ -382,6 +397,11 @@ fun QuickAddBottomSheet(
                             placeholder = { Text("15:30") },
                             leadingIcon = {
                                 Icon(Icons.Outlined.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
+                            },
+                            trailingIcon = {
+                                IconButton(onClick = { showEndTimePicker = true }) {
+                                    Icon(Icons.Default.Schedule, contentDescription = "Pick End Time", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                }
                             },
                             modifier = Modifier
                                 .weight(1f)
@@ -544,7 +564,7 @@ fun QuickAddBottomSheet(
                         Icon(Icons.Default.EventNote, contentDescription = null, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Add Activity to Timetable",
+                            text = "Add Activity",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp
                         )
@@ -678,6 +698,11 @@ fun QuickAddBottomSheet(
                         leadingIcon = {
                             Icon(Icons.Outlined.School, contentDescription = null, modifier = Modifier.size(18.dp))
                         },
+                        trailingIcon = {
+                            IconButton(onClick = { showCoursePicker = true }) {
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = "Pick Course", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("task_course_input"),
@@ -692,6 +717,12 @@ fun QuickAddBottomSheet(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             modifier = Modifier.padding(top = 6.dp)
                         ) {
+                            item {
+                                AssistChip(
+                                    onClick = { showCoursePicker = true },
+                                    label = { Text("Select Course ▼", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                                )
+                            }
                             items(courseSuggestions) { code ->
                                 SuggestionChip(
                                     onClick = { taskCourseCode = code },
@@ -711,6 +742,11 @@ fun QuickAddBottomSheet(
                         placeholder = { Text("e.g. Tomorrow • 17:00, Friday • 23:59") },
                         leadingIcon = {
                             Icon(Icons.Outlined.CalendarToday, contentDescription = null, modifier = Modifier.size(18.dp))
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { showDueDayPicker = true }) {
+                                Icon(Icons.Default.CalendarMonth, contentDescription = "Pick Due Date", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                            }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -880,7 +916,7 @@ fun QuickAddBottomSheet(
                         Icon(Icons.AutoMirrored.Outlined.Assignment, contentDescription = null, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Save Task to Timetable",
+                            text = "Add Task",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp
                         )
@@ -888,5 +924,60 @@ fun QuickAddBottomSheet(
                 }
             }
         }
+    }
+
+    if (showStartTimePicker) {
+        DedicatedTimePickerDialog(
+            initialTime = activityStartTime,
+            title = "Set Activity Start Time",
+            onTimeSelected = { activityStartTime = it },
+            onDismiss = { showStartTimePicker = false }
+        )
+    }
+
+    if (showEndTimePicker) {
+        DedicatedTimePickerDialog(
+            initialTime = activityEndTime,
+            title = "Set Activity End Time",
+            onTimeSelected = { activityEndTime = it },
+            onDismiss = { showEndTimePicker = false }
+        )
+    }
+
+    if (showCoursePicker) {
+        val resolvedCourseList = remember(availableCourses, courseDetails) {
+            if (courseDetails.isNotEmpty()) courseDetails
+            else availableCourses.map { it to "" }
+        }
+        DedicatedCoursePickerDialog(
+            selectedCourse = taskCourseCode,
+            availableCourses = resolvedCourseList,
+            onCourseSelected = { code, _ -> taskCourseCode = code },
+            onDismiss = { showCoursePicker = false }
+        )
+    }
+
+    if (showDueDayPicker) {
+        DedicatedDayPickerDialog(
+            selectedDay = tempDueDay,
+            onDaySelected = { day ->
+                tempDueDay = day
+                showDueDayPicker = false
+                showDueTimePicker = true
+            },
+            onDismiss = { showDueDayPicker = false }
+        )
+    }
+
+    if (showDueTimePicker) {
+        DedicatedTimePickerDialog(
+            initialTime = "17:00",
+            title = "Set Due Time ($tempDueDay)",
+            onTimeSelected = { time ->
+                taskDueDate = "$tempDueDay • $time"
+                showDueTimePicker = false
+            },
+            onDismiss = { showDueTimePicker = false }
+        )
     }
 }

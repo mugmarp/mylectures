@@ -17,8 +17,28 @@ class ETagStore(context: Context) {
     private val NOTIFICATIONS_ENABLED_KEY = "notifications_enabled"
     private val LAST_SYNC_KEY = "last_sync_time"
     private val ONBOARDING_COMPLETED_KEY = "onboarding_completed"
+    private val ACADEMIC_YEAR_KEY = "academic_year"
+    private val SEMESTER_KEY = "academic_semester"
 
     private val initialMode = prefs.getString(THEME_MODE_KEY, "LIGHT") ?: "LIGHT"
+
+    private val _academicYearPref = MutableStateFlow(prefs.getString(ACADEMIC_YEAR_KEY, "2026/2027") ?: "2026/2027")
+    val academicYearPref: Flow<String> = _academicYearPref.asStateFlow()
+
+    private val _semesterPref = MutableStateFlow(prefs.getString(SEMESTER_KEY, "Semester 1") ?: "Semester 1")
+    val semesterPref: Flow<String> = _semesterPref.asStateFlow()
+
+    fun getAcademicYear(): String = prefs.getString(ACADEMIC_YEAR_KEY, "2026/2027") ?: "2026/2027"
+    fun getSemester(): String = prefs.getString(SEMESTER_KEY, "Semester 1") ?: "Semester 1"
+
+    suspend fun setAcademicSession(academicYear: String, semester: String) {
+        prefs.edit()
+            .putString(ACADEMIC_YEAR_KEY, academicYear)
+            .putString(SEMESTER_KEY, semester)
+            .apply()
+        _academicYearPref.value = academicYear
+        _semesterPref.value = semester
+    }
 
     private val _programmePref = MutableStateFlow<String?>(
         prefs.getString(PROGRAMME_KEY, null)?.ifBlank { null }

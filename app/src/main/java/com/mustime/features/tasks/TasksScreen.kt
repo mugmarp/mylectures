@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material3.*
@@ -42,6 +43,7 @@ import com.mustime.core.alarm.TaskDateTimeParser
 import com.mustime.features.timetable.domain.Assignment
 import com.mustime.features.timetable.ui.*
 import com.mustime.ui.LocalAppTheme
+import com.mustime.ui.components.*
 import com.mustime.ui.components.AcademicProfileSheet
 import com.mustime.ui.components.NotificationCenterSheet
 
@@ -71,6 +73,10 @@ fun TasksScreen(
     val primaryColor = MaterialTheme.colorScheme.primary
 
     val savedProgramme by repository.programmePref.collectAsState(initial = repository.getInitialProgramme())
+    val allEntries by repository.getAllEntries().collectAsState(initial = emptyList())
+    val availableCoursePairs = remember(allEntries) {
+        allEntries.map { it.courseCode to it.courseTitle }.distinctBy { it.first }
+    }
     val alarmScheduler = remember(context) { TaskAlarmScheduler(context) }
 
     val viewModel: TasksViewModel = viewModel(
@@ -81,6 +87,7 @@ fun TasksScreen(
     val assignments = uiState.assignments
 
     var showAddDialog by remember { mutableStateOf(false) }
+    var taskToEdit by remember { mutableStateOf<Assignment?>(null) }
     var showNotificationSheet by remember { mutableStateOf(false) }
     var showProfileSheet by remember { mutableStateOf(false) }
 
@@ -127,21 +134,33 @@ fun TasksScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = bg,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
+            ExtendedFloatingActionButton(
+                onClick = {
+                    taskToEdit = null
+                    showAddDialog = true
+                },
                 containerColor = primaryColor,
                 contentColor = Color.White,
-                shape = CircleShape,
+                shape = RoundedCornerShape(16.dp),
+                icon = {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Add Task",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp
+                    )
+                },
                 modifier = Modifier
+                    .navigationBarsPadding()
+                    .padding(bottom = 76.dp)
                     .testTag("add_task_fab")
-                    .padding(bottom = 8.dp)
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "Add Task",
-                    modifier = Modifier.size(24.dp)
-                )
-            }
+            )
         }
     ) { innerPadding ->
         Column(
@@ -199,18 +218,6 @@ fun TasksScreen(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = { showNotificationSheet = true },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            Icons.Outlined.Notifications,
-                            contentDescription = "Notification Center",
-                            tint = textPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(4.dp))
                     Box(
                         modifier = Modifier
                             .size(36.dp)
@@ -322,7 +329,7 @@ fun TasksScreen(
                     .fillMaxSize()
                     .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(top = 4.dp, bottom = 88.dp)
+                contentPadding = PaddingValues(top = 4.dp, bottom = 150.dp)
             ) {
                 // 1. Visual Progress Dashboard for Total Tasks Completed vs Pending
                 item(key = "task_progress_dashboard_item") {
@@ -436,6 +443,10 @@ fun TasksScreen(
                             task = task,
                             isDark = isDark,
                             onToggleComplete = { viewModel.toggleComplete(task) },
+                            onEdit = {
+                                taskToEdit = task
+                                showAddDialog = true
+                            },
                             onDelete = { viewModel.deleteAssignment(task.id) },
                             onTestAlarm = { viewModel.triggerTestReminder(task, delaySeconds = 3) }
                         )
@@ -449,16 +460,35 @@ fun TasksScreen(
     if (showAddDialog) {
         AddTaskDialog(
             isDark = isDark,
-            onDismiss = { showAddDialog = false },
-            onConfirm = { title, course, dueDate, priority, reminderMinutes ->
-                viewModel.saveAssignment(
-                    title = title,
-                    courseCode = course,
-                    dueDate = dueDate,
-                    priority = priority,
-                    reminderMinutes = reminderMinutes
-                )
+            initialTask = taskToEdit,
+            availableCourses = availableCoursePairs,
+            onDismiss = {
                 showAddDialog = false
+                taskToEdit = null
+            },
+            onConfirm = { title, course, dueDate, priority, reminderMinutes ->
+                val currentTask = taskToEdit
+                if (currentTask != null) {
+                    viewModel.updateAssignment(
+                        currentTask.copy(
+                            title = title,
+                            courseCode = course,
+                            dueDate = dueDate,
+                            priority = priority,
+                            reminderMinutes = reminderMinutes
+                        )
+                    )
+                } else {
+                    viewModel.saveAssignment(
+                        title = title,
+                        courseCode = course,
+                        dueDate = dueDate,
+                        priority = priority,
+                        reminderMinutes = reminderMinutes
+                    )
+                }
+                showAddDialog = false
+                taskToEdit = null
             }
         )
     }
@@ -488,6 +518,7 @@ fun TaskCard(
     task: Assignment,
     isDark: Boolean,
     onToggleComplete: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
     onTestAlarm: () -> Unit
 ) {
@@ -505,7 +536,9 @@ fun TaskCard(
                 if (isDark) DarkBorderSubtle else Color(0xFFE2E8F0)
             )
         ),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onEdit)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -542,6 +575,21 @@ fun TaskCard(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Edit / Reschedule button
+                    IconButton(
+                        onClick = onEdit,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = "Edit or Reschedule Task",
+                            tint = primaryColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
                     // Test reminder trigger button
                     IconButton(
                         onClick = onTestAlarm,
@@ -651,14 +699,21 @@ fun TaskCard(
 @Composable
 fun AddTaskDialog(
     isDark: Boolean,
+    initialTask: Assignment? = null,
+    availableCourses: List<Pair<String, String>> = emptyList(),
     onDismiss: () -> Unit,
     onConfirm: (title: String, course: String, dueDate: String, priority: String, reminder: Int?) -> Unit
 ) {
-    var title by remember { mutableStateOf("") }
-    var course by remember { mutableStateOf("") }
-    var dueDate by remember { mutableStateOf("Tomorrow • 17:00") }
-    var priority by remember { mutableStateOf("Medium") }
-    var reminderMinutes by remember { mutableStateOf<Int?>(30) }
+    var title by remember(initialTask) { mutableStateOf(initialTask?.title ?: "") }
+    var course by remember(initialTask) { mutableStateOf(initialTask?.courseCode ?: "") }
+    var dueDate by remember(initialTask) { mutableStateOf(initialTask?.dueDate ?: "Tomorrow • 17:00") }
+    var priority by remember(initialTask) { mutableStateOf(initialTask?.priority ?: "Medium") }
+    var reminderMinutes by remember(initialTask) { mutableStateOf<Int?>(initialTask?.reminderMinutes ?: 30) }
+
+    var showCoursePicker by remember { mutableStateOf(false) }
+    var showDueDayPicker by remember { mutableStateOf(false) }
+    var showDueTimePicker by remember { mutableStateOf(false) }
+    var tempDueDay by remember { mutableStateOf("Tomorrow") }
 
     val primaryColor = MaterialTheme.colorScheme.primary
     val textPrimary = if (isDark) Color.White else TextPrimaryLight
@@ -672,9 +727,19 @@ fun AddTaskDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Alarm, contentDescription = null, tint = primaryColor, modifier = Modifier.size(24.dp))
+                Icon(
+                    imageVector = if (initialTask != null) Icons.Outlined.Edit else Icons.Default.Alarm,
+                    contentDescription = null,
+                    tint = primaryColor,
+                    modifier = Modifier.size(24.dp)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Academic Task", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = textPrimary)
+                Text(
+                    text = if (initialTask != null) "Edit & Reschedule Task" else "Add Academic Task",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = textPrimary
+                )
             }
         },
         text = {
@@ -695,6 +760,11 @@ fun AddTaskDialog(
                     onValueChange = { course = it },
                     label = { Text("Course code *") },
                     placeholder = { Text("e.g. PHA3102") },
+                    trailingIcon = {
+                        IconButton(onClick = { showCoursePicker = true }) {
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = "Pick Course", tint = primaryColor)
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -705,6 +775,11 @@ fun AddTaskDialog(
                     onValueChange = { dueDate = it },
                     label = { Text("Due Date & Time *") },
                     placeholder = { Text("e.g. Tomorrow • 17:00") },
+                    trailingIcon = {
+                        IconButton(onClick = { showDueDayPicker = true }) {
+                            Icon(Icons.Default.CalendarMonth, contentDescription = "Pick Due Date", tint = primaryColor)
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -849,7 +924,7 @@ fun AddTaskDialog(
                 enabled = title.isNotBlank() && course.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
             ) {
-                Text("Schedule & Save")
+                Text(if (initialTask != null) "Save & Reschedule" else "Schedule & Save")
             }
         },
         dismissButton = {
@@ -858,4 +933,37 @@ fun AddTaskDialog(
             }
         }
     )
+
+    if (showCoursePicker) {
+        DedicatedCoursePickerDialog(
+            selectedCourse = course,
+            availableCourses = availableCourses,
+            onCourseSelected = { code, _ -> course = code },
+            onDismiss = { showCoursePicker = false }
+        )
+    }
+
+    if (showDueDayPicker) {
+        DedicatedDayPickerDialog(
+            selectedDay = tempDueDay,
+            onDaySelected = { day ->
+                tempDueDay = day
+                showDueDayPicker = false
+                showDueTimePicker = true
+            },
+            onDismiss = { showDueDayPicker = false }
+        )
+    }
+
+    if (showDueTimePicker) {
+        DedicatedTimePickerDialog(
+            initialTime = "17:00",
+            title = "Set Due Time ($tempDueDay)",
+            onTimeSelected = { time ->
+                dueDate = "$tempDueDay • $time"
+                showDueTimePicker = false
+            },
+            onDismiss = { showDueTimePicker = false }
+        )
+    }
 }

@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -109,10 +110,11 @@ data class SpecClassSession(
 fun TimetableTopAppBar(
     program: String,
     subtitle: String = "Academic Schedule",
-    hasUnreadNotifications: Boolean = true,
-    onNotificationClick: () -> Unit,
+    hasUnreadNotifications: Boolean = false,
+    onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
+    onOpenVacantRooms: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isDark = LocalAppTheme.current.isDark
@@ -184,42 +186,59 @@ fun TimetableTopAppBar(
             }
         }
 
-        // Right: Notification Bell, Profile Avatar & Settings Gear inside Capsule Pill
+        // Right: Vacant Rooms Button & Profile Avatar
         Row(
-            modifier = Modifier
-                .background(capsuleBg, RoundedCornerShape(20.dp))
-                .border(1.dp, borderSubtle, RoundedCornerShape(20.dp))
-                .padding(horizontal = 4.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Box(contentAlignment = Alignment.TopEnd) {
-                IconButton(onClick = onNotificationClick, modifier = Modifier.size(36.dp)) {
+            // Free Rooms Button
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = PrimaryBlue.copy(alpha = 0.12f),
+                border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.35f)),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onOpenVacantRooms() }
+                    .testTag("topbar_vacant_rooms_btn")
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Icon(
-                        imageVector = Icons.Outlined.Notifications,
-                        contentDescription = "Notifications",
-                        tint = iconTint,
-                        modifier = Modifier.size(20.dp)
+                        imageVector = Icons.Outlined.MeetingRoom,
+                        contentDescription = "Vacant Rooms",
+                        tint = PrimaryBlue,
+                        modifier = Modifier.size(16.dp)
                     )
-                }
-                if (hasUnreadNotifications) {
-                    Box(
-                        modifier = Modifier
-                            .padding(top = 6.dp, end = 6.dp)
-                            .size(6.dp)
-                            .background(PrimaryBlue, CircleShape)
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "Free Rooms",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryBlue
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(2.dp))
-
-            IconButton(onClick = onProfileClick, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    imageVector = Icons.Outlined.Person,
-                    contentDescription = "Academic Profile",
-                    tint = iconTint,
-                    modifier = Modifier.size(20.dp)
-                )
+            // Profile Avatar Button
+            Surface(
+                shape = CircleShape,
+                color = capsuleBg,
+                border = BorderStroke(1.dp, borderSubtle),
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .clickable { onProfileClick() }
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Outlined.Person,
+                        contentDescription = "Academic Profile",
+                        tint = iconTint,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }

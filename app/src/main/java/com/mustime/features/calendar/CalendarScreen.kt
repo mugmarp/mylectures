@@ -130,7 +130,10 @@ fun CalendarScreen(
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = RoundedCornerShape(16.dp),
                 icon = { Icon(Icons.Default.Add, contentDescription = "Add Activity") },
-                text = { Text("Add Activity", fontWeight = FontWeight.Bold) }
+                text = { Text("Add Activity", fontWeight = FontWeight.Bold) },
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .padding(bottom = 76.dp)
             )
         }
     ) { innerPadding ->
@@ -139,7 +142,7 @@ fun CalendarScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .statusBarsPadding(),
-            contentPadding = PaddingValues(bottom = 80.dp)
+            contentPadding = PaddingValues(bottom = 150.dp)
         ) {
             // Top Header
             item {
@@ -179,14 +182,6 @@ fun CalendarScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        IconButton(onClick = { showNotificationSheet = true }) {
-                            Icon(
-                                Icons.Outlined.Notifications,
-                                contentDescription = "Notifications",
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
                         Box(
                             modifier = Modifier
                                 .size(36.dp)

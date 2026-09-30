@@ -106,13 +106,15 @@ fun NotesScreen(
                 },
                 containerColor = Color(0xFF0052CC),
                 contentColor = Color.White,
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(16.dp),
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .padding(bottom = 76.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "New Note", modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Add, contentDescription = "Add Note", modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("New Note", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text("Add Note", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
             }
         }
     ) { innerPadding ->
@@ -181,15 +183,6 @@ fun NotesScreen(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    IconButton(onClick = { showNotificationSheet = true }) {
-                        Icon(
-                            Icons.Outlined.Notifications,
-                            contentDescription = "Notifications",
-                            tint = if (isDark) Color.White else Color(0xFF0F172A),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
                     Box(
                         modifier = Modifier
                             .size(36.dp)
@@ -461,7 +454,7 @@ fun NotesScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 90.dp),
+                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 150.dp),
                     verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
                     grouped.forEach { (courseCode, notes) ->
