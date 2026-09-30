@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +30,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mustime.features.timetable.domain.LectureNote
@@ -83,6 +85,8 @@ fun NoteEditorScreen(
     var attachmentName by remember { mutableStateOf(initialAttachment) }
 
     var showClassPicker by remember { mutableStateOf(false) }
+    var showCoursePickerModal by remember { mutableStateOf(false) }
+    var showTagPicker by remember { mutableStateOf(false) }
     var showDiscardConfirmDialog by remember { mutableStateOf(false) }
     var showProfileSheet by remember { mutableStateOf(false) }
 
@@ -363,96 +367,77 @@ fun NoteEditorScreen(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 2. COURSE CODE SECTION
-            Row(
+            // 2. METADATA PILLS STRIP (Horizontally scrollable, clean, compact)
+            LazyRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Outlined.BookmarkBorder,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        "COURSE / MODULE",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        letterSpacing = 0.5.sp
+                // Course Pill
+                item {
+                    AssistChip(
+                        onClick = { showCoursePickerModal = true },
+                        label = {
+                            Text(
+                                text = if (selectedCourse.isNotBlank()) "📚 $selectedCourse" else "📚 Select Course",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 12.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        trailingIcon = {
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(16.dp))
+                        },
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
-                Text("Required", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
 
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Horizontal Course Chips (if available)
-            if (availableCourses.isNotEmpty()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val courses = availableCourses.take(4)
-
-                    courses.forEach { course ->
-                        val isSelected = selectedCourse.equals(course.code, ignoreCase = true)
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-                                )
-                                .clickable {
-                                    selectedCourse = course.code
-                                    val matched = timetableClasses.find { it.courseCode.equals(course.code, ignoreCase = true) }
-                                    if (matched != null) {
-                                        attachedClassText = "${matched.courseCode}: ${matched.courseTitle} · ${matched.day}, ${matched.startTime} – ${matched.endTime}"
-                                        attachedLocation = if (!matched.room.isNullOrBlank() && matched.room.trim().uppercase() !in listOf("TBA", "TBD", "NONE", "N/A")) "📍 ${matched.room.trim()}" else ""
-                                        lecturer = matched.lecturer ?: "Course Lecturer"
-                                    } else {
-                                        attachedClassText = "${course.code}: ${course.title} · Weekly Session"
-                                    }
-                                }
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "${course.code} · ${course.title.take(8)}",
-                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = 12.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                )
-                                if (isSelected) {
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Icon(
-                                        Icons.Default.Check,
-                                        contentDescription = "Selected",
-                                        tint = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                }
+                // Attached Class Pill
+                item {
+                    AssistChip(
+                        onClick = { showClassPicker = true },
+                        label = {
+                            val labelText = if (attachedClassText.isNotBlank()) {
+                                "📍 ${attachedClassText.substringBefore(" · ").take(18)}"
+                            } else {
+                                "📍 Attach Class"
                             }
-                        }
-                    }
+                            Text(labelText, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        },
+                        trailingIcon = {
+                            Icon(Icons.Default.SwapHoriz, contentDescription = null, modifier = Modifier.size(14.dp))
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    )
                 }
-            } else {
-                OutlinedTextField(
-                    value = selectedCourse,
-                    onValueChange = { selectedCourse = it },
-                    placeholder = { Text("e.g. Course Code") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
-                )
+
+                // Pre-class Alert Pill
+                item {
+                    AssistChip(
+                        onClick = { showCustomReminderDialog = true },
+                        label = {
+                            val alertText = if (selectedAlarmMinutes != null) "⏰ ${selectedAlarmMinutes}m alert" else "⏰ Add Alert"
+                            Text(alertText, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+
+                // Tag Pill
+                item {
+                    AssistChip(
+                        onClick = { showTagPicker = true },
+                        label = { Text("🏷️ $tag", fontSize = 12.sp, fontWeight = FontWeight.Medium) },
+                        trailingIcon = {
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(14.dp))
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             Spacer(modifier = Modifier.height(16.dp))
 

@@ -29,10 +29,10 @@ import androidx.compose.ui.window.Dialog
 import com.mustime.features.timetable.ui.PrimaryBlue
 
 /**
- * Dedicated Time Picker Dialog with Google Clock inspired interactive Hour and Minute selectors,
- * support for full 24 hours (0..23), exact minute steppers (-1m, +1m) and quick intervals,
- * keypad toggle mode, and student quick presets (+15m, +30m, +1h, Morning, Noon, Evening, Deadline).
+ * Dedicated Time Picker Dialog featuring the official Google Clock circular dial clock (TimePicker),
+ * with interactive circular clock face, rotating clock hand for hours and minutes, and AM/PM toggle.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DedicatedTimePickerDialog(
     initialTime: String = "14:00",
@@ -44,50 +44,21 @@ fun DedicatedTimePickerDialog(
     val initialHour = initialParts.getOrNull(0)?.toIntOrNull() ?: 14
     val initialMinute = initialParts.getOrNull(1)?.toIntOrNull() ?: 0
 
-    var selectedHour by remember { mutableIntStateOf(initialHour.coerceIn(0, 23)) }
-    var selectedMinute by remember { mutableIntStateOf(initialMinute.coerceIn(0, 59)) }
-    var isEditingHour by remember { mutableStateOf(true) }
-    var isKeypadMode by remember { mutableStateOf(false) }
-
-    val primaryColor = MaterialTheme.colorScheme.primary
-
-    val quickPresets = listOf(
-        "+15m" to {
-            val total = selectedHour * 60 + selectedMinute + 15
-            selectedHour = (total / 60) % 24
-            selectedMinute = total % 60
-        },
-        "+30m" to {
-            val total = selectedHour * 60 + selectedMinute + 30
-            selectedHour = (total / 60) % 24
-            selectedMinute = total % 60
-        },
-        "+1h" to {
-            selectedHour = (selectedHour + 1) % 24
-        },
-        "08:00" to { selectedHour = 8; selectedMinute = 0 },
-        "10:00" to { selectedHour = 10; selectedMinute = 0 },
-        "12:00" to { selectedHour = 12; selectedMinute = 0 },
-        "14:00" to { selectedHour = 14; selectedMinute = 0 },
-        "17:00" to { selectedHour = 17; selectedMinute = 0 },
-        "20:00" to { selectedHour = 20; selectedMinute = 0 },
-        "23:59" to { selectedHour = 23; selectedMinute = 59 }
+    val timePickerState = rememberTimePickerState(
+        initialHour = initialHour.coerceIn(0, 23),
+        initialMinute = initialMinute.coerceIn(0, 59),
+        is24Hour = false
     )
-
-    val allHours = (0..23).toList()
-    val minuteIntervals = listOf(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(28.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+            modifier = Modifier.padding(horizontal = 4.dp)
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
+                modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Header
@@ -96,249 +67,45 @@ fun DedicatedTimePickerDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.AccessTime,
-                            contentDescription = null,
-                            tint = primaryColor,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = title,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    Text(
+                        text = title,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                     IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
                         Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(18.dp))
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Google Clock Inspired Large Time Display Cards
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Hour Box
-                    Surface(
-                        onClick = { isEditingHour = true },
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (isEditingHour) primaryColor.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        border = BorderStroke(
-                            width = if (isEditingHour) 2.dp else 1.dp,
-                            color = if (isEditingHour) primaryColor else MaterialTheme.colorScheme.outlineVariant
-                        ),
-                        modifier = Modifier.width(86.dp).height(74.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = "%02d".format(selectedHour),
-                                fontSize = 36.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = if (isEditingHour) primaryColor else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-
-                    Text(
-                        text = ":",
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = primaryColor,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
-
-                    // Minute Box
-                    Surface(
-                        onClick = { isEditingHour = false },
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (!isEditingHour) primaryColor.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        border = BorderStroke(
-                            width = if (!isEditingHour) 2.dp else 1.dp,
-                            color = if (!isEditingHour) primaryColor else MaterialTheme.colorScheme.outlineVariant
-                        ),
-                        modifier = Modifier.width(86.dp).height(74.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = "%02d".format(selectedMinute),
-                                fontSize = 36.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = if (!isEditingHour) primaryColor else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    // AM / PM Indicator Tag
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        modifier = Modifier.padding(start = 4.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = if (selectedHour < 12) "AM" else "PM",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                            Text(
-                                text = "24h",
-                                fontSize = 10.sp,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                            )
-                        }
-                    }
-                }
-
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Selector Body (Dial Grid or Keypad Steppers)
-                if (isEditingHour) {
-                    Text(
-                        text = "Select Hour (00 – 23)",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = primaryColor,
-                        modifier = Modifier.align(Alignment.Start)
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(allHours) { hour ->
-                            val isSelected = hour == selectedHour
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = {
-                                    selectedHour = hour
-                                    isEditingHour = false // Google Clock auto-advances to minute
-                                },
-                                label = {
-                                    Text(
-                                        text = "%02d".format(hour),
-                                        fontSize = 13.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                },
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                        }
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Select Minute (00 – 59)",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = primaryColor
-                        )
-                        // Precise +/- 1 Minute Stepper
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            FilledTonalButton(
-                                onClick = { selectedMinute = (selectedMinute - 1 + 60) % 60 },
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                modifier = Modifier.height(28.dp)
-                            ) {
-                                Text("-1m", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                            }
-                            FilledTonalButton(
-                                onClick = { selectedMinute = (selectedMinute + 1) % 60 },
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                modifier = Modifier.height(28.dp)
-                            ) {
-                                Text("+1m", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(minuteIntervals) { min ->
-                            val isSelected = min == selectedMinute
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { selectedMinute = min },
-                                label = {
-                                    Text(
-                                        text = ":%02d".format(min),
-                                        fontSize = 13.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                },
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Quick Academic Presets & Offsets
-                Text(
-                    text = "Quick Presets & Offsets",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.align(Alignment.Start)
+                // Circular Clock Dial (Google Clock style)
+                TimePicker(
+                    state = timePickerState
                 )
-                Spacer(modifier = Modifier.height(6.dp))
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(quickPresets) { (label, action) ->
-                        AssistChip(
-                            onClick = action,
-                            label = { Text(label, fontSize = 11.sp) }
-                        )
-                    }
-                }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Action Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Cancel")
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel", fontSize = 14.sp)
                     }
+                    Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = {
-                            val result = "%02d:%02d".format(selectedHour, selectedMinute)
-                            onTimeSelected(result)
+                            val formatted = "%02d:%02d".format(timePickerState.hour, timePickerState.minute)
+                            onTimeSelected(formatted)
                             onDismiss()
                         },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Set Time")
+                        Text("OK", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
             }
@@ -411,8 +178,9 @@ fun DedicatedSchedulePickerDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Unified Result Preview Tile
+                // Unified Result Preview Tile (Clickable to open circular Google Clock picker)
                 Surface(
+                    onClick = { showTimeDialog = true },
                     shape = RoundedCornerShape(16.dp),
                     color = primaryColor.copy(alpha = 0.08f),
                     border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f)),

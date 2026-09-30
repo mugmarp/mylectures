@@ -134,7 +134,7 @@ fun CalendarScreen(
                 text = { Text("Add Activity", fontWeight = FontWeight.Bold) },
                 modifier = Modifier
                     .navigationBarsPadding()
-                    .padding(bottom = 76.dp)
+                    .padding(bottom = 96.dp)
             )
         }
     ) { innerPadding ->
@@ -183,6 +183,19 @@ fun CalendarScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        AssistChip(
+                            onClick = { viewModel.selectToday() },
+                            label = { Text("Today", fontWeight = FontWeight.SemiBold, fontSize = 12.sp) },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Outlined.Event,
+                                    contentDescription = "Jump to Today",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
@@ -197,16 +210,6 @@ fun CalendarScreen(
                                 tint = Color.White,
                                 modifier = Modifier.size(20.dp)
                             )
-                        }
-
-                        FilledTonalButton(
-                            onClick = { showAddActivitySheet = true },
-                            shape = RoundedCornerShape(12.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Add Activity", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }

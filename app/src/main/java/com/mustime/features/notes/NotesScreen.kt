@@ -40,7 +40,8 @@ import com.mustime.ui.components.NotificationCenterSheet
 fun NotesScreen(
     onBack: (() -> Unit)? = null,
     onSettingsClick: () -> Unit = {},
-    onReconfigureAcademicProfile: () -> Unit = {}
+    onReconfigureAcademicProfile: () -> Unit = {},
+    onEditingChanged: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as? TimetableApplication
@@ -65,6 +66,10 @@ fun NotesScreen(
     var noteToEdit by remember { mutableStateOf<LectureNote?>(null) }
     var showNotificationSheet by remember { mutableStateOf(false) }
     var showProfileSheet by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isEditing) {
+        onEditingChanged(isEditing)
+    }
 
     if (isEditing) {
         NoteEditorScreen(
@@ -110,7 +115,7 @@ fun NotesScreen(
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
                 modifier = Modifier
                     .navigationBarsPadding()
-                    .padding(bottom = 76.dp)
+                    .padding(bottom = 96.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Note", modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))

@@ -206,6 +206,12 @@ class CalendarViewModel(
                 now.get(Calendar.DAY_OF_MONTH) == day
     }
 
+    fun selectToday() {
+        val now = Calendar.getInstance()
+        calendar.timeInMillis = now.timeInMillis
+        recalculateMonth(selectedDay = now.get(Calendar.DAY_OF_MONTH))
+    }
+
     fun saveNote(entry: TimetableEntry, noteText: String, reminderMinutes: Int?) {
         viewModelScope.launch {
             repository.saveNote(entry.naturalKey, noteText, reminderMinutes)

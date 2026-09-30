@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -199,39 +200,72 @@ fun AddActivitySheet(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Time range row
+            // Time range row (Tap to open circular Google Clock picker)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                OutlinedTextField(
-                    value = startTime,
-                    onValueChange = { startTime = it },
-                    label = { Text("Start Time") },
-                    placeholder = { Text("14:00") },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
+                // Start Time Selector Tile
+                Surface(
+                    onClick = { showStartTimePicker = true },
                     shape = RoundedCornerShape(12.dp),
-                    leadingIcon = {
-                        IconButton(onClick = { showStartTimePicker = true }) {
-                            Icon(Icons.Outlined.Schedule, contentDescription = "Pick start time", modifier = Modifier.size(18.dp))
-                        }
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("add_activity_start_time_input")
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = "Start Time",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = startTime.ifBlank { "14:00" },
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     }
-                )
-                OutlinedTextField(
-                    value = endTime,
-                    onValueChange = { endTime = it },
-                    label = { Text("End Time") },
-                    placeholder = { Text("15:30") },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
+                }
+
+                // End Time Selector Tile
+                Surface(
+                    onClick = { showEndTimePicker = true },
                     shape = RoundedCornerShape(12.dp),
-                    leadingIcon = {
-                        IconButton(onClick = { showEndTimePicker = true }) {
-                            Icon(Icons.Outlined.Schedule, contentDescription = "Pick end time", modifier = Modifier.size(18.dp))
-                        }
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("add_activity_end_time_input")
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = "End Time",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = endTime.ifBlank { "15:30" },
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     }
-                )
+                }
             }
 
             // Quick time suggestions

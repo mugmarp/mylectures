@@ -75,6 +75,7 @@ fun MainScaffold() {
         )
     }
     var selectedTab by remember { mutableIntStateOf(0) }
+    var isNotesEditing by remember { mutableStateOf(false) }
 
     // First app launch resolution via DataStore / Preferences
     LaunchedEffect(onboardingCompleted) {
@@ -222,7 +223,8 @@ fun MainScaffold() {
                                 onReconfigureAcademicProfile = {
                                     isSettingsOpen = false
                                     navState = AppNavState.FacultySelection
-                                }
+                                },
+                                onEditingChanged = { isNotesEditing = it }
                             )
                             3 -> TasksScreen(
                                 onBack = null,
@@ -235,15 +237,16 @@ fun MainScaffold() {
                         }
                     }
 
-                    // Floating Pill Dock (overlaid above content, letting unoccupied space reveal content behind)
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(start = 14.dp, end = 14.dp, bottom = 6.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    // Floating Pill Dock (overlaid above content, letting unoccupied space reveal content behind - hidden when in dedicated Note Editor)
+                    if (!isNotesEditing) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .navigationBarsPadding()
+                                .padding(start = 14.dp, end = 14.dp, bottom = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                         Surface(
                             shape = RoundedCornerShape(24.dp),
                             color = navBg.copy(alpha = 0.96f),
@@ -308,6 +311,7 @@ fun MainScaffold() {
                             }
                         }
                     }
+                }
                 }
             }
         }

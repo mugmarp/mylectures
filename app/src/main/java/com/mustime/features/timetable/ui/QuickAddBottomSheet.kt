@@ -352,6 +352,7 @@ fun QuickAddBottomSheet(
 
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        contentPadding = PaddingValues(end = 16.dp),
                         modifier = Modifier.testTag("activity_day_row")
                     ) {
                         items(daysOfWeek) { day ->
@@ -367,50 +368,72 @@ fun QuickAddBottomSheet(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Time Window: Start & End Time
+                    // Time Window: Start & End Time (Tap to open circular Google Clock picker)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        OutlinedTextField(
-                            value = activityStartTime,
-                            onValueChange = { activityStartTime = it },
-                            label = { Text("Start Time") },
-                            placeholder = { Text("14:00") },
-                            leadingIcon = {
-                                Icon(Icons.Outlined.AccessTime, contentDescription = null, modifier = Modifier.size(18.dp))
-                            },
-                            trailingIcon = {
-                                IconButton(onClick = { showStartTimePicker = true }) {
-                                    Icon(Icons.Default.AccessTime, contentDescription = "Pick Start Time", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                                }
-                            },
+                        // Start Time Selector Tile
+                        Surface(
+                            onClick = { showStartTimePicker = true },
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             modifier = Modifier
                                 .weight(1f)
-                                .testTag("activity_start_time_input"),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true
-                        )
+                                .testTag("activity_start_time_input")
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                            ) {
+                                Text(
+                                    text = "Start Time",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = activityStartTime.ifBlank { "14:00" },
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
 
-                        OutlinedTextField(
-                            value = activityEndTime,
-                            onValueChange = { activityEndTime = it },
-                            label = { Text("End Time") },
-                            placeholder = { Text("15:30") },
-                            leadingIcon = {
-                                Icon(Icons.Outlined.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
-                            },
-                            trailingIcon = {
-                                IconButton(onClick = { showEndTimePicker = true }) {
-                                    Icon(Icons.Default.Schedule, contentDescription = "Pick End Time", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                                }
-                            },
+                        // End Time Selector Tile
+                        Surface(
+                            onClick = { showEndTimePicker = true },
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             modifier = Modifier
                                 .weight(1f)
-                                .testTag("activity_end_time_input"),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true
-                        )
+                                .testTag("activity_end_time_input")
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                            ) {
+                                Text(
+                                    text = "End Time",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = activityEndTime.ifBlank { "15:30" },
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
                     }
 
                     // Duration presets
@@ -461,18 +484,20 @@ fun QuickAddBottomSheet(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    androidx.compose.foundation.layout.FlowRow(
+                    LazyRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        contentPadding = PaddingValues(end = 16.dp)
                     ) {
-                        listOf(
-                            "None" to null,
-                            "10m" to 10,
-                            "15m" to 15,
-                            "30m" to 30,
-                            "1h" to 60
-                        ).forEach { (label, minutes) ->
+                        items(
+                            listOf(
+                                "None" to null,
+                                "10m" to 10,
+                                "15m" to 15,
+                                "30m" to 30,
+                                "1h" to 60
+                            )
+                        ) { (label, minutes) ->
                             val isSelected = !isActivityCustomAlarm && activityAlarmMinutes == minutes
                             FilterChip(
                                 selected = isSelected,
@@ -488,12 +513,14 @@ fun QuickAddBottomSheet(
                             )
                         }
 
-                        FilterChip(
-                            selected = isActivityCustomAlarm,
-                            onClick = { isActivityCustomAlarm = !isActivityCustomAlarm },
-                            label = { Text("Custom", fontSize = 12.sp) },
-                            shape = RoundedCornerShape(10.dp)
-                        )
+                        item {
+                            FilterChip(
+                                selected = isActivityCustomAlarm,
+                                onClick = { isActivityCustomAlarm = !isActivityCustomAlarm },
+                                label = { Text("Custom", fontSize = 12.sp) },
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
                     }
 
                     if (isActivityCustomAlarm) {

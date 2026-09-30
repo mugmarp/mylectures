@@ -159,7 +159,7 @@ fun TasksScreen(
                 },
                 modifier = Modifier
                     .navigationBarsPadding()
-                    .padding(bottom = 76.dp)
+                    .padding(bottom = 96.dp)
                     .testTag("add_task_fab")
             )
         }
