@@ -1,6 +1,10 @@
-# Features Specification — MUST Time
+# Features Specification — Lectures
 
-This document details the functional specifications, user interface behaviors, and business rules implemented across all screens in **MUST Time**.
+**Application Name**: **Lectures**  
+**Author**: **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page))  
+**GitHub**: [@mugmarp](https://github.com/mugmarp) • **Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
+
+This document details the functional specifications, user interface behaviors, and business rules implemented across all screens in **Lectures**.
 
 ---
 
@@ -97,3 +101,14 @@ This document details the functional specifications, user interface behaviors, a
   * **Vacant Now**: Marked in green with duration until the next class starts (e.g. `Free for next 1h 45m`).
   * **Occupied**: Marked in red with active class code and scheduled end time.
 * **Campus Building Filters**: Filter rooms across university faculties (Science, Computing, Engineering, Medicine).
+
+---
+
+## 7. ⚙️ Settings, Regulations & Developer Attribution
+
+* **Academic Profile Reconfiguration**: Change faculty, enrolled programme, and semester anytime.
+* **Display Theming**: Choose between System Default, AMOLED Pure Dark, and Clean Light mode.
+* **Legal Regulations & Disclaimer Dialogs**:
+  * Independent Developer Attribution to **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page)).
+  * Full institutional non-affiliation disclaimer stating that Lectures is NOT an official app of Mbarara University of Science and Technology (MUST).
+  * Direct access to Terms of Service and Privacy Policy.

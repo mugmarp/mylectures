@@ -1,12 +1,14 @@
-# Architecture Guide — MUST Time
+# Architecture Guide — Lectures
 
-This document provides a comprehensive technical overview of the architecture, design patterns, threading model, and data lifecycle in **MUST Time**.
+**Application Name**: **Lectures**  
+**Author**: **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page))  
+**GitHub**: [@mugmarp](https://github.com/mugmarp) • **Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
 
 ---
 
 ## 1. Architectural Overview
 
-MUST Time adheres to the official **Android Recommended App Architecture** and **Unidirectional Data Flow (UDF)** principles.
+**Lectures** adheres to the official **Android Recommended App Architecture** and **Unidirectional Data Flow (UDF)** principles.
 
 ```
        User Action (Clicks, Drags, Input)
@@ -64,7 +66,7 @@ MUST Time adheres to the official **Android Recommended App Architecture** and *
   * `CalendarViewModel`: Manages month grid matrices, days offset, and unified event aggregation.
   * `NotesViewModel`: Handles note filtering, course grouping, search queries, and natural key associations.
   * `TasksViewModel`: Tracks pending/completed assignments, deadline sorting, and priority states.
-  * `SettingsViewModel`: Controls academic profile switching, programme selection, and dark/light theme toggling.
+  * `SettingsViewModel`: Controls academic profile switching, programme selection, dark/light theme toggling, and legal/disclaimer dialogs.
 * ViewModels never hold references to Views, Composables, or Android Activities, avoiding memory leaks.
 
 ### C. Data & Repository Layer (`com.mustime.features.timetable.data`)
@@ -80,7 +82,7 @@ MUST Time adheres to the official **Android Recommended App Architecture** and *
 
 ## 3. Background Processing & Alarms
 
-MUST Time features exact alarm scheduling for lectures and task deadlines:
+Lectures features exact alarm scheduling for lectures and task deadlines:
 
 * **`AlarmScheduler`** (`com.mustime.core.alarm.AlarmScheduler`):
   * Schedules alerts for upcoming university classes (e.g. 10m, 15m, or 30m prior to start time).

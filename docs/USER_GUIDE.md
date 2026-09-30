@@ -1,18 +1,27 @@
-# User Guide — MUST Time
+# User Guide — Lectures
 
-Welcome to **MUST Time**! This guide walks you through using all academic features on your Android device.
+**Application Name**: **Lectures**  
+**Author**: **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page))  
+**GitHub**: [@mugmarp](https://github.com/mugmarp) • **Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
+
+Welcome to **Lectures**! This user manual walks you through all the academic features on your Android device.
+
+---
+
+> ### ⚠️ Notice of Non-Affiliation
+> Lectures is an independently developed academic student companion created by Mugendawala Mark Paul (TiralLab). **Lectures is NOT an official app of, nor is it endorsed by, affiliated with, or sponsored by Mbarara University of Science and Technology (MUST).** Always check your faculty's official physical notice board and university portal for official schedule announcements, test dates, and room changes.
 
 ---
 
 ## 1. Getting Started: Setting Up Your Academic Programme
 
-When you first launch the app, you will be prompted to select your academic profile:
+When you first launch Lectures, you will be prompted to select your academic profile:
 1. Select your **Faculty** (e.g. *Faculty of Computing and Informatics*).
 2. Choose your **Academic Programme** (e.g. *Bachelor of Computer Science*).
 3. Choose your **Year & Semester** (e.g. *Year 2 Semester 1*).
 4. Tap **Confirm Programme**. The app immediately loads your full university timetable offline.
 
-> **Tip**: You can switch or reconfigure your programme anytime by tapping the **Profile** icon in the top right corner of the Timetable or Calendar screens.
+> **Tip**: You can switch or reconfigure your programme anytime by tapping the **Profile** icon in the top right corner of the Timetable or Calendar screens, or via the Settings screen.
 
 ---
 
@@ -27,14 +36,14 @@ When you first launch the app, you will be prompted to select your academic prof
 
 ## 3. Using the Circular Clock Time Picker
 
-MUST Time uses a Google Clock-inspired circular dial:
+Lectures uses a Google Clock-inspired circular dial:
 1. When creating a task or personal activity, tap the **Start Time** or **End Time** card.
 2. The circular clock appears:
    * **Hours**: Drag the clock hand to your desired hour.
    * **Minutes**: Drag the clock hand to your desired minute.
    * **AM/PM**: Tap the AM or PM toggle.
 3. Tap **OK** to set the time.
-4. Use the quick duration chips below (`+1 hr`, `+1.5 hrs`, `+2 hrs`) to automatically compute your end time without manual adjustments!
+4. Use the quick duration chips below (`+1 hr`, `+1.5 hrs`, `+2 hrs`) to automatically compute your end time without manual typing errors!
 
 ---
 

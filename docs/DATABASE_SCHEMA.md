@@ -1,6 +1,10 @@
-# Database Schema — MUST Time
+# Database Schema — Lectures
 
-This document details the local database architecture implemented using **AndroidX Room** (SQLite) in **MUST Time**.
+**Application Name**: **Lectures**  
+**Author**: **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page))  
+**GitHub**: [@mugmarp](https://github.com/mugmarp) • **Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
+
+This document details the local database architecture implemented using **AndroidX Room** (SQLite) in **Lectures**.
 
 ---
 

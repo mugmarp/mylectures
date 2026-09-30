@@ -1,6 +1,10 @@
-# Developer Guide — MUST Time
+# Developer Guide — Lectures
 
-This guide assists software engineers and contributors in setting up, maintaining, and extending **MUST Time**.
+**Application Name**: **Lectures**  
+**Author & Lead Engineer**: **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page))  
+**GitHub**: [@mugmarp](https://github.com/mugmarp) • **Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
+
+This guide assists software engineers and contributors in setting up, maintaining, and extending **Lectures**.
 
 ---
 
