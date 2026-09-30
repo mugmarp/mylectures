@@ -1252,26 +1252,22 @@ fun TimelineClassCard(
             .border(1.dp, borderSubtle, TimelineCardShape)
             .clickable(onClick = onClick)
     ) {
-        Row(
+        // Left Category Bar (4dp) - zero intrinsic overhead
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .width(4.dp)
+                .matchParentSize()
+                .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                .background(categoryColor)
+        )
+
+        // Card Content
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(IntrinsicSize.Min)
+                .padding(start = 18.dp, top = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
-            // Left Category Bar (4dp)
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
-                    .background(categoryColor)
-            )
-
-            // Card Content
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(16.dp)
-            ) {
                 // Time & Type Badge Row + Alert Bell
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1446,7 +1442,6 @@ fun TimelineClassCard(
             }
         }
     }
-}
 
 /**
  * Offline Archive Card:

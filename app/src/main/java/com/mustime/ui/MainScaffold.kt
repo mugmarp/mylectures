@@ -1,6 +1,11 @@
 package com.mustime.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -195,9 +200,16 @@ fun MainScaffold() {
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
                 ) {
-                    // Main Screen Content (flows edge-to-edge behind floating dock)
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        when (selectedTab) {
+                    // Main Screen Content (flows edge-to-edge behind floating dock with smooth transitions)
+                    AnimatedContent(
+                        targetState = selectedTab,
+                        transitionSpec = {
+                            fadeIn(animationSpec = tween(180)) togetherWith fadeOut(animationSpec = tween(120))
+                        },
+                        label = "main_tab_transition",
+                        modifier = Modifier.fillMaxSize()
+                    ) { tabIndex ->
+                        when (tabIndex) {
                             0 -> TimetableRoute(
                                 onSettingsClick = { isSettingsOpen = true },
                                 onNavigateToNotes = { selectedTab = 2 },

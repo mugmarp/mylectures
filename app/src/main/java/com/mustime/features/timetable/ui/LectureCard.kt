@@ -50,15 +50,21 @@ fun LectureCard(entry: TimetableEntry, onClick: () -> Unit) {
             .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
     ) {
-        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-            Box(
-                modifier = Modifier
-                    .width(if (progress.isOngoing) 6.dp else 4.dp)
-                    .fillMaxHeight()
-                    .background(if (progress.isOngoing) MaterialTheme.colorScheme.primary else style.accentBar)
-            )
-            
-            Column(modifier = Modifier.padding(16.dp).weight(1f)) {
+        // Left accent bar with matchParentSize (no intrinsic measurement pass)
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .width(if (progress.isOngoing) 6.dp else 4.dp)
+                .matchParentSize()
+                .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                .background(if (progress.isOngoing) MaterialTheme.colorScheme.primary else style.accentBar)
+        )
+        
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = if (progress.isOngoing) 20.dp else 18.dp, top = 16.dp, end = 16.dp, bottom = 16.dp)
+        ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -188,7 +194,6 @@ fun LectureCard(entry: TimetableEntry, onClick: () -> Unit) {
                 }
             }
         }
-    }
 }
 
 @Composable

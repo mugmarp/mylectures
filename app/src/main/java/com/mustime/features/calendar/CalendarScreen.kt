@@ -404,30 +404,9 @@ fun CalendarScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Schedule for selected day header (supports horizontal swipe from day to another day)
-                var dragTotal by remember { mutableFloatStateOf(0f) }
+                // Schedule for selected day header
                 Column(
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp)
-                        .pointerInput(uiState.selectedDay, uiState.daysInMonth) {
-                            detectHorizontalDragGestures(
-                                onHorizontalDrag = { change, dragAmount ->
-                                    change.consume()
-                                    dragTotal += dragAmount
-                                },
-                                onDragEnd = {
-                                    if (dragTotal < -50f) {
-                                        viewModel.nextDay()
-                                    } else if (dragTotal > 50f) {
-                                        viewModel.previousDay()
-                                    }
-                                    dragTotal = 0f
-                                },
-                                onDragCancel = {
-                                    dragTotal = 0f
-                                }
-                            )
-                        }
+                    modifier = Modifier.padding(horizontal = 24.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),

@@ -247,31 +247,6 @@ fun TimetableScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                // Swipe gestures: Left swipe -> Next Day, Right swipe -> Previous Day
-                .pointerInput(selectedDay) {
-                    detectHorizontalDragGestures(
-                        onHorizontalDrag = { change, dragAmount ->
-                            change.consume()
-                            dragTotal += dragAmount
-                        },
-                        onDragEnd = {
-                            val currentIndex = daysList.indexOfFirst { it.equals(selectedDay, ignoreCase = true) }
-                            if (dragTotal < -50f) {
-                                // Swiped Left -> Next day
-                                val nextIndex = if (currentIndex != -1) (currentIndex + 1) % daysList.size else 0
-                                onDaySelected(daysList[nextIndex])
-                            } else if (dragTotal > 50f) {
-                                // Swiped Right -> Previous day
-                                val prevIndex = if (currentIndex != -1) (currentIndex - 1 + daysList.size) % daysList.size else 0
-                                onDaySelected(daysList[prevIndex])
-                            }
-                            dragTotal = 0f
-                        },
-                        onDragCancel = {
-                            dragTotal = 0f
-                        }
-                    )
-                }
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),

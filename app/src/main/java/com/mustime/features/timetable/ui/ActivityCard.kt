@@ -57,23 +57,21 @@ fun ActivityCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = if (progress.isOngoing) 3.dp else 1.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min)
-        ) {
-            // Distinguished color left accent stripe
+        Box(modifier = Modifier.fillMaxWidth()) {
+            // Distinguished color left accent stripe (zero intrinsic measurement overhead)
             Box(
                 modifier = Modifier
+                    .align(Alignment.CenterStart)
                     .width(6.dp)
-                    .fillMaxHeight()
+                    .matchParentSize()
+                    .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
                     .background(catColor)
             )
 
             Column(
                 modifier = Modifier
-                    .padding(16.dp)
-                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, top = 16.dp, end = 16.dp, bottom = 16.dp)
             ) {
                 // Top row: Category Pill + Ongoing Live Badge + Delete Action
                 Row(
