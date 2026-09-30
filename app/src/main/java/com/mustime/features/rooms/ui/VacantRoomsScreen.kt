@@ -48,6 +48,9 @@ fun VacantRoomsScreen(
     val allEntries by (repository?.getAllEntries() ?: kotlinx.coroutines.flow.flowOf(emptyList()))
         .collectAsState(initial = emptyList())
 
+    val customEvents by (repository?.getCustomEvents() ?: kotlinx.coroutines.flow.flowOf(emptyList()))
+        .collectAsState(initial = emptyList())
+
     val isDark = LocalAppTheme.current.isDark
     val surfaceColor = if (isDark) DarkSurfaceCard else Color.White
     val bgColor = if (isDark) DarkSurfaceBase else SurfaceBaseLight
@@ -79,12 +82,13 @@ fun VacantRoomsScreen(
     var selectedRoomForSchedule by remember { mutableStateOf<RoomVacancyStatus?>(null) }
 
     // Calculate Room Vacancy algorithmically
-    val vacancyStatuses = remember(allEntries, queryDay, queryTime, minGapMinutes) {
+    val vacancyStatuses = remember(allEntries, customEvents, queryDay, queryTime, minGapMinutes) {
         UniversityDirectory.calculateRoomVacancy(
             allEntries = allEntries,
             dayOfWeek = queryDay,
             queryTimeStr = queryTime,
-            minGapMinutes = minGapMinutes
+            minGapMinutes = minGapMinutes,
+            customEvents = customEvents
         )
     }
 

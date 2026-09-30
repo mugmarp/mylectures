@@ -503,12 +503,24 @@ fun QuickChangeProgrammeDialog(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Year Group Selector
-                Text(
-                    text = "3. Academic Year Group",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = primaryColor
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "3. Academic Year (Year Group)",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = primaryColor
+                    )
+                    Text(
+                        text = "Year $selectedYearGroup",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isDark) Color(0xFF94A3B8) else TextMutedLight
+                    )
+                }
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -519,7 +531,18 @@ fun QuickChangeProgrammeDialog(
                         FilterChip(
                             selected = isSelected,
                             onClick = { selectedYearGroup = yr },
-                            label = { Text("Year $yr", fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                            label = {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = yr,
+                                        fontSize = 13.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                }
+                            },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp)
                         )
@@ -529,14 +552,23 @@ fun QuickChangeProgrammeDialog(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 val chosenGroup = "${selectedProgramme.code} $selectedYearGroup"
+                val isDifferentProgram = chosenGroup.trim() != currentProgramme.trim()
 
                 Button(
                     onClick = { onProgrammeSelected(chosenGroup) },
+                    enabled = isDifferentProgram,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = primaryColor,
+                        disabledContainerColor = if (isDark) DarkSurfaceBase else Color(0xFFE2E8F0),
+                        disabledContentColor = if (isDark) Color(0xFF64748B) else Color(0xFF94A3B8)
+                    )
                 ) {
-                    Text("Switch to $chosenGroup", fontWeight = FontWeight.Bold)
+                    Text(
+                        text = if (isDifferentProgram) "Switch to $chosenGroup" else "Current: $currentProgramme",
+                        fontWeight = FontWeight.Bold
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

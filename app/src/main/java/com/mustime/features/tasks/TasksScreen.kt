@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -711,6 +712,7 @@ fun AddTaskDialog(
     var reminderMinutes by remember(initialTask) { mutableStateOf<Int?>(initialTask?.reminderMinutes ?: 30) }
 
     var showCoursePicker by remember { mutableStateOf(false) }
+    var showDueSchedulePicker by remember { mutableStateOf(false) }
     var showDueDayPicker by remember { mutableStateOf(false) }
     var showDueTimePicker by remember { mutableStateOf(false) }
     var tempDueDay by remember { mutableStateOf("Tomorrow") }
@@ -769,20 +771,58 @@ fun AddTaskDialog(
                     singleLine = true
                 )
 
-                // Due Date & Time
-                OutlinedTextField(
-                    value = dueDate,
-                    onValueChange = { dueDate = it },
-                    label = { Text("Due Date & Time *") },
-                    placeholder = { Text("e.g. Tomorrow • 17:00") },
-                    trailingIcon = {
-                        IconButton(onClick = { showDueDayPicker = true }) {
-                            Icon(Icons.Default.CalendarMonth, contentDescription = "Pick Due Date", tint = primaryColor)
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                // Due Date & Time Scheduler Card (Google Clock inspired)
+                Text(
+                    text = "Due Date & Time *",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = textSecondary
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+                Surface(
+                    onClick = { showDueSchedulePicker = true },
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isDark) DarkSurfaceCard else Color(0xFFF1F5F9),
+                    border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else Color(0xFFCBD5E1)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.CalendarMonth,
+                                contentDescription = null,
+                                tint = primaryColor,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = dueDate.ifBlank { "Tomorrow • 17:00" },
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isDark) Color.White else Color(0xFF0F172A)
+                                )
+                                Text(
+                                    text = "Managed by Time Scheduler",
+                                    fontSize = 11.sp,
+                                    color = textSecondary
+                                )
+                            }
+                        }
+                        Icon(
+                            Icons.Default.AccessTime,
+                            contentDescription = "Change Schedule",
+                            tint = primaryColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
 
                 // Quick Due Date Presets
                 Row(
@@ -940,6 +980,18 @@ fun AddTaskDialog(
             availableCourses = availableCourses,
             onCourseSelected = { code, _ -> course = code },
             onDismiss = { showCoursePicker = false }
+        )
+    }
+
+    if (showDueSchedulePicker) {
+        DedicatedSchedulePickerDialog(
+            initialSchedule = dueDate,
+            title = "Set Task Schedule",
+            onScheduleSelected = { picked ->
+                dueDate = picked
+                showDueSchedulePicker = false
+            },
+            onDismiss = { showDueSchedulePicker = false }
         )
     }
 

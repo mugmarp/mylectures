@@ -29,6 +29,7 @@ import com.mustime.features.timetable.domain.CustomEvent
 fun ActivityCard(
     event: CustomEvent,
     onClick: () -> Unit = {},
+    onEdit: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null
 ) {
     val category = remember(event.category) { ActivityCategory.fromName(event.category) }
@@ -114,17 +115,33 @@ fun ActivityCard(
                         }
                     }
 
-                    if (onDelete != null) {
-                        IconButton(
-                            onClick = onDelete,
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.DeleteOutline,
-                                contentDescription = "Delete Activity",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                modifier = Modifier.size(18.dp)
-                            )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (onEdit != null) {
+                            IconButton(
+                                onClick = onEdit,
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Edit,
+                                    contentDescription = "Edit Activity",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(17.dp)
+                                )
+                            }
+                        }
+
+                        if (onDelete != null) {
+                            IconButton(
+                                onClick = onDelete,
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DeleteOutline,
+                                    contentDescription = "Delete Activity",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
                 }

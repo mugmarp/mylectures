@@ -34,6 +34,7 @@ import com.mustime.features.timetable.domain.CustomEvent
 import com.mustime.features.timetable.domain.TaskCategory
 import com.mustime.ui.components.DedicatedCoursePickerDialog
 import com.mustime.ui.components.DedicatedDayPickerDialog
+import com.mustime.ui.components.DedicatedSchedulePickerDialog
 import com.mustime.ui.components.DedicatedTimePickerDialog
 
 enum class QuickAddMode(val title: String, val subtitle: String) {
@@ -98,6 +99,7 @@ fun QuickAddBottomSheet(
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
     var showCoursePicker by remember { mutableStateOf(false) }
+    var showDueSchedulePicker by remember { mutableStateOf(false) }
     var showDueDayPicker by remember { mutableStateOf(false) }
     var showDueTimePicker by remember { mutableStateOf(false) }
     var tempDueDay by remember { mutableStateOf(initialDayOfWeek) }
@@ -734,26 +736,58 @@ fun QuickAddBottomSheet(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Due Date & Time
-                    OutlinedTextField(
-                        value = taskDueDate,
-                        onValueChange = { taskDueDate = it },
-                        label = { Text("Due Date & Time *") },
-                        placeholder = { Text("e.g. Tomorrow • 17:00, Friday • 23:59") },
-                        leadingIcon = {
-                            Icon(Icons.Outlined.CalendarToday, contentDescription = null, modifier = Modifier.size(18.dp))
-                        },
-                        trailingIcon = {
-                            IconButton(onClick = { showDueDayPicker = true }) {
-                                Icon(Icons.Default.CalendarMonth, contentDescription = "Pick Due Date", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("task_due_date_input"),
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true
+                    // Due Date & Time Scheduler Card (Google Clock inspired)
+                    Text(
+                        text = "Due Date & Time *",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Surface(
+                        onClick = { showDueSchedulePicker = true },
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+                        modifier = Modifier.fillMaxWidth().testTag("task_due_date_button")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.CalendarMonth,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = taskDueDate.ifBlank { "Tomorrow • 17:00" },
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Google Clock style Time Scheduler",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            Icon(
+                                Icons.Default.AccessTime,
+                                contentDescription = "Change Schedule",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
 
                     // Quick Due Date Presets
                     LazyRow(
@@ -954,6 +988,18 @@ fun QuickAddBottomSheet(
             availableCourses = resolvedCourseList,
             onCourseSelected = { code, _ -> taskCourseCode = code },
             onDismiss = { showCoursePicker = false }
+        )
+    }
+
+    if (showDueSchedulePicker) {
+        DedicatedSchedulePickerDialog(
+            initialSchedule = taskDueDate,
+            title = "Set Task Schedule",
+            onScheduleSelected = { picked ->
+                taskDueDate = picked
+                showDueSchedulePicker = false
+            },
+            onDismiss = { showDueSchedulePicker = false }
         )
     }
 

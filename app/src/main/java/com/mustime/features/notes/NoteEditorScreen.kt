@@ -252,7 +252,11 @@ fun NoteEditorScreen(
         )
     }
 
+    var showCustomReminderDialog by remember { mutableStateOf(false) }
+    var customReminderText by remember { mutableStateOf(selectedAlarmMinutes?.toString() ?: "45") }
+
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Column(
@@ -260,86 +264,58 @@ fun NoteEditorScreen(
                     .background(MaterialTheme.colorScheme.surface)
                     .statusBarsPadding()
             ) {
-                // Top row with Back, Title, Profile
+                // Unified Header: Back, Title, AutoSavingIndicator, Save Button
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = handleBackPress) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-
-                    Text(
-                        text = if (initialNote == null) "Add Note" else "Note Editor",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer)
-                            .clickable { showProfileSheet = true },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = "Profile",
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-
-                // Subheader Action Bar (Cancel, Auto-saving, Save Note)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(onClick = handleBackPress) {
-                        Text(
-                            "Cancel",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
-                    AutoSavingIndicator()
-
-                    Button(
-                        onClick = {
-                            onSave(
-                                initialNote?.naturalKey,
-                                selectedCourse,
-                                title.ifBlank { "Academic Note: $selectedCourse" },
-                                contentValue.text,
-                                selectedAlarmMinutes,
-                                tag,
-                                attachedClassText,
-                                attachmentName
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = handleBackPress) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        ),
-                        shape = RoundedCornerShape(20.dp),
-                        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp)
+                        }
+                        Text(
+                            text = if (initialNote == null) "New Note" else "Edit Note",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("Save Note ✓", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        AutoSavingIndicator()
+
+                        Button(
+                            onClick = {
+                                onSave(
+                                    initialNote?.naturalKey,
+                                    selectedCourse,
+                                    title.ifBlank { "Academic Note: $selectedCourse" },
+                                    contentValue.text,
+                                    selectedAlarmMinutes,
+                                    tag,
+                                    attachedClassText,
+                                    attachmentName
+                                )
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                        ) {
+                            Text("Save Note ✓", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
                     }
                 }
 
@@ -353,9 +329,43 @@ fun NoteEditorScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
                 .verticalScroll(scrollState)
-                .padding(horizontal = 20.dp, vertical = 16.dp)
+                .padding(horizontal = 18.dp, vertical = 12.dp)
         ) {
-            // COURSE CODE SECTION
+            // 1. TITLE INPUT (Streamlined, flush, without bulky card wrapper)
+            BasicTextField(
+                value = title,
+                onValueChange = { title = it },
+                textStyle = TextStyle(
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                decorationBox = { innerTextField ->
+                    if (title.isEmpty()) {
+                        Text(
+                            "Enter note title or lecture topic...",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                        )
+                    }
+                    innerTextField()
+                }
+            )
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                thickness = 1.dp,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 2. COURSE CODE SECTION
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -366,27 +376,27 @@ fun NoteEditorScreen(
                         Icons.Outlined.BookmarkBorder,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        "COURSE CODE",
-                        fontSize = 12.sp,
+                        "COURSE / MODULE",
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         letterSpacing = 0.5.sp
                     )
                 }
-                Text("Required", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Required", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             // Horizontal Course Chips (if available)
             if (availableCourses.isNotEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     val courses = availableCourses.take(4)
 
@@ -394,7 +404,7 @@ fun NoteEditorScreen(
                         val isSelected = selectedCourse.equals(course.code, ignoreCase = true)
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
+                                .clip(RoundedCornerShape(16.dp))
                                 .background(
                                     if (isSelected) MaterialTheme.colorScheme.primary
                                     else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
@@ -410,14 +420,14 @@ fun NoteEditorScreen(
                                         attachedClassText = "${course.code}: ${course.title} · Weekly Session"
                                     }
                                 }
-                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = "${course.code} · ${course.title.take(8)}",
                                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = 13.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                 )
                                 if (isSelected) {
@@ -426,7 +436,7 @@ fun NoteEditorScreen(
                                         Icons.Default.Check,
                                         contentDescription = "Selected",
                                         tint = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(14.dp)
                                     )
                                 }
                             }
@@ -442,49 +452,6 @@ fun NoteEditorScreen(
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp)
                 )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // TITLE INPUT
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        "TITLE",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        letterSpacing = 0.5.sp
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    BasicTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        textStyle = TextStyle(
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        ),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        modifier = Modifier.fillMaxWidth(),
-                        decorationBox = { innerTextField ->
-                            if (title.isEmpty()) {
-                                Text(
-                                    "e.g. Lecture Notes & Key Concepts",
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                                )
-                            }
-                            innerTextField()
-                        }
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -658,11 +625,11 @@ fun NoteEditorScreen(
                             "15m" to 15,
                             "30m" to 30,
                             "1h" to 60,
-                            "Custom" to 45
+                            (if (selectedAlarmMinutes != null && selectedAlarmMinutes !in listOf(15, 30, 60)) "${selectedAlarmMinutes}m" else "Custom") to selectedAlarmMinutes
                         )
 
-                        reminderOptions.forEach { (label, minutes) ->
-                            val isSelected = selectedAlarmMinutes == minutes
+                        reminderOptions.forEachIndexed { idx, (label, minutes) ->
+                            val isSelected = (idx == 4 && selectedAlarmMinutes != null && selectedAlarmMinutes !in listOf(15, 30, 60)) || (idx < 4 && selectedAlarmMinutes == minutes)
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
@@ -671,7 +638,13 @@ fun NoteEditorScreen(
                                         if (isSelected) MaterialTheme.colorScheme.primary
                                         else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
                                     )
-                                    .clickable { selectedAlarmMinutes = minutes }
+                                    .clickable {
+                                        if (idx == 4) {
+                                            showCustomReminderDialog = true
+                                        } else {
+                                            selectedAlarmMinutes = minutes
+                                        }
+                                    }
                                     .padding(vertical = 8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -1071,6 +1044,40 @@ fun NoteEditorScreen(
             onOpenSettings = {
                 showProfileSheet = false
                 onSettingsClick()
+            }
+        )
+    }
+
+    if (showCustomReminderDialog) {
+        AlertDialog(
+            onDismissRequest = { showCustomReminderDialog = false },
+            title = { Text("Custom Pre-Class Alert", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Minutes before class begins:", fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = customReminderText,
+                        onValueChange = { customReminderText = it.filter { ch -> ch.isDigit() }.take(4) },
+                        label = { Text("Minutes") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val parsed = customReminderText.toIntOrNull()?.coerceIn(1, 1440)
+                    if (parsed != null) selectedAlarmMinutes = parsed
+                    showCustomReminderDialog = false
+                }) {
+                    Text("Apply", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCustomReminderDialog = false }) {
+                    Text("Cancel")
+                }
             }
         )
     }

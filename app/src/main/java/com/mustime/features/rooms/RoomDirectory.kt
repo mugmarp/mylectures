@@ -1,6 +1,7 @@
 package com.mustime.features.rooms
 
 import com.mustime.core.util.TimeUtil
+import com.mustime.features.timetable.domain.CustomEvent
 import com.mustime.features.timetable.domain.TimetableEntry
 
 enum class RoomType(val displayName: String, val isStudyFriendlyDefault: Boolean) {
@@ -34,13 +35,27 @@ data class RoomItem(
 ) {
     fun matchesRoomString(queryRoom: String?): Boolean {
         if (queryRoom.isNullOrBlank()) return false
-        val clean = queryRoom.trim().lowercase()
-        val cleanCode = code.lowercase()
-        val cleanName = name.lowercase()
-        if (clean == cleanCode || clean == cleanName) return true
-        if (aliases.any { it.trim().lowercase() == clean }) return true
-        // Partial matching for known abbreviations
-        if (clean.contains(cleanCode) || cleanCode.contains(clean)) return true
+        val clean = queryRoom.trim()
+        val cleanCode = code.trim()
+        val cleanName = name.trim()
+
+        if (clean.equals(cleanCode, ignoreCase = true) || clean.equals(cleanName, ignoreCase = true)) return true
+        if (aliases.any { it.trim().equals(clean, ignoreCase = true) }) return true
+
+        // Normalized matching: ignore dashes, redundant spaces, and case
+        val cleanNorm = clean.lowercase().replace("-", " ").replace(Regex("\\s+"), " ")
+        val codeNorm = cleanCode.lowercase().replace("-", " ").replace(Regex("\\s+"), " ")
+        if (cleanNorm == codeNorm) return true
+
+        for (alias in aliases) {
+            val aliasNorm = alias.lowercase().replace("-", " ").replace(Regex("\\s+"), " ")
+            if (cleanNorm == aliasNorm) return true
+
+            // Handle compound rooms (e.g. "FCI L1 / FCI L2" or "FCI LAB 3, FCI LAB 4")
+            val parts = cleanNorm.split("/", ",", ";", "&").map { it.trim() }
+            if (parts.any { it == aliasNorm || it == codeNorm }) return true
+        }
+
         return false
     }
 }
@@ -261,14 +276,36 @@ object UniversityDirectory {
         allEntries: List<TimetableEntry>,
         dayOfWeek: String,
         queryTimeStr: String,
-        minGapMinutes: Int = 30
+        minGapMinutes: Int = 30,
+        customEvents: List<CustomEvent> = emptyList()
     ): List<RoomVacancyStatus> {
         val queryMinutes = TimeUtil.toMinutes(queryTimeStr)
         val endOfDayMinutes = 21 * 60 // 21:00 (9:00 PM)
 
+        // Convert any custom events with rooms into TimetableEntry format for vacancy evaluation
+        val syntheticCustomEntries = customEvents.filter {
+            it.dayOfWeek.equals(dayOfWeek, ignoreCase = true) && it.location.isNotBlank()
+        }.map { event ->
+            TimetableEntry(
+                natural_key = "custom_event_${event.id}",
+                program_group = "Custom Booking",
+                day = event.dayOfWeek,
+                time_slot = "${event.startTime} - ${event.endTime}",
+                start_time = event.startTime,
+                end_time = event.endTime,
+                course_code = event.category,
+                course_title = event.title,
+                session_type = "Custom Event",
+                lecturer = null,
+                room = event.location
+            )
+        }
+
+        val combinedEntries = allEntries + syntheticCustomEntries
+
         return FCI_ROOMS.map { room ->
             // Find all entries for this room on the given day
-            val roomDayEntries = allEntries.filter { entry ->
+            val roomDayEntries = combinedEntries.filter { entry ->
                 entry.dayOfWeek.equals(dayOfWeek, ignoreCase = true) &&
                         room.matchesRoomString(entry.room)
             }.sortedBy { TimeUtil.toMinutes(it.startTime) }
@@ -276,13 +313,13 @@ object UniversityDirectory {
             // 1. Is room occupied right now?
             val activeSession = roomDayEntries.firstOrNull { entry ->
                 val startM = TimeUtil.toMinutes(entry.startTime)
-                val endM = TimeUtil.toMinutes(entry.endTime)
+                val endM = if (!entry.endTime.isNullOrBlank()) TimeUtil.toMinutes(entry.endTime) else (startM + 60)
                 queryMinutes in startM until endM
             }
 
             if (activeSession != null) {
                 // Room is occupied
-                val occupiedEnd = activeSession.endTime
+                val occupiedEnd = activeSession.endTime ?: queryTimeStr
                 // Find next session after active session
                 val nextSessionAfterThis = roomDayEntries.firstOrNull { entry ->
                     TimeUtil.toMinutes(entry.startTime) >= TimeUtil.toMinutes(occupiedEnd)

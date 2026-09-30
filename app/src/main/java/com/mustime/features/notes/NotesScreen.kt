@@ -125,18 +125,18 @@ fun NotesScreen(
                 .padding(innerPadding)
                 .statusBarsPadding()
         ) {
-            // TOP APP BAR (MUST Academic Portal Header - NO redundant back arrow!)
+            // UNIFIED TOP APP BAR: Notes with active badge, programme tag, Filter, and Profile
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(38.dp)
                             .clip(CircleShape)
                             .background(Color(0xFF2563EB)),
                         contentAlignment = Alignment.Center
@@ -145,44 +145,70 @@ fun NotesScreen(
                             Icons.Default.School,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                "Notes",
+                                "Academic Notes",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
+                                fontSize = 20.sp,
                                 color = if (isDark) Color.White else Color(0xFF0F172A)
                             )
-                            if (uiState.userProgramme.isNotBlank()) {
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(if (isDark) Color(0xFF1E3A8A) else Color(0xFFDBEAFE))
-                                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        uiState.userProgramme.take(7),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isDark) Color(0xFF93C5FD) else Color(0xFF1E40AF)
-                                    )
-                                }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (isDark) Color(0xFF1E3A8A) else Color(0xFFDBEAFE))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    "${uiState.filteredNotes.size} active",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isDark) Color(0xFF93C5FD) else Color(0xFF1D4ED8)
+                                )
                             }
                         }
-                        Text(
-                            "Academic Notes & Studies",
-                            fontSize = 12.sp,
-                            color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
-                        )
+                        if (uiState.userProgramme.isNotBlank()) {
+                            Text(
+                                uiState.userProgramme,
+                                fontSize = 12.sp,
+                                color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+                            )
+                        }
                     }
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Surface(
+                        onClick = { viewModel.onFilterSelected("All Notes") },
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isDark) DarkSurfaceCard else Color(0xFFF1F5F9),
+                        border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else Color(0xFFE2E8F0))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Outlined.Tune,
+                                contentDescription = "Filter",
+                                tint = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                "Filter",
+                                fontSize = 12.sp,
+                                color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
                     Box(
                         modifier = Modifier
                             .size(36.dp)
@@ -202,68 +228,6 @@ fun NotesScreen(
             }
 
             Spacer(modifier = Modifier.height(6.dp))
-
-            // TITLE ROW: Academic Notes · [count active] · Filter
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "Academic Notes",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isDark) Color.White else Color(0xFF0F172A)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (isDark) Color(0xFF1E3A8A) else Color(0xFFDBEAFE))
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            "${uiState.filteredNotes.size} active",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isDark) Color(0xFF93C5FD) else Color(0xFF1D4ED8)
-                        )
-                    }
-                }
-
-                Surface(
-                    onClick = {
-                        viewModel.onFilterSelected("All Notes")
-                    },
-                    shape = RoundedCornerShape(10.dp),
-                    color = if (isDark) DarkSurfaceCard else Color(0xFFF1F5F9),
-                    border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else Color(0xFFE2E8F0))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Outlined.Tune,
-                            contentDescription = "Filter",
-                            tint = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            "Filter",
-                            fontSize = 12.sp,
-                            color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
 
             // SEARCH BAR
             Card(

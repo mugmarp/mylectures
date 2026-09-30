@@ -94,6 +94,7 @@ fun TimetableScreen(
     var showQuickAddSheet by remember { mutableStateOf(false) }
     var showAcademicProfileSheet by remember { mutableStateOf(false) }
     var selectedActivityForDetail by remember { mutableStateOf<CustomEvent?>(null) }
+    var activityToEdit by remember { mutableStateOf<CustomEvent?>(null) }
     var selectedFilter by remember { mutableStateOf("All") }
 
     // 1. Compute day dates for the current week (Monday through Sunday)
@@ -236,7 +237,8 @@ fun TimetableScreen(
                     )
                 },
                 modifier = Modifier
-                    .padding(bottom = 68.dp)
+                    .navigationBarsPadding()
+                    .padding(bottom = 96.dp)
                     .testTag("timetable_fab")
             )
         }
@@ -640,6 +642,7 @@ fun TimetableScreen(
                             ActivityCard(
                                 event = event,
                                 onClick = { selectedActivityForDetail = event },
+                                onEdit = { activityToEdit = event },
                                 onDelete = { onDeleteActivity(event.id) }
                             )
                         }
@@ -693,8 +696,17 @@ fun TimetableScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { selectedActivityForDetail = null }) {
-                    Text("Close")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = {
+                        val toEdit = event
+                        selectedActivityForDetail = null
+                        activityToEdit = toEdit
+                    }) {
+                        Text("Edit", fontWeight = FontWeight.Bold)
+                    }
+                    TextButton(onClick = { selectedActivityForDetail = null }) {
+                        Text("Close")
+                    }
                 }
             },
             dismissButton = {
@@ -708,6 +720,17 @@ fun TimetableScreen(
                 ) {
                     Text("Delete Activity")
                 }
+            }
+        )
+    }
+
+    if (activityToEdit != null) {
+        AddActivitySheet(
+            eventToEdit = activityToEdit,
+            onDismiss = { activityToEdit = null },
+            onSave = { updatedEvent ->
+                onAddActivity(updatedEvent)
+                activityToEdit = null
             }
         )
     }

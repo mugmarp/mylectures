@@ -26,26 +26,37 @@ import androidx.compose.ui.unit.sp
 import com.mustime.core.util.TimeUtil
 import com.mustime.features.timetable.domain.ActivityCategory
 import com.mustime.features.timetable.domain.CustomEvent
+import com.mustime.ui.components.DedicatedTimePickerDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddActivitySheet(
     initialDayOfWeek: String = TimeUtil.todayName(),
+    eventToEdit: CustomEvent? = null,
     onDismiss: () -> Unit,
     onSave: (CustomEvent) -> Unit
 ) {
-    var title by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf(ActivityCategory.STUDY) }
-    var selectedDay by remember {
+    val isEditMode = eventToEdit != null
+
+    var title by remember { mutableStateOf(eventToEdit?.title ?: "") }
+    var selectedCategory by remember {
         mutableStateOf(
-            if (initialDayOfWeek.isNotBlank()) initialDayOfWeek else TimeUtil.todayName()
+            if (eventToEdit != null) ActivityCategory.fromName(eventToEdit.category) else ActivityCategory.STUDY
         )
     }
-    var startTime by remember { mutableStateOf("14:00") }
-    var endTime by remember { mutableStateOf("15:30") }
-    var location by remember { mutableStateOf("") }
-    var notes by remember { mutableStateOf("") }
+    var selectedDay by remember {
+        mutableStateOf(
+            eventToEdit?.dayOfWeek ?: if (initialDayOfWeek.isNotBlank()) initialDayOfWeek else TimeUtil.todayName()
+        )
+    }
+    var startTime by remember { mutableStateOf(eventToEdit?.startTime ?: "14:00") }
+    var endTime by remember { mutableStateOf(eventToEdit?.endTime ?: "15:30") }
+    var location by remember { mutableStateOf(eventToEdit?.location ?: "") }
+    var notes by remember { mutableStateOf(eventToEdit?.notes ?: "") }
     var hasError by remember { mutableStateOf(false) }
+
+    var showStartTimePicker by remember { mutableStateOf(false) }
+    var showEndTimePicker by remember { mutableStateOf(false) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -68,13 +79,13 @@ fun AddActivitySheet(
             ) {
                 Column {
                     Text(
-                        text = "Add New Activity",
+                        text = if (isEditMode) "Edit Activity" else "Add New Activity",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Schedule custom study, lab, sports, or club events",
+                        text = if (isEditMode) "Update schedule, venue, category, or notes" else "Schedule custom study, lab, sports, or club events",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -202,7 +213,9 @@ fun AddActivitySheet(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = {
-                        Icon(Icons.Outlined.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
+                        IconButton(onClick = { showStartTimePicker = true }) {
+                            Icon(Icons.Outlined.Schedule, contentDescription = "Pick start time", modifier = Modifier.size(18.dp))
+                        }
                     }
                 )
                 OutlinedTextField(
@@ -214,7 +227,9 @@ fun AddActivitySheet(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = {
-                        Icon(Icons.Outlined.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
+                        IconButton(onClick = { showEndTimePicker = true }) {
+                            Icon(Icons.Outlined.Schedule, contentDescription = "Pick end time", modifier = Modifier.size(18.dp))
+                        }
                     }
                 )
             }
@@ -285,6 +300,7 @@ fun AddActivitySheet(
                         return@Button
                     }
                     val event = CustomEvent(
+                        id = eventToEdit?.id ?: 0L,
                         title = title.trim(),
                         dayOfWeek = selectedDay,
                         startTime = startTime.trim(),
@@ -306,10 +322,38 @@ fun AddActivitySheet(
                     containerColor = selectedCategory.color
                 )
             ) {
-                Icon(Icons.Outlined.Add, contentDescription = null)
+                Icon(if (isEditMode) Icons.Outlined.Check else Icons.Outlined.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Activity", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = if (isEditMode) "Save Changes" else "Add Activity",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
+    }
+
+    if (showStartTimePicker) {
+        DedicatedTimePickerDialog(
+            initialTime = startTime,
+            title = "Select Start Time",
+            onTimeSelected = { picked ->
+                startTime = picked
+                showStartTimePicker = false
+            },
+            onDismiss = { showStartTimePicker = false }
+        )
+    }
+
+    if (showEndTimePicker) {
+        DedicatedTimePickerDialog(
+            initialTime = endTime,
+            title = "Select End Time",
+            onTimeSelected = { picked ->
+                endTime = picked
+                showEndTimePicker = false
+            },
+            onDismiss = { showEndTimePicker = false }
+        )
     }
 }

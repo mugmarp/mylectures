@@ -84,6 +84,7 @@ fun CalendarScreen(
     }
 
     var showAddActivitySheet by remember { mutableStateOf(false) }
+    var activityToEdit by remember { mutableStateOf<CustomEvent?>(null) }
     var showNotificationSheet by remember { mutableStateOf(false) }
     var showProfileSheet by remember { mutableStateOf(false) }
     var eventToDelete by remember { mutableStateOf<CustomEvent?>(null) }
@@ -592,6 +593,7 @@ fun CalendarScreen(
                                 ActivityCard(
                                     event = item.event,
                                     onClick = { selectedActivityForDetail = item.event },
+                                    onEdit = { activityToEdit = item.event },
                                     onDelete = { eventToDelete = item.event }
                                 )
                             }
@@ -643,8 +645,17 @@ fun CalendarScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { selectedActivityForDetail = null }) {
-                    Text("Close")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = {
+                        val toEdit = event
+                        selectedActivityForDetail = null
+                        activityToEdit = toEdit
+                    }) {
+                        Text("Edit", fontWeight = FontWeight.Bold)
+                    }
+                    TextButton(onClick = { selectedActivityForDetail = null }) {
+                        Text("Close")
+                    }
                 }
             },
             dismissButton = {
@@ -658,6 +669,17 @@ fun CalendarScreen(
                 ) {
                     Text("Delete Activity")
                 }
+            }
+        )
+    }
+
+    if (activityToEdit != null) {
+        AddActivitySheet(
+            eventToEdit = activityToEdit,
+            onDismiss = { activityToEdit = null },
+            onSave = { updatedEvent ->
+                viewModel.addCustomEvent(updatedEvent)
+                activityToEdit = null
             }
         )
     }
