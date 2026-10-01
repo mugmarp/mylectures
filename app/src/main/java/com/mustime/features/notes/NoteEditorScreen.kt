@@ -1,13 +1,17 @@
 package com.mustime.features.notes
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +29,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
@@ -37,7 +43,16 @@ import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.domain.TimetableEntry
 import com.mustime.ui.components.AcademicProfileSheet
 import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
+enum class NoteEditorTab {
+    WRITE,
+    PREVIEW
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteEditorScreen(
     initialNote: LectureNote? = null,
@@ -59,11 +74,11 @@ fun NoteEditorScreen(
 ) {
     val initialCourse = initialNote?.naturalKey?.split("|")?.firstOrNull()
         ?: availableCourses.firstOrNull()?.code
-        ?: ""
+        ?: "GEN101"
     val initialTitleVal = initialNote?.title ?: ""
     val initialContentVal = initialNote?.content ?: ""
     val initialAlarm = initialNote?.alarmMinutes ?: 15
-    val initialTag = initialNote?.tag ?: "General"
+    val initialTag = initialNote?.tag ?: "Lecture"
     val initialClassText = initialNote?.attachedClass ?: ""
     val initialAttachment = initialNote?.attachmentName ?: ""
 
@@ -84,11 +99,19 @@ fun NoteEditorScreen(
     var lecturer by remember { mutableStateOf("Course Lecturer") }
     var attachmentName by remember { mutableStateOf(initialAttachment) }
 
+    // Editor tab: Write vs Live Preview
+    var currentTab by remember { mutableStateOf(NoteEditorTab.WRITE) }
+
+    // Modals
     var showClassPicker by remember { mutableStateOf(false) }
     var showCoursePickerModal by remember { mutableStateOf(false) }
     var showTagPicker by remember { mutableStateOf(false) }
+    var showTemplatesSheet by remember { mutableStateOf(false) }
+    var showHelpSheet by remember { mutableStateOf(false) }
     var showDiscardConfirmDialog by remember { mutableStateOf(false) }
     var showProfileSheet by remember { mutableStateOf(false) }
+    var showCustomReminderDialog by remember { mutableStateOf(false) }
+    var customReminderText by remember { mutableStateOf(selectedAlarmMinutes?.toString() ?: "45") }
 
     // Audio recording state
     var isRecordingAudio by remember { mutableStateOf(false) }
@@ -113,7 +136,12 @@ fun NoteEditorScreen(
             attachedClassText != initialClassText ||
             attachmentName != initialAttachment
 
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     val handleBackPress: () -> Unit = {
+        focusManager.clearFocus()
+        keyboardController?.hide()
         if (isModified) {
             showDiscardConfirmDialog = true
         } else {
@@ -160,6 +188,44 @@ fun NoteEditorScreen(
         )
     }
 
+    val insertSnippet: (String) -> Unit = { snippet ->
+        val text = contentValue.text
+        val selection = contentValue.selection
+        val insertPos = selection.start
+        val needsLeadingNewline = insertPos > 0 && text[insertPos - 1] != '\n' && !snippet.startsWith("\n")
+        val insertion = if (needsLeadingNewline) "\n$snippet" else snippet
+        val newText = text.substring(0, insertPos) + insertion + text.substring(insertPos)
+        val newCursor = insertPos + insertion.length
+        contentValue = TextFieldValue(
+            text = newText,
+            selection = TextRange(newCursor)
+        )
+    }
+
+    // Insert current date stamp
+    val insertDateStamp: () -> Unit = {
+        val formatter = SimpleDateFormat("EEEE, MMM d, yyyy", Locale.getDefault())
+        val dateStr = "📅 **${formatter.format(Date())}**\n"
+        insertSnippet(dateStr)
+    }
+
+    // Toggle checklist in preview mode
+    val toggleChecklistInPreview: (Int) -> Unit = { lineIndex ->
+        val updatedText = MarkdownUtils.toggleChecklistAt(contentValue.text, lineIndex)
+        contentValue = contentValue.copy(text = updatedText)
+    }
+
+    // Calculate word & char count & checklist progress
+    val wordsCount = remember(contentValue.text) {
+        contentValue.text.trim().split("\\s+".toRegex()).filter { it.isNotBlank() }.size
+    }
+    val charsCount = remember(contentValue.text) { contentValue.text.length }
+    val checklistProgress = remember(contentValue.text) {
+        MarkdownUtils.countChecklistProgress(contentValue.text)
+    }
+
+    val scrollState = rememberScrollState()
+
     // Discard Confirmation Dialog
     if (showDiscardConfirmDialog) {
         AlertDialog(
@@ -203,13 +269,179 @@ fun NoteEditorScreen(
         )
     }
 
-    // Calculate word & char count
-    val wordsCount = remember(contentValue.text) {
-        contentValue.text.trim().split("\\s+".toRegex()).filter { it.isNotBlank() }.size
-    }
-    val charsCount = remember(contentValue.text) { contentValue.text.length }
+    // Course Selection Modal
+    if (showCoursePickerModal) {
+        var customCourseCode by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showCoursePickerModal = false },
+            title = { Text("Select Course", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "Choose from your enrolled courses or enter a custom course code:",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-    val scrollState = rememberScrollState()
+                    availableCourses.forEach { course ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedCourse = course.code
+                                    showCoursePickerModal = false
+                                },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (selectedCourse.equals(course.code, ignoreCase = true))
+                                    MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .padding(12.dp)
+                                    .fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            try { Color(android.graphics.Color.parseColor(course.color)) } catch (e: Exception) { Color(0xFF2563EB) }
+                                        )
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(course.code, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text(course.title, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Custom Course Code:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = customCourseCode,
+                            onValueChange = { customCourseCode = it.uppercase() },
+                            placeholder = { Text("e.g. CSC3100") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Button(
+                            onClick = {
+                                if (customCourseCode.isNotBlank()) {
+                                    selectedCourse = customCourseCode.trim()
+                                    showCoursePickerModal = false
+                                }
+                            },
+                            enabled = customCourseCode.isNotBlank()
+                        ) {
+                            Text("Set")
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showCoursePickerModal = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Tag Selection Modal
+    if (showTagPicker) {
+        val standardTags = listOf(
+            "Lecture" to "General classroom notes & discussions",
+            "Lab Prep" to "Practical assignments, code logs & experiments",
+            "Study Guide" to "Comprehensive summaries & textbook synthesis",
+            "Assignment" to "Coursework breakdown, research & references",
+            "Revision" to "High-yield exam prep, formulas & confidence tracker",
+            "Exam Prep" to "Targeted past papers & test solutions",
+            "Quick Note" to "Lightweight thoughts & immediate reminders"
+        )
+        var customTagInput by remember { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = { showTagPicker = false },
+            title = { Text("Select Note Category", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    standardTags.forEach { (tagName, desc) ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    tag = tagName
+                                    showTagPicker = false
+                                },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (tag == tagName)
+                                    MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            )
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text("🏷️ $tagName", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text(desc, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Custom Tag:", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = customTagInput,
+                            onValueChange = { customTagInput = it },
+                            placeholder = { Text("e.g. Fieldwork") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Button(
+                            onClick = {
+                                if (customTagInput.isNotBlank()) {
+                                    tag = customTagInput.trim()
+                                    showTagPicker = false
+                                }
+                            },
+                            enabled = customTagInput.isNotBlank()
+                        ) {
+                            Text("Set")
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showTagPicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     // Class selection modal
     if (showClassPicker) {
@@ -217,23 +449,44 @@ fun NoteEditorScreen(
             onDismissRequest = { showClassPicker = false },
             title = { Text("Attach Timetable Class", fontWeight = FontWeight.Bold) },
             text = {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (attachedClassText.isNotBlank()) {
+                        OutlinedButton(
+                            onClick = {
+                                attachedClassText = ""
+                                attachedLocation = ""
+                                lecturer = ""
+                                showClassPicker = false
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Detach Current Class")
+                        }
+                    }
+
                     val matchingClasses = timetableClasses.filter {
                         it.courseCode.equals(selectedCourse, ignoreCase = true)
-                    }.ifEmpty { timetableClasses.take(5) }
+                    }.ifEmpty { timetableClasses }
 
                     if (matchingClasses.isEmpty()) {
-                        Text("No specific timetable classes found for $selectedCourse.")
+                        Text("No specific timetable classes found. You can still write notes without an attached class.")
                     } else {
                         matchingClasses.forEach { entry ->
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
                                     .clickable {
                                         attachedClassText = "${entry.courseCode}: ${entry.courseTitle} · ${entry.day}, ${entry.startTime} – ${entry.endTime}"
-                                        attachedLocation = if (!entry.room.isNullOrBlank() && entry.room.trim().uppercase() !in listOf("TBA", "TBD", "NONE", "N/A")) "📍 ${entry.room.trim()}" else ""
-                                        lecturer = entry.lecturer ?: ""
+                                        attachedLocation = if (!entry.room.isNullOrBlank() && entry.room.trim().uppercase() !in listOf("TBA", "TBD", "NONE", "N/A")) "📍 ${entry.room.trim()}" else "📍 Lecture Room"
+                                        lecturer = entry.lecturer ?: "Course Lecturer"
                                         showClassPicker = false
                                     },
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
@@ -256,8 +509,32 @@ fun NoteEditorScreen(
         )
     }
 
-    var showCustomReminderDialog by remember { mutableStateOf(false) }
-    var customReminderText by remember { mutableStateOf(selectedAlarmMinutes?.toString() ?: "45") }
+    // Templates BottomSheet
+    if (showTemplatesSheet) {
+        NoteTemplatesBottomSheet(
+            onDismiss = { showTemplatesSheet = false },
+            onSelectTemplate = { tpl ->
+                if (title.isBlank() || title == "New Note") {
+                    title = tpl.defaultTitle.replace("[Course Code]", selectedCourse)
+                }
+                tag = tpl.tag
+                val filledContent = tpl.content
+                    .replace("[Course Code]", selectedCourse)
+                    .replace("[Date]", SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date()))
+                contentValue = TextFieldValue(text = filledContent, selection = TextRange(filledContent.length))
+            }
+        )
+    }
+
+    // Markdown Guide BottomSheet
+    if (showHelpSheet) {
+        MarkdownHelpBottomSheet(
+            onDismiss = { showHelpSheet = false },
+            onInsertSnippet = { snippet ->
+                insertSnippet(snippet)
+            }
+        )
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -268,7 +545,7 @@ fun NoteEditorScreen(
                     .background(MaterialTheme.colorScheme.surface)
                     .statusBarsPadding()
             ) {
-                // Unified Header: Back, Title, AutoSavingIndicator, Save Button
+                // Unified Header: Back, Title, Mode Selector, Save Button
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -286,7 +563,7 @@ fun NoteEditorScreen(
                         }
                         Text(
                             text = if (initialNote == null) "New Note" else "Edit Note",
-                            fontSize = 18.sp,
+                            fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -296,10 +573,83 @@ fun NoteEditorScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        AutoSavingIndicator()
+                        // Write vs Preview Segmented Control
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        ) {
+                            Row(modifier = Modifier.padding(2.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(
+                                            if (currentTab == NoteEditorTab.WRITE) MaterialTheme.colorScheme.primary
+                                            else Color.Transparent
+                                        )
+                                        .clickable {
+                                            focusManager.clearFocus()
+                                            keyboardController?.hide()
+                                            currentTab = NoteEditorTab.WRITE
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            Icons.Default.Edit,
+                                            contentDescription = null,
+                                            tint = if (currentTab == NoteEditorTab.WRITE) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(13.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            "Write",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (currentTab == NoteEditorTab.WRITE) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(
+                                            if (currentTab == NoteEditorTab.PREVIEW) MaterialTheme.colorScheme.primary
+                                            else Color.Transparent
+                                        )
+                                        .clickable {
+                                            focusManager.clearFocus()
+                                            keyboardController?.hide()
+                                            currentTab = NoteEditorTab.PREVIEW
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            Icons.Default.Visibility,
+                                            contentDescription = null,
+                                            tint = if (currentTab == NoteEditorTab.PREVIEW) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(13.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            "Preview",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (currentTab == NoteEditorTab.PREVIEW) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
 
                         Button(
                             onClick = {
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
                                 onSave(
                                     initialNote?.naturalKey,
                                     selectedCourse,
@@ -315,10 +665,10 @@ fun NoteEditorScreen(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary
                             ),
-                            shape = RoundedCornerShape(16.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                            shape = RoundedCornerShape(14.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                         ) {
-                            Text("Save Note ✓", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text("Save ✓", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
                     }
                 }
@@ -332,15 +682,16 @@ fun NoteEditorScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
+                .imePadding()
                 .verticalScroll(scrollState)
                 .padding(horizontal = 18.dp, vertical = 12.dp)
         ) {
-            // 1. TITLE INPUT (Streamlined, flush, without bulky card wrapper)
+            // 1. TITLE INPUT
             BasicTextField(
                 value = title,
                 onValueChange = { title = it },
                 textStyle = TextStyle(
-                    fontSize = 22.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 ),
@@ -352,7 +703,7 @@ fun NoteEditorScreen(
                     if (title.isEmpty()) {
                         Text(
                             "Enter note title or lecture topic...",
-                            fontSize = 22.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
                         )
@@ -364,10 +715,10 @@ fun NoteEditorScreen(
             HorizontalDivider(
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
                 thickness = 1.dp,
-                modifier = Modifier.padding(vertical = 8.dp)
+                modifier = Modifier.padding(vertical = 6.dp)
             )
 
-            // 2. METADATA PILLS STRIP (Horizontally scrollable, clean, compact)
+            // 2. METADATA PILLS STRIP
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -393,6 +744,42 @@ fun NoteEditorScreen(
                     )
                 }
 
+                // Category Tag Pill
+                item {
+                    AssistChip(
+                        onClick = { showTagPicker = true },
+                        label = { Text("🏷️ $tag", fontSize = 12.sp, fontWeight = FontWeight.Medium) },
+                        trailingIcon = {
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(14.dp))
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+
+                // Quick Templates Button
+                item {
+                    AssistChip(
+                        onClick = { showTemplatesSheet = true },
+                        leadingIcon = {
+                            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(15.dp))
+                        },
+                        label = { Text("Templates", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary) },
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+
+                // Formatting Guide Pill
+                item {
+                    AssistChip(
+                        onClick = { showHelpSheet = true },
+                        leadingIcon = {
+                            Icon(Icons.Outlined.HelpOutline, contentDescription = null, modifier = Modifier.size(14.dp))
+                        },
+                        label = { Text("Guide", fontSize = 12.sp, fontWeight = FontWeight.Medium) },
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+
                 // Attached Class Pill
                 item {
                     AssistChip(
@@ -404,9 +791,6 @@ fun NoteEditorScreen(
                                 "📍 Attach Class"
                             }
                             Text(labelText, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        },
-                        trailingIcon = {
-                            Icon(Icons.Default.SwapHoriz, contentDescription = null, modifier = Modifier.size(14.dp))
                         },
                         shape = RoundedCornerShape(12.dp)
                     )
@@ -423,78 +807,325 @@ fun NoteEditorScreen(
                         shape = RoundedCornerShape(12.dp)
                     )
                 }
-
-                // Tag Pill
-                item {
-                    AssistChip(
-                        onClick = { showTagPicker = true },
-                        label = { Text("🏷️ $tag", fontSize = 12.sp, fontWeight = FontWeight.Medium) },
-                        trailingIcon = {
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(14.dp))
-                        },
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ATTACHED CLASS CARD
+            // 3. MAIN EDITOR CARD OR PREVIEW CARD
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showClassPicker = true },
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
             ) {
-                Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-                    // Left primary accent strip
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .width(6.dp)
-                            .background(MaterialTheme.colorScheme.primary)
-                    )
+                Column(modifier = Modifier.padding(14.dp)) {
+                    if (currentTab == NoteEditorTab.WRITE) {
+                        // VISUAL FORMATTING TOOLBAR (WYSIWYG Helpers for everyone)
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState())
+                                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Bold
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable { applyMarkdown("**", "**", "Bold text") }
+                                        .padding(horizontal = 6.dp, vertical = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("B", fontWeight = FontWeight.Black, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                }
 
-                    Column(modifier = Modifier.padding(16.dp).weight(1f)) {
+                                // Italic
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable { applyMarkdown("*", "*", "Italic text") }
+                                        .padding(horizontal = 6.dp, vertical = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("I", fontStyle = FontStyle.Italic, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                }
+
+                                // Heading 1
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable { insertLinePrefix("# ") }
+                                        .padding(horizontal = 6.dp, vertical = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("H1", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                                }
+
+                                // Heading 2
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable { insertLinePrefix("## ") }
+                                        .padding(horizontal = 6.dp, vertical = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("H2", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                                }
+
+                                // Checklist / To-Do
+                                IconButton(
+                                    onClick = { insertLinePrefix("- [ ] ") },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Checklist,
+                                        contentDescription = "Checklist item",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(19.dp)
+                                    )
+                                }
+
+                                // Bullet List
+                                IconButton(
+                                    onClick = { insertLinePrefix("- ") },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.FormatListBulleted,
+                                        contentDescription = "Bullet List",
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.size(19.dp)
+                                    )
+                                }
+
+                                // Numbered List
+                                IconButton(
+                                    onClick = { insertLinePrefix("1. ") },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.FormatListNumbered,
+                                        contentDescription = "Numbered List",
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.size(19.dp)
+                                    )
+                                }
+
+                                // Quote / Callout
+                                IconButton(
+                                    onClick = { insertLinePrefix("> ") },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.FormatQuote,
+                                        contentDescription = "Quote / Callout",
+                                        tint = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.size(19.dp)
+                                    )
+                                }
+
+                                // Code / Formula
+                                IconButton(
+                                    onClick = { applyMarkdown("`", "`", "formula") },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Code,
+                                        contentDescription = "Code or Formula",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+
+                                // Divider Line
+                                IconButton(
+                                    onClick = { insertSnippet("\n---\n") },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.HorizontalRule,
+                                        contentDescription = "Divider",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+
+                                // Insert Date Stamp
+                                IconButton(
+                                    onClick = insertDateStamp,
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.Today,
+                                        contentDescription = "Insert Date Stamp",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Text Area with selection tracking
+                        BasicTextField(
+                            value = contentValue,
+                            onValueChange = { contentValue = it },
+                            textStyle = TextStyle(
+                                fontSize = 15.sp,
+                                lineHeight = 24.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            ),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 180.dp),
+                            decorationBox = { innerTextField ->
+                                if (contentValue.text.isEmpty()) {
+                                    Text(
+                                        "Start taking lecture notes, revision points, or checklists...\n• Tap formatting buttons above to style without syntax\n• Tap 'Templates' for full academic note outlines\n• Switch to 'Preview' tab anytime to view formatted notes",
+                                        fontSize = 14.sp,
+                                        lineHeight = 22.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        )
+                    } else {
+                        // PREVIEW TAB (Rendered Rich Markdown)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(MaterialTheme.colorScheme.primaryContainer),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        Icons.Outlined.EventNote,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                "RICH PREVIEW",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                letterSpacing = 0.5.sp
+                            )
+                            if (checklistProgress != null) {
+                                val (done, total) = checklistProgress
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                        .background(
+                                            if (done == total) Color(0xFFDCFCE7) else MaterialTheme.colorScheme.primaryContainer
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 2.dp)
                                 ) {
                                     Text(
-                                        "Attached Class",
-                                        color = MaterialTheme.colorScheme.primary,
+                                        "☑ $done / $total completed",
                                         fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (done == total) Color(0xFF15803D) else MaterialTheme.colorScheme.primary
                                     )
                                 }
-                                Spacer(modifier = Modifier.width(6.dp))
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), thickness = 1.dp)
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        MarkdownViewer(
+                            markdown = contentValue.text,
+                            onToggleChecklist = toggleChecklistInPreview
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Outlined.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                "Markdown & Visual formatting",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Text(
+                            "$wordsCount words · $charsCount chars",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // ATTACHED CLASS CARD (If attached)
+            if (attachedClassText.isNotBlank()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showClassPicker = true },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .matchParentSize()
+                                .width(6.dp)
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+
+                        Column(modifier = Modifier.padding(start = 20.dp, top = 14.dp, end = 16.dp, bottom = 14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(MaterialTheme.colorScheme.primaryContainer),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.EventNote,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        "ATTACHED TIMETABLE CLASS",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+
                                 Text(
                                     attachedLocation,
                                     fontSize = 12.sp,
@@ -503,55 +1134,32 @@ fun NoteEditorScreen(
                                 )
                             }
 
-                            Icon(
-                                Icons.Default.SwapHoriz,
-                                contentDescription = "Change Class",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Text(
-                            text = attachedClassText.substringBefore(" · ").ifBlank { if (selectedCourse.isNotBlank()) "$selectedCourse: Class Session" else "Class Session" },
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
+                            Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = attachedClassText.substringAfter(" · ", "Scheduled Session"),
-                                fontSize = 13.sp,
+                                text = attachedClassText.substringBefore(" · "),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = attachedClassText.substringAfter(" · ", ""),
+                                fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = lecturer,
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Medium
                             )
                         }
                     }
                 }
+                Spacer(modifier = Modifier.height(14.dp))
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // PRE-CLASS ALERT REMINDER
+            // PRE-CLASS ALERT REMINDER CARD
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(14.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -580,27 +1188,17 @@ fun NoteEditorScreen(
                                 .background(MaterialTheme.colorScheme.secondaryContainer)
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Default.AccessTime,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.size(12.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    "Push + Sound",
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
+                            Text(
+                                if (selectedAlarmMinutes != null) "${selectedAlarmMinutes}m Chime" else "Disabled",
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    // Reminder intervals
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -618,7 +1216,7 @@ fun NoteEditorScreen(
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(10.dp))
                                     .background(
                                         if (isSelected) MaterialTheme.colorScheme.primary
                                         else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
@@ -635,195 +1233,41 @@ fun NoteEditorScreen(
                             ) {
                                 Text(
                                     text = label,
-                                    fontSize = 13.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Outlined.Info,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (selectedAlarmMinutes != null) {
-                                "Will chime an audio notification at ${selectedAlarmMinutes}m before your lecture begins."
-                            } else {
-                                "No pre-class reminder alarm will be scheduled."
-                            },
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // MARKDOWN TOOLBAR & TEXT AREA
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    // Formatting Toolbar (Selection-Aware)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            // Bold
-                            Text(
-                                "B",
-                                fontWeight = FontWeight.Black,
-                                fontSize = 15.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .clickable { applyMarkdown("**", "**", "Bold text") }
-                                    .padding(horizontal = 4.dp, vertical = 2.dp)
-                            )
-                            // Italic
-                            Text(
-                                "I",
-                                fontStyle = FontStyle.Italic,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .clickable { applyMarkdown("*", "*", "Italic text") }
-                                    .padding(horizontal = 4.dp, vertical = 2.dp)
-                            )
-                            // Bullet List
-                            Icon(
-                                Icons.Default.FormatListBulleted,
-                                contentDescription = "Bullet List",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .clickable { insertLinePrefix("• ") }
-                            )
-                            // Numbered List
-                            Icon(
-                                Icons.Default.FormatListNumbered,
-                                contentDescription = "Numbered List",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .clickable { insertLinePrefix("1. ") }
-                            )
-                            // Checklist
-                            Icon(
-                                Icons.Default.Checklist,
-                                contentDescription = "Checklist",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .clickable { insertLinePrefix("- [ ] ") }
-                            )
-                        }
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            // Attachment Pin
-                            Icon(
-                                Icons.Outlined.AttachFile,
-                                contentDescription = "Attach File",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .clickable {
-                                        attachmentName = "Lecture_Notes_Revision.pdf"
-                                    }
-                            )
-                            // Link
-                            Icon(
-                                Icons.Outlined.Link,
-                                contentDescription = "Insert Link",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .clickable { applyMarkdown("[", "](https://moodle.must.ac.ug)", "Link Title") }
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Text Area with selection tracking
-                    BasicTextField(
-                        value = contentValue,
-                        onValueChange = { contentValue = it },
-                        textStyle = TextStyle(
-                            fontSize = 15.sp,
-                            lineHeight = 24.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        ),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 140.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), thickness = 1.dp)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Markdown supported", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("$wordsCount words · $charsCount chars", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // QUICK ATTACHMENTS
+            // QUICK ATTACHMENTS (Voice memo, Lecture slide, Whiteboard)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "QUICK ATTACHMENTS",
-                    fontSize = 12.sp,
+                    "ATTACHMENTS & RECORDINGS",
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     letterSpacing = 0.5.sp
                 )
                 Text(
-                    if (attachmentName.isNotBlank()) "1 file attached" else "No files attached",
-                    fontSize = 12.sp,
+                    if (attachmentName.isNotBlank()) "1 file attached" else "None",
+                    fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // 3 Action Cards: Record Audio, Lecture Slide, Whiteboard
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -840,7 +1284,7 @@ fun NoteEditorScreen(
                                 isRecordingAudio = true
                             }
                         },
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isRecordingAudio) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surface
                     ),
@@ -850,12 +1294,12 @@ fun NoteEditorScreen(
                     )
                 ) {
                     Column(
-                        modifier = Modifier.padding(14.dp),
+                        modifier = Modifier.padding(12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(42.dp)
+                                .size(38.dp)
                                 .clip(CircleShape)
                                 .background(
                                     if (isRecordingAudio) MaterialTheme.colorScheme.error
@@ -867,40 +1311,35 @@ fun NoteEditorScreen(
                                 if (isRecordingAudio) Icons.Default.Stop else Icons.Default.Mic,
                                 contentDescription = if (isRecordingAudio) "Stop Recording" else "Record Audio",
                                 tint = if (isRecordingAudio) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = if (isRecordingAudio) "Stop (${recordingDurationSeconds}s)" else "Record Audio",
+                            text = if (isRecordingAudio) "Stop (${recordingDurationSeconds}s)" else "Voice Memo",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             color = if (isRecordingAudio) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = if (isRecordingAudio) "Tap to attach" else "Voice memo",
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
-                // Lecture Slide
+                // Lecture Slide PDF
                 Card(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { attachmentName = "Lecture_Slides_Notes.pdf" },
-                    shape = RoundedCornerShape(16.dp),
+                        .clickable { attachmentName = "Lecture_Slides_${selectedCourse}.pdf" },
+                    shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
                 ) {
                     Column(
-                        modifier = Modifier.padding(14.dp),
+                        modifier = Modifier.padding(12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(42.dp)
+                                .size(38.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.primaryContainer),
                             contentAlignment = Alignment.Center
@@ -909,31 +1348,30 @@ fun NoteEditorScreen(
                                 Icons.Default.PictureAsPdf,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Lecture Slide", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text("PDF / PPTX", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text("Slide PDF", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
 
-                // Whiteboard
+                // Whiteboard Photo
                 Card(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { attachmentName = "Whiteboard_Photo.jpg" },
-                    shape = RoundedCornerShape(16.dp),
+                        .clickable { attachmentName = "Whiteboard_${System.currentTimeMillis() % 1000}.jpg" },
+                    shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
                 ) {
                     Column(
-                        modifier = Modifier.padding(14.dp),
+                        modifier = Modifier.padding(12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(42.dp)
+                                .size(38.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.tertiaryContainer),
                             contentAlignment = Alignment.Center
@@ -942,19 +1380,18 @@ fun NoteEditorScreen(
                                 Icons.Default.CameraAlt,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Whiteboard", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text("Snap photo", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text("Whiteboard", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
 
-            // Attached file item
+            // Attached file item badge
             if (attachmentName.isNotBlank()) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -963,7 +1400,7 @@ fun NoteEditorScreen(
                 ) {
                     Row(
                         modifier = Modifier
-                            .padding(12.dp)
+                            .padding(10.dp)
                             .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -971,7 +1408,7 @@ fun NoteEditorScreen(
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                             Box(
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(32.dp)
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(MaterialTheme.colorScheme.primaryContainer),
                                 contentAlignment = Alignment.Center
@@ -980,21 +1417,21 @@ fun NoteEditorScreen(
                                     if (attachmentName.endsWith(".m4a")) Icons.Default.Mic else Icons.Default.Description,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
                                     text = attachmentName,
                                     fontWeight = FontWeight.SemiBold,
-                                    fontSize = 13.sp,
+                                    fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1
                                 )
                                 Text(
-                                    if (attachmentName.endsWith(".m4a")) "Audio Memo · Attached just now" else "1.4 MB · Uploaded just now",
-                                    fontSize = 11.sp,
+                                    if (attachmentName.endsWith(".m4a")) "Audio Memo · Attached" else "Attached Document",
+                                    fontSize = 10.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -1002,13 +1439,13 @@ fun NoteEditorScreen(
 
                         IconButton(
                             onClick = { attachmentName = "" },
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(26.dp)
                         ) {
                             Icon(
                                 Icons.Default.Close,
                                 contentDescription = "Remove attachment",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                     }
@@ -1064,37 +1501,6 @@ fun NoteEditorScreen(
                     Text("Cancel")
                 }
             }
-        )
-    }
-}
-
-@Composable
-private fun AutoSavingIndicator() {
-    val infiniteTransition = rememberInfiniteTransition(label = "autosave")
-    val alphaAnim by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "alpha"
-    )
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .graphicsLayer { this.alpha = alphaAnim }
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            "AUTO-SAVING",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            letterSpacing = 0.5.sp
         )
     }
 }

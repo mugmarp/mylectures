@@ -23,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -60,6 +62,9 @@ fun QuickAddBottomSheet(
         notes: String
     ) -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     var currentMode by remember { mutableStateOf(initialMode) }
 
     // Activity state
@@ -119,6 +124,7 @@ fun QuickAddBottomSheet(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
         ) {
             // Header Row
@@ -141,7 +147,11 @@ fun QuickAddBottomSheet(
                     )
                 }
                 IconButton(
-                    onClick = onDismiss,
+                    onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        onDismiss()
+                    },
                     modifier = Modifier.testTag("close_quick_add_sheet")
                 ) {
                     Icon(
@@ -578,6 +588,8 @@ fun QuickAddBottomSheet(
                                 colorTag = selectedActivityCategory.colorHex,
                                 alarmMinutes = activityAlarmMinutes
                             )
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
                             onSaveActivity(newEvent)
                             onDismiss()
                         },
@@ -955,6 +967,8 @@ fun QuickAddBottomSheet(
                             } else {
                                 taskTitle.trim()
                             }
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
                             onSaveTask(
                                 fullTitle,
                                 effectiveCourse.trim(),

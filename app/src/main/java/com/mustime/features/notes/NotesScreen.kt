@@ -24,6 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -35,6 +37,9 @@ import com.mustime.features.timetable.ui.*
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.components.AcademicProfileSheet
 import com.mustime.ui.components.NotificationCenterSheet
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun NotesScreen(
@@ -55,6 +60,8 @@ fun NotesScreen(
     }
 
     val isDark = LocalAppTheme.current.isDark
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val viewModel: NotesViewModel = viewModel(
         factory = NotesViewModel.provideFactory(repository)
     )
@@ -64,6 +71,7 @@ fun NotesScreen(
     // State for Note Editor flow
     var isEditing by remember { mutableStateOf(false) }
     var noteToEdit by remember { mutableStateOf<LectureNote?>(null) }
+    var noteToDelete by remember { mutableStateOf<LectureNote?>(null) }
     var showNotificationSheet by remember { mutableStateOf(false) }
     var showProfileSheet by remember { mutableStateOf(false) }
 
@@ -106,6 +114,8 @@ fun NotesScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
                     noteToEdit = null
                     isEditing = true
                 },
@@ -278,6 +288,24 @@ fun NotesScreen(
                         modifier = Modifier.weight(1f),
                         singleLine = true
                     )
+                    if (uiState.searchQuery.isNotBlank()) {
+                        IconButton(
+                            onClick = {
+                                viewModel.onSearchQueryChanged("")
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                            },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Clear search",
+                                tint = Color(0xFF94A3B8),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
                     Icon(
                         Icons.Default.Mic,
                         contentDescription = "Voice search",
@@ -470,17 +498,55 @@ fun NotesScreen(
                                 courseCode = courseCode,
                                 isDark = isDark,
                                 onOpen = {
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
                                     noteToEdit = note
                                     isEditing = true
                                 },
                                 onTogglePin = { viewModel.togglePin(note.naturalKey) },
-                                onDelete = { viewModel.deleteNote(note.naturalKey) }
+                                onDelete = { noteToDelete = note }
                             )
                         }
                     }
                 }
             }
         }
+    }
+
+    if (noteToDelete != null) {
+        val target = noteToDelete!!
+        AlertDialog(
+            onDismissRequest = { noteToDelete = null },
+            icon = {
+                Icon(
+                    Icons.Outlined.DeleteOutline,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            title = {
+                Text("Delete this note?", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text("Are you sure you want to delete \"${target.title ?: "Untitled Note"}\"? This action cannot be undone.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteNote(target.naturalKey)
+                        noteToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { noteToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     if (showNotificationSheet) {
@@ -648,9 +714,12 @@ fun NoteCardItem(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Note Content Preview (2 lines)
+            // Note Content Preview (2 lines, stripped of raw markdown symbols)
+            val cleanPreview = remember(note.content) {
+                MarkdownUtils.stripMarkdown(note.content).ifBlank { "Tap to add lecture notes, checklist items, or study formulas..." }
+            }
             Text(
-                text = note.content,
+                text = cleanPreview,
                 fontSize = 13.sp,
                 color = if (isDark) Color(0xFFCBD5E1) else Color(0xFF475569),
                 maxLines = 2,
@@ -658,65 +727,108 @@ fun NoteCardItem(
                 lineHeight = 18.sp
             )
 
+            val checklistProgress = remember(note.content) {
+                MarkdownUtils.countChecklistProgress(note.content)
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Bottom Bar: Reminder Pill & Timestamp/Attachment
+            // Bottom Bar: Reminder Pill / Checklist Progress & Timestamp/Attachment
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Reminder Pill
-                if (note.alarmMinutes != null) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.4f) else Color(0xFFEEF2FF))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.NotificationsActive,
-                                contentDescription = null,
-                                tint = if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB),
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                "${note.alarmMinutes}m before class",
-                                fontSize = 11.sp,
-                                color = if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB),
-                                fontWeight = FontWeight.SemiBold
-                            )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Reminder Pill
+                    if (note.alarmMinutes != null) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.4f) else Color(0xFFEEF2FF))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.NotificationsActive,
+                                    contentDescription = null,
+                                    tint = if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB),
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    "${note.alarmMinutes}m alert",
+                                    fontSize = 11.sp,
+                                    color = if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
-                } else {
-                    Spacer(modifier = Modifier.width(1.dp))
+
+                    // Checklist Progress Pill
+                    if (checklistProgress != null) {
+                        val (done, total) = checklistProgress
+                        val isComplete = done == total
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (isComplete) Color(0xFFDCFCE7)
+                                    else (if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.4f) else Color(0xFFEFF6FF))
+                                )
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    if (isComplete) Icons.Default.CheckCircle else Icons.Default.Checklist,
+                                    contentDescription = null,
+                                    tint = if (isComplete) Color(0xFF15803D) else (if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB)),
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    "$done/$total tasks",
+                                    fontSize = 11.sp,
+                                    color = if (isComplete) Color(0xFF15803D) else (if (isDark) Color(0xFF93C5FD) else Color(0xFF2563EB)),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
                 }
 
                 // Trailing: Attachment or Relative time
                 if (!note.attachmentName.isNullOrBlank()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            Icons.Default.AttachFile,
+                            if (note.attachmentName.endsWith(".m4a")) Icons.Default.Mic else Icons.Default.AttachFile,
                             contentDescription = null,
                             tint = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
                             modifier = Modifier.size(13.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            "1 PDF",
+                            if (note.attachmentName.endsWith(".m4a")) "Audio" else "1 File",
                             fontSize = 11.sp,
                             color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
                             fontWeight = FontWeight.Medium
                         )
                     }
                 } else {
-                    val relativeTime = when {
-                        note.naturalKey.contains("sample1") -> "Edited 2h ago"
-                        note.naturalKey.contains("sample2") -> "Yesterday"
-                        note.naturalKey.contains("sample4") -> "Sep 28"
-                        else -> "Recently"
+                    val relativeTime = remember(note.updatedAt) {
+                        val diff = System.currentTimeMillis() - note.updatedAt
+                        when {
+                            diff < 0 -> "Just now"
+                            diff < 60_000L -> "Just now"
+                            diff < 3600_000L -> "${(diff / 60_000L).coerceAtLeast(1)}m ago"
+                            diff < 86400_000L -> "${diff / 3600_000L}h ago"
+                            diff < 172800_000L -> "Yesterday"
+                            else -> SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(note.updatedAt))
+                        }
                     }
                     Text(
                         text = relativeTime,

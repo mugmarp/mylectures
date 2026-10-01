@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,6 +39,9 @@ fun AddActivitySheet(
     onDismiss: () -> Unit,
     onSave: (CustomEvent) -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     val isEditMode = eventToEdit != null
 
     var title by remember { mutableStateOf(eventToEdit?.title ?: "") }
@@ -70,6 +75,7 @@ fun AddActivitySheet(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
         ) {
             // Header
@@ -91,7 +97,11 @@ fun AddActivitySheet(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(onClick = onDismiss) {
+                IconButton(onClick = {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                    onDismiss()
+                }) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Close",
@@ -345,6 +355,8 @@ fun AddActivitySheet(
                         category = selectedCategory.name,
                         colorTag = selectedCategory.colorHex
                     )
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
                     onSave(event)
                     onDismiss()
                 },

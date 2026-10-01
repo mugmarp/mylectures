@@ -147,7 +147,7 @@ class NotesViewModel(
             }
 
             matchesFilter && matchesSearch
-        }
+        }.sortedWith(compareByDescending<LectureNote> { it.isPinned }.thenByDescending { it.updatedAt })
     }
 
     fun saveNote(
@@ -168,6 +168,12 @@ class NotesViewModel(
                     "$courseCode|Note|${System.currentTimeMillis()}"
                 }
 
+                // Preserve pinned state if updating existing note
+                val existingNote = if (!naturalKey.isNullOrBlank()) {
+                    _uiState.value.notes.find { it.naturalKey == naturalKey }
+                } else null
+                val isPinned = existingNote?.isPinned ?: false
+
                 // Pick color for course
                 val courseColor = _uiState.value.availableCourses.find { it.code.equals(courseCode, ignoreCase = true) }?.color ?: "#2563EB"
 
@@ -180,7 +186,7 @@ class NotesViewModel(
                     attachedClass = attachedClass,
                     attachmentName = attachmentName,
                     colourTag = courseColor,
-                    isPinned = false
+                    isPinned = isPinned
                 )
                 _uiState.value = _uiState.value.copy(
                     userMessage = "Note saved successfully",
