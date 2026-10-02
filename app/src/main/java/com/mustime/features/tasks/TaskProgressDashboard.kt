@@ -334,6 +334,7 @@ fun TaskProgressDashboard(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (metrics.highPriorityPending > 0) {
                         Surface(
+                            onClick = { onFilterChange("High Priority") },
                             shape = RoundedCornerShape(10.dp),
                             color = if (isDark) Color(0xFF7F1D1D).copy(alpha = 0.4f) else Color(0xFFFEF2F2),
                             border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) Color(0xFF991B1B) else Color(0xFFFCA5A5))

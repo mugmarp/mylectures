@@ -85,7 +85,8 @@ class TasksViewModel(
         courseCode: String,
         dueDate: String,
         priority: String,
-        reminderMinutes: Int?
+        reminderMinutes: Int?,
+        notes: String = ""
     ) {
         viewModelScope.launch {
             val task = Assignment(
@@ -94,7 +95,7 @@ class TasksViewModel(
                 dueDate = dueDate,
                 reminderMinutes = reminderMinutes,
                 priority = priority,
-                notes = "",
+                notes = notes,
                 completed = false
             )
             val generatedId = repository.saveAssignment(task)

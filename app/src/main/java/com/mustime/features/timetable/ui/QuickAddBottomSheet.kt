@@ -122,47 +122,51 @@ fun QuickAddBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 32.dp)
                 .imePadding()
-                .verticalScroll(rememberScrollState())
         ) {
-            // Header Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = false)
+                    .padding(horizontal = 20.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
-                Column {
-                    Text(
-                        text = "Quick Add Entry",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Add an activity or task directly into your schedule",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                IconButton(
-                    onClick = {
-                        focusManager.clearFocus()
-                        keyboardController?.hide()
-                        onDismiss()
-                    },
-                    modifier = Modifier.testTag("close_quick_add_sheet")
+                // Header Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column {
+                        Text(
+                            text = "Quick Add Entry",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Add an activity or task directly into your schedule",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                            onDismiss()
+                        },
+                        modifier = Modifier.testTag("close_quick_add_sheet")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
             // Mode Distinction Selector Tabs
             Row(
@@ -568,48 +572,7 @@ fun QuickAddBottomSheet(
                         maxLines = 3
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Submit Button for Activity
-                    Button(
-                        onClick = {
-                            if (activityTitle.isBlank()) {
-                                activityHasError = true
-                                return@Button
-                            }
-                            val newEvent = CustomEvent(
-                                title = activityTitle.trim(),
-                                dayOfWeek = activityDay,
-                                startTime = activityStartTime.trim(),
-                                endTime = activityEndTime.trim(),
-                                location = activityLocation.trim(),
-                                notes = activityNotes.trim(),
-                                category = selectedActivityCategory.displayName,
-                                colorTag = selectedActivityCategory.colorHex,
-                                alarmMinutes = activityAlarmMinutes
-                            )
-                            focusManager.clearFocus()
-                            keyboardController?.hide()
-                            onSaveActivity(newEvent)
-                            onDismiss()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp)
-                            .testTag("save_activity_button"),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = selectedActivityCategory.color
-                        )
-                    ) {
-                        Icon(Icons.Default.EventNote, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Add Activity",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
 
                 QuickAddMode.TASK -> {
@@ -952,54 +915,115 @@ fun QuickAddBottomSheet(
                         maxLines = 3
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+        }
 
-                    // Submit Button for Task
-                    Button(
-                        onClick = {
-                            if (taskTitle.isBlank()) {
-                                taskHasError = true
-                                return@Button
-                            }
-                            val effectiveCourse = taskCourseCode.ifBlank { "GEN100" }
-                            val fullTitle = if (selectedTaskCategory != TaskCategory.GENERAL && !taskTitle.startsWith(selectedTaskCategory.displayName)) {
-                                "[${selectedTaskCategory.displayName}] ${taskTitle.trim()}"
-                            } else {
-                                taskTitle.trim()
-                            }
-                            focusManager.clearFocus()
-                            keyboardController?.hide()
-                            onSaveTask(
-                                fullTitle,
-                                effectiveCourse.trim(),
-                                taskDueDate.trim(),
-                                taskPriority,
-                                taskReminderMinutes,
-                                taskNotes.trim()
+        // Pinned / Sticky Bottom Action Bar - ALWAYS VISIBLE, ZERO SCROLLING REQUIRED!
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 3.dp,
+            shadowElevation = 8.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 10.dp)
+            ) {
+                when (currentMode) {
+                    QuickAddMode.ACTIVITY -> {
+                        Button(
+                            onClick = {
+                                if (activityTitle.isBlank()) {
+                                    activityHasError = true
+                                    return@Button
+                                }
+                                val newEvent = CustomEvent(
+                                    title = activityTitle.trim(),
+                                    dayOfWeek = activityDay,
+                                    startTime = activityStartTime.trim(),
+                                    endTime = activityEndTime.trim(),
+                                    location = activityLocation.trim(),
+                                    notes = activityNotes.trim(),
+                                    category = selectedActivityCategory.displayName,
+                                    colorTag = selectedActivityCategory.colorHex,
+                                    alarmMinutes = activityAlarmMinutes
+                                )
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                                onSaveActivity(newEvent)
+                                onDismiss()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .testTag("save_activity_button"),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = selectedActivityCategory.color
                             )
-                            onDismiss()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp)
-                            .testTag("save_task_button"),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Icon(Icons.AutoMirrored.Outlined.Assignment, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Add Task",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
-                        )
+                        ) {
+                            Icon(Icons.Default.EventNote, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Add Activity",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                        }
+                    }
+                    QuickAddMode.TASK -> {
+                        Button(
+                            onClick = {
+                                if (taskTitle.isBlank()) {
+                                    taskHasError = true
+                                    return@Button
+                                }
+                                val effectiveCourse = taskCourseCode.ifBlank { "GEN100" }
+                                val fullTitle = if (selectedTaskCategory != TaskCategory.GENERAL && !taskTitle.startsWith(selectedTaskCategory.displayName)) {
+                                    "[${selectedTaskCategory.displayName}] ${taskTitle.trim()}"
+                                } else {
+                                    taskTitle.trim()
+                                }
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                                onSaveTask(
+                                    fullTitle,
+                                    effectiveCourse.trim(),
+                                    taskDueDate.trim(),
+                                    taskPriority,
+                                    taskReminderMinutes,
+                                    taskNotes.trim()
+                                )
+                                onDismiss()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .testTag("save_task_button"),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(Icons.AutoMirrored.Outlined.Assignment, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Add Task",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                        }
                     }
                 }
             }
         }
     }
+}
 
     if (showStartTimePicker) {
         DedicatedTimePickerDialog(

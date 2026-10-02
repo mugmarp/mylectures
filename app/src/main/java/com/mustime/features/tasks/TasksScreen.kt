@@ -41,12 +41,68 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mustime.TimetableApplication
 import com.mustime.core.alarm.TaskAlarmScheduler
 import com.mustime.core.alarm.TaskDateTimeParser
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.style.TextDecoration
+import com.mustime.features.timetable.domain.TaskCategory
+import java.util.Calendar
+import java.util.Locale
 import com.mustime.features.timetable.domain.Assignment
 import com.mustime.features.timetable.ui.*
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.components.*
 import com.mustime.ui.components.AcademicProfileSheet
 import com.mustime.ui.components.NotificationCenterSheet
+
+enum class TaskDueStatus {
+    OVERDUE,
+    DUE_TODAY,
+    DUE_TOMORROW,
+    UPCOMING,
+    NO_DATE
+}
+
+fun getTaskDueStatus(dueDate: String, isCompleted: Boolean): TaskDueStatus {
+    if (isCompleted) return TaskDueStatus.UPCOMING
+    val millis = TaskDateTimeParser.calculateDueMillis(dueDate) ?: return TaskDueStatus.NO_DATE
+    val now = Calendar.getInstance()
+    val dueCal = Calendar.getInstance().apply { timeInMillis = millis }
+
+    if (millis < now.timeInMillis) {
+        return TaskDueStatus.OVERDUE
+    }
+
+    val isSameDay = now.get(Calendar.YEAR) == dueCal.get(Calendar.YEAR) &&
+            now.get(Calendar.DAY_OF_YEAR) == dueCal.get(Calendar.DAY_OF_YEAR)
+    if (isSameDay) return TaskDueStatus.DUE_TODAY
+
+    val tomorrowCal = (now.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }
+    val isTomorrow = tomorrowCal.get(Calendar.YEAR) == dueCal.get(Calendar.YEAR) &&
+            tomorrowCal.get(Calendar.DAY_OF_YEAR) == dueCal.get(Calendar.DAY_OF_YEAR)
+    if (isTomorrow) return TaskDueStatus.DUE_TOMORROW
+
+    return TaskDueStatus.UPCOMING
+}
+
+fun resolveTaskCategoryAndTitle(title: String): Pair<TaskCategory, String> {
+    val trimmed = title.trim()
+    if (trimmed.startsWith("[") && trimmed.contains("]")) {
+        val closeBracket = trimmed.indexOf("]")
+        val categoryStr = trimmed.substring(1, closeBracket).trim()
+        val cleanTitle = trimmed.substring(closeBracket + 1).trim()
+        val cat = TaskCategory.fromName(categoryStr)
+        return cat to cleanTitle
+    }
+    val lower = trimmed.lowercase(Locale.ROOT)
+    val inferredCat = when {
+        lower.contains("lab report") || lower.contains("practical") -> TaskCategory.LAB_REPORT
+        lower.contains("project") || lower.contains("capstone") -> TaskCategory.PROJECT
+        lower.contains("quiz") || lower.contains("exam") || lower.contains("test") -> TaskCategory.EXAM_PREP
+        lower.contains("reading") || lower.contains("chapter") -> TaskCategory.READING
+        else -> TaskCategory.ASSIGNMENT
+    }
+    return inferredCat to trimmed
+}
 
 @Composable
 fun TasksScreen(
@@ -118,17 +174,30 @@ fun TasksScreen(
         }
     }
 
+    var taskToDelete by remember { mutableStateOf<Assignment?>(null) }
+
     val filteredTasks = remember(assignments, uiState.searchQuery, uiState.selectedFilter) {
         assignments.filter { task ->
+            val status = getTaskDueStatus(task.dueDate, task.completed)
             val matchesFilter = when (uiState.selectedFilter) {
                 "Pending" -> !task.completed
+                "Overdue" -> !task.completed && status == TaskDueStatus.OVERDUE
                 "Completed" -> task.completed
+                "High Priority" -> !task.completed && task.priority.equals("High", ignoreCase = true)
                 else -> true
             }
-            val matchesSearch = task.title.contains(uiState.searchQuery, ignoreCase = true) ||
-                    task.courseCode.contains(uiState.searchQuery, ignoreCase = true)
+            val query = uiState.searchQuery.trim()
+            val matchesSearch = query.isBlank() ||
+                    task.title.contains(query, ignoreCase = true) ||
+                    task.courseCode.contains(query, ignoreCase = true) ||
+                    task.notes.contains(query, ignoreCase = true)
             matchesFilter && matchesSearch
-        }
+        }.sortedWith(
+            compareBy<Assignment> { it.completed }
+                .thenByDescending { getTaskDueStatus(it.dueDate, it.completed) == TaskDueStatus.OVERDUE }
+                .thenBy { TaskDateTimeParser.calculateDueMillis(it.dueDate) ?: Long.MAX_VALUE }
+                .thenByDescending { it.priority.equals("High", ignoreCase = true) }
+        )
     }
 
     Scaffold(
@@ -369,29 +438,61 @@ fun TasksScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        val filters = listOf("All", "Pending", "Completed")
+                        val filters = listOf("All", "Pending", "Overdue", "Completed", "High Priority")
                         items(filters) { filter ->
                             val isSelected = uiState.selectedFilter == filter
                             val count = when (filter) {
                                 "Pending" -> assignments.count { !it.completed }
+                                "Overdue" -> assignments.count { !it.completed && getTaskDueStatus(it.dueDate, it.completed) == TaskDueStatus.OVERDUE }
                                 "Completed" -> assignments.count { it.completed }
+                                "High Priority" -> assignments.count { !it.completed && it.priority.equals("High", ignoreCase = true) }
                                 else -> assignments.size
                             }
+                            val isOverdueFilter = filter == "Overdue"
+                            val chipBg = when {
+                                isSelected && isOverdueFilter -> Color(0xFFDC2626)
+                                isSelected -> primaryColor
+                                isOverdueFilter && count > 0 -> if (isDark) Color(0xFF7F1D1D).copy(alpha = 0.4f) else Color(0xFFFEE2E2)
+                                else -> cardBg
+                            }
+                            val chipBorder = when {
+                                isSelected && isOverdueFilter -> Color(0xFFDC2626)
+                                isSelected -> primaryColor
+                                isOverdueFilter && count > 0 -> if (isDark) Color(0xFFB91C1C) else Color(0xFFFCA5A5)
+                                else -> borderColor
+                            }
+                            val chipTextColor = when {
+                                isSelected -> Color.White
+                                isOverdueFilter && count > 0 -> if (isDark) Color(0xFFFCA5A5) else Color(0xFFDC2626)
+                                else -> textSecondary
+                            }
+
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(16.dp))
-                                    .background(if (isSelected) primaryColor else cardBg)
-                                    .border(1.dp, if (isSelected) primaryColor else borderColor, RoundedCornerShape(16.dp))
+                                    .background(chipBg)
+                                    .border(1.dp, chipBorder, RoundedCornerShape(16.dp))
                                     .clickable { viewModel.setFilter(filter) }
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    .padding(horizontal = 14.dp, vertical = 8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = "$filter ($count)",
-                                    fontSize = 13.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) Color.White else textSecondary
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (isOverdueFilter && count > 0 && !isSelected) {
+                                        Icon(
+                                            Icons.Default.WarningAmber,
+                                            contentDescription = null,
+                                            tint = chipTextColor,
+                                            modifier = Modifier.size(13.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                    }
+                                    Text(
+                                        text = "$filter ($count)",
+                                        fontSize = 13.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = chipTextColor
+                                    )
+                                }
                             }
                         }
                     }
@@ -448,7 +549,7 @@ fun TasksScreen(
                                 taskToEdit = task
                                 showAddDialog = true
                             },
-                            onDelete = { viewModel.deleteAssignment(task.id) },
+                            onDelete = { taskToDelete = task },
                             onTestAlarm = { viewModel.triggerTestReminder(task, delaySeconds = 3) }
                         )
                     }
@@ -467,29 +568,76 @@ fun TasksScreen(
                 showAddDialog = false
                 taskToEdit = null
             },
-            onConfirm = { title, course, dueDate, priority, reminderMinutes ->
+            onConfirm = { title, course, dueDate, priority, reminderMinutes, notes, category ->
+                val fullTitle = if (category != TaskCategory.GENERAL) {
+                    "[${category.displayName}] ${title.trim()}"
+                } else {
+                    title.trim()
+                }
                 val currentTask = taskToEdit
                 if (currentTask != null) {
                     viewModel.updateAssignment(
                         currentTask.copy(
-                            title = title,
+                            title = fullTitle,
                             courseCode = course,
                             dueDate = dueDate,
                             priority = priority,
-                            reminderMinutes = reminderMinutes
+                            reminderMinutes = reminderMinutes,
+                            notes = notes
                         )
                     )
                 } else {
                     viewModel.saveAssignment(
-                        title = title,
+                        title = fullTitle,
                         courseCode = course,
                         dueDate = dueDate,
                         priority = priority,
-                        reminderMinutes = reminderMinutes
+                        reminderMinutes = reminderMinutes,
+                        notes = notes
                     )
                 }
                 showAddDialog = false
                 taskToEdit = null
+            }
+        )
+    }
+
+    if (taskToDelete != null) {
+        val task = taskToDelete!!
+        AlertDialog(
+            onDismissRequest = { taskToDelete = null },
+            icon = {
+                Icon(
+                    Icons.Default.DeleteOutline,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(28.dp)
+                )
+            },
+            title = {
+                Text("Delete Task?", fontWeight = FontWeight.Bold, color = textPrimary)
+            },
+            text = {
+                Text(
+                    "Are you sure you want to delete '${task.title}'? Any scheduled AlarmManager reminders for this task will be cancelled.",
+                    color = textSecondary
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteAssignment(task.id)
+                        taskToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { taskToDelete = null }) {
+                    Text("Cancel", color = textSecondary)
+                }
             }
         )
     }
@@ -528,13 +676,22 @@ fun TaskCard(
     val textSecondary = if (isDark) Color(0xFF94A3B8) else TextMutedLight
     val primaryColor = MaterialTheme.colorScheme.primary
 
+    val (category, cleanTitle) = remember(task.title) { resolveTaskCategoryAndTitle(task.title) }
+    val dueStatus = remember(task.dueDate, task.completed) { getTaskDueStatus(task.dueDate, task.completed) }
+
     Card(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = cardBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         border = CardDefaults.outlinedCardBorder().copy(
             brush = androidx.compose.ui.graphics.SolidColor(
-                if (isDark) DarkBorderSubtle else Color(0xFFE2E8F0)
+                if (isDark) {
+                    if (!task.completed && dueStatus == TaskDueStatus.OVERDUE) Color(0xFF991B1B)
+                    else DarkBorderSubtle
+                } else {
+                    if (!task.completed && dueStatus == TaskDueStatus.OVERDUE) Color(0xFFFCA5A5)
+                    else Color(0xFFE2E8F0)
+                }
             )
         ),
         modifier = Modifier
@@ -544,74 +701,152 @@ fun TaskCard(
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(
                     modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(26.dp)
+                            .padding(top = 2.dp)
+                            .size(24.dp)
                             .clip(CircleShape)
-                            .border(2.dp, if (task.completed) primaryColor else (if (isDark) Color(0xFF475569) else Color(0xFFCBD5E1)), CircleShape)
+                            .border(
+                                2.dp,
+                                if (task.completed) primaryColor else (if (isDark) Color(0xFF475569) else Color(0xFFCBD5E1)),
+                                CircleShape
+                            )
                             .background(if (task.completed) primaryColor else Color.Transparent)
                             .clickable(onClick = onToggleComplete),
                         contentAlignment = Alignment.Center
                     ) {
                         if (task.completed) {
-                            Icon(Icons.Default.Check, contentDescription = "Completed", tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = "Completed",
+                                tint = Color.White,
+                                modifier = Modifier.size(15.dp)
+                            )
                         }
                     }
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    Text(
-                        text = task.title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (task.completed) textSecondary else textPrimary
-                    )
+                    Column {
+                        // Category Pill
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = if (isDark) category.color.copy(alpha = 0.22f) else category.lightContainerColor,
+                            border = BorderStroke(1.dp, category.color.copy(alpha = 0.35f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    category.icon,
+                                    contentDescription = null,
+                                    tint = category.color,
+                                    modifier = Modifier.size(11.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    category.displayName,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = category.color
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = cleanTitle,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (task.completed) textSecondary else textPrimary,
+                            textDecoration = if (task.completed) TextDecoration.LineThrough else null,
+                            lineHeight = 20.sp
+                        )
+                    }
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // Edit / Reschedule button
                     IconButton(
                         onClick = onEdit,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(30.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Edit,
                             contentDescription = "Edit or Reschedule Task",
                             tint = primaryColor,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(17.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(2.dp))
 
                     // Test reminder trigger button
                     IconButton(
                         onClick = onTestAlarm,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(30.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.NotificationsActive,
                             contentDescription = "Test Alarm (3s)",
                             tint = primaryColor,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(17.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(2.dp))
 
-                    IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    // Delete button
+                    IconButton(onClick = onDelete, modifier = Modifier.size(30.dp)) {
                         Icon(
                             Icons.Default.DeleteOutline,
                             contentDescription = "Delete",
                             tint = textSecondary,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(17.dp)
+                        )
+                    }
+                }
+            }
+
+            // Task Notes Preview (if user added notes)
+            if (task.notes.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (isDark) DarkSurfaceBase else Color(0xFFF8FAFC),
+                    border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else Color(0xFFE2E8F0)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 36.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Icon(
+                            Icons.Default.Description,
+                            contentDescription = null,
+                            tint = textSecondary,
+                            modifier = Modifier
+                                .padding(top = 1.dp)
+                                .size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = task.notes,
+                            fontSize = 12.sp,
+                            color = textSecondary,
+                            maxLines = 3,
+                            lineHeight = 16.sp
                         )
                     }
                 }
@@ -619,32 +854,142 @@ fun TaskCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Badges row
-            val (badgeBg, badgeText) = when (task.priority.lowercase()) {
-                "high" -> {
-                    if (isDark) Color(0xFF7F1D1D).copy(alpha = 0.5f) to Color(0xFFFCA5A5)
-                    else Color(0xFFFFE4E6) to Color(0xFFE11D48)
-                }
-                "medium" -> {
-                    if (isDark) Color(0xFF78350F).copy(alpha = 0.5f) to Color(0xFFFCD34D)
-                    else Color(0xFFFEF3C7) to Color(0xFFD97706)
-                }
-                else -> {
-                    if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) to Color(0xFF93C5FD)
-                    else Color(0xFFEFF6FF) to Color(0xFF2563EB)
-                }
-            }
-
+            // Metadata & Badges row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 38.dp),
+                    .padding(start = 36.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // 1. Status Chip (Overdue, Due Today, Due Tomorrow, Done)
+                if (task.completed) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = if (isDark) Color(0xFF064E3B).copy(alpha = 0.5f) else Color(0xFFDCFCE7)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                null,
+                                tint = if (isDark) Color(0xFF6EE7B7) else Color(0xFF16A34A),
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Spacer(Modifier.width(3.dp))
+                            Text(
+                                "Done",
+                                color = if (isDark) Color(0xFF6EE7B7) else Color(0xFF15803D),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                } else when (dueStatus) {
+                    TaskDueStatus.OVERDUE -> {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = if (isDark) Color(0xFF7F1D1D).copy(alpha = 0.6f) else Color(0xFFFEE2E2),
+                            border = BorderStroke(1.dp, if (isDark) Color(0xFFB91C1C) else Color(0xFFFCA5A5))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.WarningAmber,
+                                    null,
+                                    tint = if (isDark) Color(0xFFFCA5A5) else Color(0xFFDC2626),
+                                    modifier = Modifier.size(11.dp)
+                                )
+                                Spacer(Modifier.width(3.dp))
+                                Text(
+                                    "Overdue",
+                                    color = if (isDark) Color(0xFFFCA5A5) else Color(0xFFB91C1C),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    TaskDueStatus.DUE_TODAY -> {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = if (isDark) Color(0xFF78350F).copy(alpha = 0.5f) else Color(0xFFFEF3C7)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.AccessTime,
+                                    null,
+                                    tint = if (isDark) Color(0xFFFCD34D) else Color(0xFFD97706),
+                                    modifier = Modifier.size(11.dp)
+                                )
+                                Spacer(Modifier.width(3.dp))
+                                Text(
+                                    "Today",
+                                    color = if (isDark) Color(0xFFFCD34D) else Color(0xFFB45309),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    TaskDueStatus.DUE_TOMORROW -> {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.4f) else Color(0xFFEFF6FF)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.CalendarToday,
+                                    null,
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(11.dp)
+                                )
+                                Spacer(Modifier.width(3.dp))
+                                Text(
+                                    "Tomorrow",
+                                    color = primaryColor,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    else -> {}
+                }
+
+                // 2. Priority Badge
+                val (badgeBg, badgeText) = when (task.priority.lowercase(Locale.ROOT)) {
+                    "high" -> {
+                        if (isDark) Color(0xFF7F1D1D).copy(alpha = 0.5f) to Color(0xFFFCA5A5)
+                        else Color(0xFFFFE4E6) to Color(0xFFE11D48)
+                    }
+                    "medium" -> {
+                        if (isDark) Color(0xFF78350F).copy(alpha = 0.5f) to Color(0xFFFCD34D)
+                        else Color(0xFFFEF3C7) to Color(0xFFD97706)
+                    }
+                    else -> {
+                        if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) to Color(0xFF93C5FD)
+                        else Color(0xFFEFF6FF) to Color(0xFF2563EB)
+                    }
+                }
+
                 Box(
                     modifier = Modifier
-                        .background(badgeBg, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                        .background(badgeBg, RoundedCornerShape(6.dp))
+                        .padding(horizontal = 7.dp, vertical = 2.dp)
                 ) {
                     Text(
                         task.priority.replaceFirstChar { it.uppercase() },
@@ -654,15 +999,37 @@ fun TaskCard(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(task.courseCode, fontSize = 13.sp, color = textSecondary, fontWeight = FontWeight.Medium)
-                Spacer(modifier = Modifier.width(10.dp))
-                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = if (isDark) Color(0xFFFBBF24) else Color(0xFFD97706), modifier = Modifier.size(13.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(task.dueDate, fontSize = 13.sp, color = textSecondary)
+                Spacer(modifier = Modifier.width(8.dp))
 
+                // 3. Course Code
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = if (isDark) DarkSurfaceBase else Color(0xFFF1F5F9)
+                ) {
+                    Text(
+                        task.courseCode,
+                        fontSize = 11.sp,
+                        color = textSecondary,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // 4. Due Date
+                Icon(
+                    Icons.Default.CalendarToday,
+                    contentDescription = null,
+                    tint = if (isDark) Color(0xFFFBBF24) else Color(0xFFD97706),
+                    modifier = Modifier.size(12.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(task.dueDate, fontSize = 12.sp, color = textSecondary)
+
+                // 5. Alarm Pill
                 if (task.reminderMinutes != null) {
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Box(
                         modifier = Modifier
                             .background(
@@ -671,21 +1038,21 @@ fun TaskCard(
                                 } else {
                                     if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.4f) else Color(0xFFEFF6FF)
                                 },
-                                RoundedCornerShape(8.dp)
+                                RoundedCornerShape(6.dp)
                             )
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .padding(horizontal = 5.dp, vertical = 2.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Default.Notifications,
                                 contentDescription = null,
                                 tint = if (task.completed) textSecondary else primaryColor,
-                                modifier = Modifier.size(12.dp)
+                                modifier = Modifier.size(11.dp)
                             )
                             Spacer(modifier = Modifier.width(3.dp))
                             Text(
                                 if (task.completed) "Off" else "${task.reminderMinutes}m",
-                                fontSize = 11.sp,
+                                fontSize = 10.sp,
                                 color = if (task.completed) textSecondary else primaryColor,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -703,13 +1070,20 @@ fun AddTaskDialog(
     initialTask: Assignment? = null,
     availableCourses: List<Pair<String, String>> = emptyList(),
     onDismiss: () -> Unit,
-    onConfirm: (title: String, course: String, dueDate: String, priority: String, reminder: Int?) -> Unit
+    onConfirm: (title: String, course: String, dueDate: String, priority: String, reminder: Int?, notes: String, category: TaskCategory) -> Unit
 ) {
-    var title by remember(initialTask) { mutableStateOf(initialTask?.title ?: "") }
+    val initialCatAndTitle = remember(initialTask) {
+        if (initialTask != null) resolveTaskCategoryAndTitle(initialTask.title)
+        else TaskCategory.ASSIGNMENT to ""
+    }
+
+    var title by remember(initialTask) { mutableStateOf(initialCatAndTitle.second) }
+    var category by remember(initialTask) { mutableStateOf(initialCatAndTitle.first) }
     var course by remember(initialTask) { mutableStateOf(initialTask?.courseCode ?: "") }
     var dueDate by remember(initialTask) { mutableStateOf(initialTask?.dueDate ?: "Tomorrow • 17:00") }
     var priority by remember(initialTask) { mutableStateOf(initialTask?.priority ?: "Medium") }
     var reminderMinutes by remember(initialTask) { mutableStateOf<Int?>(initialTask?.reminderMinutes ?: 30) }
+    var notes by remember(initialTask) { mutableStateOf(initialTask?.notes ?: "") }
 
     var showCoursePicker by remember { mutableStateOf(false) }
     var showDueSchedulePicker by remember { mutableStateOf(false) }
@@ -746,8 +1120,10 @@ fun AddTaskDialog(
         },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OutlinedTextField(
                     value = title,
@@ -757,6 +1133,43 @@ fun AddTaskDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
+
+                // Task Category Selector (Compact)
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(TaskCategory.entries) { cat ->
+                        val isSelected = category == cat
+                        Surface(
+                            onClick = { category = cat },
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isSelected) cat.color else (if (isDark) DarkSurfaceBase else cat.lightContainerColor.copy(alpha = 0.5f)),
+                            border = BorderStroke(1.dp, if (isSelected) cat.color else cat.color.copy(alpha = 0.35f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    cat.icon,
+                                    contentDescription = null,
+                                    tint = if (isSelected) Color.White else cat.color,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    cat.displayName,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color.White else (if (isDark) Color.White else Color(0xFF1E293B))
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Course Code input with picker
                 OutlinedTextField(
                     value = course,
                     onValueChange = { course = it },
@@ -772,13 +1185,6 @@ fun AddTaskDialog(
                 )
 
                 // Due Date & Time Scheduler Card (Google Clock inspired)
-                Text(
-                    text = "Due Date & Time *",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = textSecondary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
                 Surface(
                     onClick = { showDueSchedulePicker = true },
                     shape = RoundedCornerShape(12.dp),
@@ -789,7 +1195,7 @@ fun AddTaskDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -798,19 +1204,19 @@ fun AddTaskDialog(
                                 Icons.Default.CalendarMonth,
                                 contentDescription = null,
                                 tint = primaryColor,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
-                            Spacer(modifier = Modifier.width(10.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text(
                                     text = dueDate.ifBlank { "Tomorrow • 17:00" },
-                                    fontSize = 15.sp,
+                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (isDark) Color.White else Color(0xFF0F172A)
                                 )
                                 Text(
-                                    text = "Managed by Time Scheduler",
-                                    fontSize = 11.sp,
+                                    text = "Tap to change schedule",
+                                    fontSize = 10.sp,
                                     color = textSecondary
                                 )
                             }
@@ -819,7 +1225,7 @@ fun AddTaskDialog(
                             Icons.Default.AccessTime,
                             contentDescription = "Change Schedule",
                             tint = primaryColor,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
@@ -847,110 +1253,121 @@ fun AddTaskDialog(
                                     RoundedCornerShape(8.dp)
                                 )
                                 .clickable { dueDate = preset }
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
                         ) {
                             Text(
                                 preset,
-                                fontSize = 11.sp,
+                                fontSize = 10.sp,
                                 color = if (isSelected) primaryColor else textSecondary
                             )
                         }
                     }
                 }
 
-                Text("Priority", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = textSecondary)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Priority & Reminder in compact rows
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text("Priority:", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = textSecondary)
                     listOf("High", "Medium", "Low").forEach { p ->
                         val isSelected = priority == p
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(8.dp))
                                 .background(
                                     if (isSelected) primaryColor else (if (isDark) DarkSurfaceBase else Color(0xFFF1F5F9))
                                 )
                                 .clickable { priority = p }
-                                .padding(horizontal = 14.dp, vertical = 6.dp)
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
                             Text(
                                 p,
                                 color = if (isSelected) Color.White else textSecondary,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-
-                // AlarmManager Reminder Setting
-                Text("Alarm Reminder (AlarmManager)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = textPrimary)
-                val reminderOptions = listOf(
-                    15 to "15m before",
-                    30 to "30m before",
-                    60 to "1h before",
-                    120 to "2h before",
-                    0 to "At due time",
-                    null to "None"
-                )
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(reminderOptions) { (mins, label) ->
-                        val isSelected = reminderMinutes == mins
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(
-                                    if (isSelected) primaryColor else (if (isDark) DarkSurfaceBase else Color(0xFFF1F5F9))
-                                )
-                                .clickable { reminderMinutes = mins }
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                label,
-                                color = if (isSelected) Color.White else textSecondary,
                                 fontSize = 11.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                             )
                         }
                     }
                 }
 
-                // Live Schedule Preview Box
-                Box(
+                // Alarm Reminder (AlarmManager)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Alert: ", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = textSecondary)
+                    val reminderOptions = listOf(
+                        15 to "15m",
+                        30 to "30m",
+                        60 to "1h",
+                        120 to "2h",
+                        0 to "Due time",
+                        null to "None"
+                    )
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        items(reminderOptions) { (mins, label) ->
+                            val isSelected = reminderMinutes == mins
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (isSelected) primaryColor else (if (isDark) DarkSurfaceBase else Color(0xFFF1F5F9))
+                                    )
+                                    .clickable { reminderMinutes = mins }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    label,
+                                    color = if (isSelected) Color.White else textSecondary,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Notes / Instructions (Compact by default, expands as typed)
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Notes / Instructions (Optional)") },
+                    placeholder = { Text("e.g. MueLE submission, rubric...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 2
+                )
+
+                // Compact Live Schedule Preview
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
                             if (isDark) Color(0xFF064E3B).copy(alpha = 0.4f) else Color(0xFFF0FDF4),
-                            RoundedCornerShape(10.dp)
+                            RoundedCornerShape(8.dp)
                         )
                         .border(
                             1.dp,
                             if (isDark) Color(0xFF065F46) else Color(0xFFBBF7D0),
-                            RoundedCornerShape(10.dp)
+                            RoundedCornerShape(8.dp)
                         )
-                        .padding(10.dp)
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.AccessTime,
-                                contentDescription = null,
-                                tint = if (isDark) Color(0xFF34D399) else Color(0xFF16A34A),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                "Scheduled Alarm Trigger",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isDark) Color(0xFF6EE7B7) else Color(0xFF15803D)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            schedulePreview,
-                            fontSize = 11.sp,
-                            color = if (isDark) Color(0xFFA7F3D0) else Color(0xFF166534)
-                        )
-                    }
+                    Icon(
+                        Icons.Default.AccessTime,
+                        contentDescription = null,
+                        tint = if (isDark) Color(0xFF34D399) else Color(0xFF16A34A),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        schedulePreview,
+                        fontSize = 11.sp,
+                        color = if (isDark) Color(0xFFA7F3D0) else Color(0xFF166534),
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         },
@@ -958,7 +1375,15 @@ fun AddTaskDialog(
             Button(
                 onClick = {
                     if (title.isNotBlank() && course.isNotBlank()) {
-                        onConfirm(title.trim(), course.trim(), dueDate.ifBlank { "Soon" }, priority, reminderMinutes)
+                        onConfirm(
+                            title.trim(),
+                            course.trim(),
+                            dueDate.ifBlank { "Soon" },
+                            priority,
+                            reminderMinutes,
+                            notes.trim(),
+                            category
+                        )
                     }
                 },
                 enabled = title.isNotBlank() && course.isNotBlank(),
