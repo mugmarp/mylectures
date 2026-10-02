@@ -22,11 +22,28 @@ class ETagStore(context: Context) {
 
     private val initialMode = prefs.getString(THEME_MODE_KEY, "LIGHT") ?: "LIGHT"
 
+    private val CLASS_ALARM_LEAD_KEY = "class_alarm_lead_minutes"
+    private val TASK_REMINDER_LEAD_KEY = "task_reminder_lead_hours"
+    private val ALARM_VIBRATION_KEY = "alarm_vibration"
+    private val ALARM_SOUND_KEY = "alarm_sound"
+
     private val _academicYearPref = MutableStateFlow(prefs.getString(ACADEMIC_YEAR_KEY, "2026/2027") ?: "2026/2027")
     val academicYearPref: Flow<String> = _academicYearPref.asStateFlow()
 
     private val _semesterPref = MutableStateFlow(prefs.getString(SEMESTER_KEY, "Semester 1") ?: "Semester 1")
     val semesterPref: Flow<String> = _semesterPref.asStateFlow()
+
+    private val _classAlarmLeadPref = MutableStateFlow(prefs.getInt(CLASS_ALARM_LEAD_KEY, 15))
+    val classAlarmLeadPref: Flow<Int> = _classAlarmLeadPref.asStateFlow()
+
+    private val _taskReminderLeadPref = MutableStateFlow(prefs.getInt(TASK_REMINDER_LEAD_KEY, 2))
+    val taskReminderLeadPref: Flow<Int> = _taskReminderLeadPref.asStateFlow()
+
+    private val _alarmVibrationPref = MutableStateFlow(prefs.getBoolean(ALARM_VIBRATION_KEY, true))
+    val alarmVibrationPref: Flow<Boolean> = _alarmVibrationPref.asStateFlow()
+
+    private val _alarmSoundPref = MutableStateFlow(prefs.getString(ALARM_SOUND_KEY, "Chime") ?: "Chime")
+    val alarmSoundPref: Flow<String> = _alarmSoundPref.asStateFlow()
 
     fun getAcademicYear(): String = prefs.getString(ACADEMIC_YEAR_KEY, "2026/2027") ?: "2026/2027"
     fun getSemester(): String = prefs.getString(SEMESTER_KEY, "Semester 1") ?: "Semester 1"
@@ -110,6 +127,26 @@ class ETagStore(context: Context) {
     suspend fun setNotificationsEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(NOTIFICATIONS_ENABLED_KEY, enabled).apply()
         _notificationsEnabledPref.value = enabled
+    }
+
+    suspend fun setClassAlarmLeadMinutes(minutes: Int) {
+        prefs.edit().putInt(CLASS_ALARM_LEAD_KEY, minutes).apply()
+        _classAlarmLeadPref.value = minutes
+    }
+
+    suspend fun setTaskReminderLeadHours(hours: Int) {
+        prefs.edit().putInt(TASK_REMINDER_LEAD_KEY, hours).apply()
+        _taskReminderLeadPref.value = hours
+    }
+
+    suspend fun setAlarmVibration(vibrate: Boolean) {
+        prefs.edit().putBoolean(ALARM_VIBRATION_KEY, vibrate).apply()
+        _alarmVibrationPref.value = vibrate
+    }
+
+    suspend fun setAlarmSound(sound: String) {
+        prefs.edit().putString(ALARM_SOUND_KEY, sound).apply()
+        _alarmSoundPref.value = sound
     }
 
     suspend fun setLastSyncTime(timeStr: String) {

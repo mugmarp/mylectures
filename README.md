@@ -8,12 +8,12 @@
 [![UI](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-4285F4.svg)](https://developer.android.com/jetpack/compose)
 [![Storage](https://img.shields.io/badge/Storage-Room%20(SQLite)-orange.svg)](https://developer.android.com/training/data-storage/room)
 
-**Lectures** is a comprehensive, production-grade Android academic companion engineered by **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page)). Designed specifically for university students, **Lectures** streamlines semester schedules, lecture notes, assignment deadlines, background alarms, and campus room availability into one fluid, offline-first application.
+**Lectures** app is a comprehensive, production-grade Android academic companion engineered by **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page)). Designed specifically for university students, **Lectures** streamlines semester schedules, lecture notes, assignment deadlines, background alarms, and campus room availability into one fluid, offline-first application.
 
 ---
 
 > ### ⚠️ Institutional Non-Affiliation Disclaimer
-> **Lectures** is an independently developed academic student utility created by **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page)).
+> **Lectures** is an independently developed academic student utility created by **MARK PAUL M** ([TiralLab](https://tirallab.page)).
 >
 > **This application is NOT an official product of, nor is it endorsed by, sponsored by, affiliated with, or in any way officially associated with Mbarara University of Science and Technology (MUST) or any of its constituent faculties, departments, or administrative offices.**
 >
@@ -23,8 +23,8 @@
 
 ## 👨‍💻 Developer & Studio Information
 
-* **Lead Software Engineer**: **MUGENDAWALA MARK PAUL**
-* **Organization / Studio**: [TiralLab](https://tirallab.page)
+* **Lead Software Engineer**: **MARK PAUL M**
+* **Personal Studio**: [TiralLab](https://tirallab.page)
 * **GitHub**: [@mugmarp](https://github.com/mugmarp)
 * **Website**: [https://tirallab.page](https://tirallab.page)
 * **Contact Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
@@ -51,7 +51,7 @@
 * **Session Filtering**: Filter timetable entries by *Lectures*, *Labs & Practicals*, *Student Associations*, or view *All Sessions*.
 * **Class Detail & Reminder Alarms**: 1-tap alarm configuration (10m, 15m, 30m) ahead of class starts via Android `AlarmManager`.
 
-### 2. 🕒 Google Clock-Inspired Circular Time Scheduler
+### 2. 🕒 Time Scheduler
 * **Material 3 Circular Clock Dial (`TimePicker`)**: Features the official Google Clock circular clock face with rotating hands for interactive hour and minute picking, combined with an AM/PM toggle.
 * **Safe, Non-Editable Inputs**: Eliminates messy raw text typing (no random symbols or format errors); tapping Start Time or End Time opens the circular dial instantly.
 * **Quick Duration Presets**: Direct duration adjustment buttons: `+1 hr`, `+1.5 hrs`, `+2 hrs` to automatically compute and set the end time relative to the start time.

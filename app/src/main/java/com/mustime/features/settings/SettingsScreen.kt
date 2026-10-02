@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mustime.TimetableApplication
 import com.mustime.core.alarm.TaskAlarmScheduler
@@ -502,48 +503,377 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // NOTIFICATIONS
+            // NOTIFICATIONS & ALARMS
             SectionHeader("NOTIFICATIONS & ALARMS")
+
+            val areNotificationsAllowed = remember(context) {
+                NotificationManagerCompat.from(context).areNotificationsEnabled()
+            }
+
+            // Card 1: Master Controls & System Permission Status
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
-                Row(
-                    modifier = Modifier.padding(18.dp).fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
-                        contentAlignment = Alignment.Center
+                Column(modifier = Modifier.padding(18.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            if (uiState.notificationsEnabled) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                if (uiState.notificationsEnabled) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Master Notification Switch",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                if (uiState.notificationsEnabled) "All scheduled alarms & reminders active" else "Alarms paused (quiet mode)",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = uiState.notificationsEnabled,
+                            onCheckedChange = { viewModel.setNotificationsEnabled(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary
+                            )
                         )
                     }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Academic Task & Class Reminders", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text(
-                            if (uiState.notificationsEnabled) "Exact notifications & class alarms active" else "Alarms paused (quiet mode)",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // System status & Test notification button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .background(
+                                        if (areNotificationsAllowed) Color(0xFF10B981) else Color(0xFFF59E0B),
+                                        CircleShape
+                                    )
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (areNotificationsAllowed) "System Permission Granted" else "Notification Permission Needed",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (areNotificationsAllowed) Color(0xFF10B981) else Color(0xFFD97706)
+                            )
+                        }
+
+                        Button(
+                            onClick = { viewModel.sendTestNotification(context) },
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                contentColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(Icons.Default.VolumeUp, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Test Alert", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
-                    Switch(
-                        checked = uiState.notificationsEnabled,
-                        onCheckedChange = { viewModel.setNotificationsEnabled(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = MaterialTheme.colorScheme.primary
-                        )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Card 2: Lecture & Class Alarms Configuration
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(Color(0xFF2563EB).copy(alpha = 0.12f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Alarm, contentDescription = null, tint = Color(0xFF2563EB), modifier = Modifier.size(20.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                "Lecture & Class Reminders",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                "Choose lead time before each lecture or lab starts",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val classLeadOptions = listOf(
+                        0 to "At start",
+                        10 to "10m before",
+                        15 to "15m before",
+                        30 to "30m before"
                     )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        classLeadOptions.forEach { (mins, label) ->
+                            val isSelected = uiState.classAlarmLeadMinutes == mins
+                            val chipBg = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                            val chipText = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(chipBg)
+                                    .clickable { viewModel.setClassAlarmLeadMinutes(mins) }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = chipText
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "• Reminders include lecture hall venue, course code, and lecturer name.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Card 3: Academic Tasks & Coursework Deadlines
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(Color(0xFFD97706).copy(alpha = 0.12f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.TaskAlt, contentDescription = null, tint = Color(0xFFD97706), modifier = Modifier.size(20.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                "Assignment & Task Deadlines",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                "Alert lead time for assignments, tests & projects",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val taskLeadOptions = listOf(
+                        1 to "1 hr before",
+                        2 to "2 hrs before",
+                        24 to "1 day before"
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        taskLeadOptions.forEach { (hours, label) ->
+                            val isSelected = uiState.taskReminderLeadHours == hours
+                            val chipBg = if (isSelected) Color(0xFFD97706) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                            val chipText = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(chipBg)
+                                    .clickable { viewModel.setTaskReminderLeadHours(hours) }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = chipText
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "• Tap 'Mark Done' right from the notification drawer to complete tasks.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Card 4: Audio & Haptic Feedback
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    // Vibration toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Vibration, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Vibrate on Alarms",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                "Tactile feedback during class alerts",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = uiState.alarmVibration,
+                            onCheckedChange = { viewModel.setAlarmVibration(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Sound Profile Selection
+                    Text(
+                        "Sound Profile",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val soundOptions = listOf("Chime", "Gentle Bell", "Standard")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        soundOptions.forEach { soundName ->
+                            val isSelected = uiState.alarmSound.equals(soundName, ignoreCase = true)
+                            val chipBg = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                            val chipText = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(chipBg)
+                                    .clickable { viewModel.setAlarmSound(soundName) }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = soundName,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = chipText
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Reschedule Alarms Action
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { viewModel.rescheduleAllAlarms() }
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Reschedule & Refresh Active Alarms",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
 

@@ -36,7 +36,6 @@ import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.ui.*
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.components.AcademicProfileSheet
-import com.mustime.ui.components.NotificationCenterSheet
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -72,7 +71,6 @@ fun NotesScreen(
     var isEditing by remember { mutableStateOf(false) }
     var noteToEdit by remember { mutableStateOf<LectureNote?>(null) }
     var noteToDelete by remember { mutableStateOf<LectureNote?>(null) }
-    var showNotificationSheet by remember { mutableStateOf(false) }
     var showProfileSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(isEditing) {
@@ -197,34 +195,20 @@ fun NotesScreen(
                     }
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    IconButton(
-                        onClick = { showNotificationSheet = true },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            Icons.Outlined.Notifications,
-                            contentDescription = "Notifications",
-                            tint = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF0052CC))
-                            .clickable { showProfileSheet = true },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = "Account",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF0052CC))
+                        .clickable { showProfileSheet = true },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = "Account",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
 
@@ -301,43 +285,7 @@ fun NotesScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // COURSE FILTER PILLS
-            val filterOptions = remember(uiState.availableCourses) {
-                listOf("All Notes") + uiState.availableCourses.map { it.code }.distinct()
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                filterOptions.forEach { filterItem ->
-                    val isSelected = uiState.selectedFilter.equals(filterItem, ignoreCase = true)
-                    val unselectedPillBg = if (isDark) DarkSurfaceCard else Color(0xFFEFF6FF)
-                    val unselectedPillText = if (isDark) Color(0xFFCBD5E1) else Color(0xFF1E293B)
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(if (isSelected) Color(0xFF0052CC) else unselectedPillBg)
-                            .clickable { viewModel.onFilterSelected(filterItem) }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = filterItem,
-                            fontSize = 13.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) Color.White else unselectedPillText
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // USER FEEDBACK MESSAGES
             AnimatedVisibility(visible = uiState.userMessage != null) {
@@ -533,10 +481,6 @@ fun NotesScreen(
                 }
             }
         )
-    }
-
-    if (showNotificationSheet) {
-        NotificationCenterSheet(onDismiss = { showNotificationSheet = false })
     }
 
     if (showProfileSheet) {

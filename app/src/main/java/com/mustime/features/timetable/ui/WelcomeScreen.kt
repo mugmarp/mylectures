@@ -219,24 +219,24 @@ fun WelcomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 10.dp)
+                .padding(horizontal = 20.dp, vertical = 12.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // 1. Top Hero Header: App Emblem, Name & Tagline
+            // 1. Top Hero Header: Prominent Brand Emblem, Name & Tagline
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
 
                 Surface(
-                    modifier = Modifier.size(68.dp),
-                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.size(92.dp),
+                    shape = RoundedCornerShape(26.dp),
                     color = cardBg,
-                    shadowElevation = 5.dp,
-                    border = BorderStroke(1.dp, if (isDark) Color(0xFF334155) else Color(0xFFE2E8F0))
+                    shadowElevation = 6.dp,
+                    border = BorderStroke(1.5.dp, if (isDark) Color(0xFF334155) else Color(0xFFDBEAFE))
                 ) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -244,10 +244,10 @@ fun WelcomeScreen(
                     ) {
                         Image(
                             painter = painterResource(R.drawable.app_logo),
-                            contentDescription = "Lectures Logo Emblem",
+                            contentDescription = "Lectures App Logo",
                             modifier = Modifier
-                                .size(54.dp)
-                                .clip(RoundedCornerShape(14.dp))
+                                .size(76.dp)
+                                .clip(RoundedCornerShape(20.dp))
                         )
                     }
                 }
@@ -267,11 +267,11 @@ fun WelcomeScreen(
                             if (isDark) Color(0xFF334155) else Color(0xFFE2E8F0),
                             RoundedCornerShape(20.dp)
                         )
-                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                        .padding(horizontal = 12.dp, vertical = 3.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(18.dp)
+                            .size(16.dp)
                             .background(primaryBlue, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
@@ -279,20 +279,22 @@ fun WelcomeScreen(
                             Icons.Default.School,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.size(11.dp)
+                            modifier = Modifier.size(10.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        "Lectures",
+                        "Smart Campus Companion",
                         color = primaryBlue,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
+                        fontSize = 12.sp
                     )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("•", color = textMuted, fontSize = 10.sp)
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         "by TiralLab",
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
                         color = textMuted
                     )
@@ -301,8 +303,8 @@ fun WelcomeScreen(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "Start Learning Today",
-                    fontSize = 22.sp,
+                    text = "Lectures",
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = textPrimary,
                     textAlign = TextAlign.Center,
@@ -312,61 +314,90 @@ fun WelcomeScreen(
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
-                    text = "Offline-first campus companion for timetables, vacant study rooms & notes.",
+                    text = "Offline timetables, vacant study rooms & coursework manager.",
                     fontSize = 12.sp,
                     color = textSecondary,
                     textAlign = TextAlign.Center,
                     lineHeight = 16.sp,
-                    modifier = Modifier.padding(horizontal = 8.dp)
+                    modifier = Modifier.padding(horizontal = 12.dp)
                 )
             }
 
-            // 2. Core Feature Showcase Cards (Addresses: "view your lectures or so, find free room")
+            // 2. Core Feature Showcase: 2x2 Bento Grid (Addresses: "view your lectures or so, find free room")
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Feature 1: View Your Lectures
-                WelcomeFeatureCard(
-                    icon = Icons.Default.CalendarToday,
-                    iconBg = if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.4f) else Color(0xFFDBEAFE),
-                    iconColor = primaryBlue,
-                    title = "View Your Lectures & Timetable",
-                    description = "Browse daily classes, allocated venues, lecturers & set timely alarms.",
-                    isDark = isDark,
-                    cardBg = cardBg,
-                    textPrimary = textPrimary,
-                    textSecondary = textSecondary
-                )
+                // Row 1: Lectures Timetable & Free Rooms Finder
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    WelcomeBentoCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.CalendarToday,
+                        iconBg = if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.45f) else Color(0xFFDBEAFE),
+                        iconTint = primaryBlue,
+                        tag = "Timetable",
+                        title = "Your Lectures",
+                        description = "Daily classes, halls & lecturers",
+                        isDark = isDark,
+                        cardBg = cardBg,
+                        textPrimary = textPrimary,
+                        textSecondary = textSecondary
+                    )
 
-                // Feature 2: Find Free Campus Rooms
-                WelcomeFeatureCard(
-                    icon = Icons.Default.MeetingRoom,
-                    iconBg = if (isDark) Color(0xFF064E3B).copy(alpha = 0.4f) else Color(0xFFDCFCE7),
-                    iconColor = Color(0xFF059669),
-                    title = "Find Free Campus Rooms",
-                    description = "Discover unoccupied lecture halls and quiet revision spaces in real time.",
-                    isDark = isDark,
-                    cardBg = cardBg,
-                    textPrimary = textPrimary,
-                    textSecondary = textSecondary
-                )
+                    WelcomeBentoCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.MeetingRoom,
+                        iconBg = if (isDark) Color(0xFF064E3B).copy(alpha = 0.45f) else Color(0xFFDCFCE7),
+                        iconTint = Color(0xFF059669),
+                        tag = "Campus",
+                        title = "Free Rooms",
+                        description = "Locate empty halls for revision",
+                        isDark = isDark,
+                        cardBg = cardBg,
+                        textPrimary = textPrimary,
+                        textSecondary = textSecondary
+                    )
+                }
 
-                // Feature 3: Academic Tasks & Notes
-                WelcomeFeatureCard(
-                    icon = Icons.Default.TaskAlt,
-                    iconBg = if (isDark) Color(0xFF581C87).copy(alpha = 0.35f) else Color(0xFFF3E8FF),
-                    iconColor = Color(0xFF9333EA),
-                    title = "Academic Tasks & Lecture Notes",
-                    description = "Track assignments, checklists & markdown study notes 100% offline.",
-                    isDark = isDark,
-                    cardBg = cardBg,
-                    textPrimary = textPrimary,
-                    textSecondary = textSecondary
-                )
+                // Row 2: Coursework Tasks & Offline Notes
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    WelcomeBentoCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.TaskAlt,
+                        iconBg = if (isDark) Color(0xFF78350F).copy(alpha = 0.4f) else Color(0xFFFEF3C7),
+                        iconTint = Color(0xFFD97706),
+                        tag = "Tasks",
+                        title = "Coursework",
+                        description = "Track assignments, tests & deadlines",
+                        isDark = isDark,
+                        cardBg = cardBg,
+                        textPrimary = textPrimary,
+                        textSecondary = textSecondary
+                    )
+
+                    WelcomeBentoCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.School,
+                        iconBg = if (isDark) Color(0xFF581C87).copy(alpha = 0.4f) else Color(0xFFF3E8FF),
+                        iconTint = Color(0xFF7C3AED),
+                        tag = "100% Local",
+                        title = "Study Notes",
+                        description = "Write summaries linked to courses",
+                        isDark = isDark,
+                        cardBg = cardBg,
+                        textPrimary = textPrimary,
+                        textSecondary = textSecondary
+                    )
+                }
             }
 
-            // 3. Independent Student Notice & Agreement Card
+            // 3. Campus Notice & Agreement Card (Notice title clearly NOT "MUST Terms...")
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = cardBg,
@@ -389,7 +420,7 @@ fun WelcomeScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Independent Student Notice & Terms",
+                                text = "Campus Notice & Terms",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = textPrimary
@@ -406,9 +437,9 @@ fun WelcomeScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = primaryBlue,
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
+                                    .clip(RoundedCornerShape(6.dp))
                                     .clickable { showDisclaimerDialog = true }
-                                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                             Text("•", color = textMuted, fontSize = 10.sp)
                             Text(
@@ -417,9 +448,9 @@ fun WelcomeScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = primaryBlue,
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
+                                    .clip(RoundedCornerShape(6.dp))
                                     .clickable { showTermsDialog = true }
-                                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
                     }
@@ -427,7 +458,7 @@ fun WelcomeScreen(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Lectures is an independent student companion authored by TiralLab, not affiliated with MUST. Timetable slots are student-curated.",
+                        text = "Lectures is an independent student companion created by TiralLab, not affiliated with MUST. Timetable slots are student-curated.",
                         fontSize = 11.sp,
                         lineHeight = 15.sp,
                         color = textSecondary
@@ -455,7 +486,7 @@ fun WelcomeScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "I understand the independent nature and accept Terms & Disclaimer.",
+                            text = "I agree to the Terms of Service & Campus Notice.",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = if (termsAcknowledged) textPrimary else textSecondary,
@@ -475,7 +506,7 @@ fun WelcomeScreen(
                     enabled = termsAcknowledged,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp)
+                        .height(50.dp)
                         .testTag("get_started_button"),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -506,7 +537,7 @@ fun WelcomeScreen(
                 if (!termsAcknowledged) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Please accept the acknowledgement above to continue.",
+                        text = "Please accept the notice above to continue.",
                         fontSize = 10.sp,
                         color = textMuted
                     )
@@ -519,10 +550,12 @@ fun WelcomeScreen(
 }
 
 @Composable
-fun WelcomeFeatureCard(
+fun WelcomeBentoCard(
+    modifier: Modifier = Modifier,
     icon: ImageVector,
     iconBg: Color,
-    iconColor: Color,
+    iconTint: Color,
+    tag: String,
     title: String,
     description: String,
     isDark: Boolean,
@@ -531,46 +564,71 @@ fun WelcomeFeatureCard(
     textSecondary: Color
 ) {
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         color = cardBg,
         border = BorderStroke(1.dp, if (isDark) Color(0xFF334155) else Color(0xFFE2E8F0)),
-        shadowElevation = 1.dp,
-        modifier = Modifier.fillMaxWidth()
+        shadowElevation = 1.dp
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(iconBg),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(20.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(iconBg),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .background(
+                            iconBg.copy(alpha = if (isDark) 0.35f else 0.7f),
+                            RoundedCornerShape(6.dp)
+                        )
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = tag,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = iconTint
+                    )
+                }
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    color = textPrimary
-                )
-                Spacer(modifier = Modifier.height(1.dp))
-                Text(
-                    text = description,
-                    fontSize = 11.sp,
-                    lineHeight = 15.sp,
-                    color = textSecondary
-                )
-            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                color = textPrimary,
+                maxLines = 1
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = description,
+                fontSize = 11.sp,
+                lineHeight = 14.sp,
+                color = textSecondary,
+                maxLines = 2
+            )
         }
     }
 }

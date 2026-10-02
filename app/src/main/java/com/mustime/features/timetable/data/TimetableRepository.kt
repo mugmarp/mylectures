@@ -82,6 +82,10 @@ class TimetableRepository(
     val themeDarkPref: Flow<Boolean> = etagStore.themeDarkPref
     val themeAccentPref: Flow<Int> = etagStore.themeAccentPref
     val notificationsEnabledPref: Flow<Boolean> = etagStore.notificationsEnabledPref
+    val classAlarmLeadPref: Flow<Int> = etagStore.classAlarmLeadPref
+    val taskReminderLeadPref: Flow<Int> = etagStore.taskReminderLeadPref
+    val alarmVibrationPref: Flow<Boolean> = etagStore.alarmVibrationPref
+    val alarmSoundPref: Flow<String> = etagStore.alarmSoundPref
     val lastSyncPref: Flow<String?> = etagStore.lastSyncPref
     val academicYearPref: Flow<String> = etagStore.academicYearPref
     val semesterPref: Flow<String> = etagStore.semesterPref
@@ -112,6 +116,22 @@ class TimetableRepository(
 
     suspend fun setNotificationsEnabled(enabled: Boolean) {
         etagStore.setNotificationsEnabled(enabled)
+    }
+
+    suspend fun setClassAlarmLeadMinutes(minutes: Int) {
+        etagStore.setClassAlarmLeadMinutes(minutes)
+    }
+
+    suspend fun setTaskReminderLeadHours(hours: Int) {
+        etagStore.setTaskReminderLeadHours(hours)
+    }
+
+    suspend fun setAlarmVibration(vibrate: Boolean) {
+        etagStore.setAlarmVibration(vibrate)
+    }
+
+    suspend fun setAlarmSound(sound: String) {
+        etagStore.setAlarmSound(sound)
     }
 
     suspend fun setLastSyncTime(timeStr: String) {

@@ -1,9 +1,11 @@
 package com.mustime.features.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.mustime.core.alarm.TaskAlarmScheduler
+import com.mustime.core.notification.NotificationHelper
 import com.mustime.features.timetable.data.DataLoader
 import com.mustime.features.timetable.data.TimetableRepository
 import com.mustime.ui.ThemeMode
@@ -24,6 +26,10 @@ data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.LIGHT,
     val darkMode: Boolean = false,
     val notificationsEnabled: Boolean = true,
+    val classAlarmLeadMinutes: Int = 15,
+    val taskReminderLeadHours: Int = 2,
+    val alarmVibration: Boolean = true,
+    val alarmSound: String = "Chime",
     val selectedAccent: Int = 0,
     val lastSyncTime: String = "Up to date",
     val isSyncing: Boolean = false,
@@ -86,6 +92,34 @@ class SettingsViewModel(
         viewModelScope.launch {
             repository.notificationsEnabledPref.collect { enabled ->
                 _uiState.value = _uiState.value.copy(notificationsEnabled = enabled)
+            }
+        }
+
+        // Collect class alarm lead minutes
+        viewModelScope.launch {
+            repository.classAlarmLeadPref.collect { lead ->
+                _uiState.value = _uiState.value.copy(classAlarmLeadMinutes = lead)
+            }
+        }
+
+        // Collect task reminder lead hours
+        viewModelScope.launch {
+            repository.taskReminderLeadPref.collect { lead ->
+                _uiState.value = _uiState.value.copy(taskReminderLeadHours = lead)
+            }
+        }
+
+        // Collect alarm vibration
+        viewModelScope.launch {
+            repository.alarmVibrationPref.collect { vib ->
+                _uiState.value = _uiState.value.copy(alarmVibration = vib)
+            }
+        }
+
+        // Collect alarm sound
+        viewModelScope.launch {
+            repository.alarmSoundPref.collect { sound ->
+                _uiState.value = _uiState.value.copy(alarmSound = sound)
             }
         }
 
@@ -164,6 +198,102 @@ class SettingsViewModel(
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(errorMessage = "Failed to update notification settings: ${e.message}")
+            }
+        }
+    }
+
+    fun setClassAlarmLeadMinutes(minutes: Int) {
+        viewModelScope.launch {
+            try {
+                repository.setClassAlarmLeadMinutes(minutes)
+                _uiState.value = _uiState.value.copy(
+                    classAlarmLeadMinutes = minutes,
+                    successMessage = "Lecture reminder updated to $minutes minutes before."
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(errorMessage = "Failed to update class reminder: ${e.message}")
+            }
+        }
+    }
+
+    fun setTaskReminderLeadHours(hours: Int) {
+        viewModelScope.launch {
+            try {
+                repository.setTaskReminderLeadHours(hours)
+                val label = if (hours >= 24) "${hours / 24} day before" else "$hours hours before"
+                _uiState.value = _uiState.value.copy(
+                    taskReminderLeadHours = hours,
+                    successMessage = "Task reminder updated to $label."
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(errorMessage = "Failed to update task reminder: ${e.message}")
+            }
+        }
+    }
+
+    fun setAlarmVibration(vibrate: Boolean) {
+        viewModelScope.launch {
+            try {
+                repository.setAlarmVibration(vibrate)
+                _uiState.value = _uiState.value.copy(
+                    alarmVibration = vibrate,
+                    successMessage = if (vibrate) "Alarm vibration enabled." else "Alarm vibration turned off."
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(errorMessage = "Failed to update vibration setting: ${e.message}")
+            }
+        }
+    }
+
+    fun setAlarmSound(sound: String) {
+        viewModelScope.launch {
+            try {
+                repository.setAlarmSound(sound)
+                _uiState.value = _uiState.value.copy(
+                    alarmSound = sound,
+                    successMessage = "Alarm sound profile set to $sound."
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(errorMessage = "Failed to update alarm sound: ${e.message}")
+            }
+        }
+    }
+
+    fun sendTestNotification(context: Context) {
+        try {
+            NotificationHelper.showClassReminderNotification(
+                context = context,
+                courseCode = "BCS2101",
+                courseTitle = "Data Structures & Algorithms",
+                room = "Comp Lab 2 (Main Campus)",
+                startTime = "09:00 AM"
+            )
+            _uiState.value = _uiState.value.copy(
+                successMessage = "Test lecture alarm notification posted! Check your status bar."
+            )
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "Failed to dispatch test notification: ${e.message}"
+            )
+        }
+    }
+
+    fun rescheduleAllAlarms() {
+        viewModelScope.launch {
+            try {
+                val tasks = repository.getAssignments().firstOrNull() ?: emptyList()
+                var scheduledCount = 0
+                tasks.forEach { task ->
+                    if (!task.completed && task.reminderMinutes != null) {
+                        val ok = alarmScheduler?.scheduleTaskReminder(task) == true
+                        if (ok) scheduledCount++
+                    }
+                }
+                _uiState.value = _uiState.value.copy(
+                    successMessage = "Refreshed and rescheduled $scheduledCount active alarms."
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(errorMessage = "Failed to reschedule alarms: ${e.message}")
             }
         }
     }
