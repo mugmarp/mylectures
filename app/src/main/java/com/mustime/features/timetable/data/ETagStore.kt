@@ -22,6 +22,8 @@ class ETagStore(context: Context) {
 
     private val initialMode = prefs.getString(THEME_MODE_KEY, "LIGHT") ?: "LIGHT"
 
+    fun getThemeMode(): String = prefs.getString(THEME_MODE_KEY, "LIGHT") ?: "LIGHT"
+
     private val CLASS_ALARM_LEAD_KEY = "class_alarm_lead_minutes"
     private val TASK_REMINDER_LEAD_KEY = "task_reminder_lead_hours"
     private val ALARM_VIBRATION_KEY = "alarm_vibration"
@@ -33,8 +35,10 @@ class ETagStore(context: Context) {
     private val _semesterPref = MutableStateFlow(prefs.getString(SEMESTER_KEY, "Semester 1") ?: "Semester 1")
     val semesterPref: Flow<String> = _semesterPref.asStateFlow()
 
-    private val _classAlarmLeadPref = MutableStateFlow(prefs.getInt(CLASS_ALARM_LEAD_KEY, 15))
+    private val _classAlarmLeadPref = MutableStateFlow(prefs.getInt(CLASS_ALARM_LEAD_KEY, 30))
     val classAlarmLeadPref: Flow<Int> = _classAlarmLeadPref.asStateFlow()
+
+    fun getClassAlarmLeadMinutes(): Int = prefs.getInt(CLASS_ALARM_LEAD_KEY, 30)
 
     private val _taskReminderLeadPref = MutableStateFlow(prefs.getInt(TASK_REMINDER_LEAD_KEY, 2))
     val taskReminderLeadPref: Flow<Int> = _taskReminderLeadPref.asStateFlow()

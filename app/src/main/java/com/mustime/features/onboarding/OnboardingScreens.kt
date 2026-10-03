@@ -38,7 +38,7 @@ fun OnboardingProgressBar(currentStep: Int, totalSteps: Int = 3) {
                     .weight(1f)
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(if (isActive) Color(0xFF2563EB) else Color(0xFFE2E8F0))
+                    .background(if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
             )
         }
     }
@@ -50,11 +50,11 @@ fun FacultySelectionScreen(
     onBack: () -> Unit
 ) {
     Scaffold(
-        containerColor = Color(0xFFF8FAFC),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Column(modifier = Modifier.fillMaxWidth().statusBarsPadding()) {
                 IconButton(onClick = onBack, modifier = Modifier.padding(start = 12.dp)) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF0F172A))
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground)
                 }
                 OnboardingProgressBar(currentStep = 1)
                 Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
@@ -62,12 +62,12 @@ fun FacultySelectionScreen(
                         text = "Choose your faculty",
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
                         text = "Select your academic department",
                         fontSize = 15.sp,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -105,7 +105,7 @@ fun FacultyCard(faculty: Faculty, onClick: () -> Unit) {
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
@@ -117,10 +117,10 @@ fun FacultyCard(faculty: Faculty, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .background(Color(0xFFEFF6FF), RoundedCornerShape(12.dp)),
+                    .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = Color(0xFF2563EB), modifier = Modifier.size(26.dp))
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -128,15 +128,15 @@ fun FacultyCard(faculty: Faculty, onClick: () -> Unit) {
                     text = faculty.name,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp,
-                    color = Color(0xFF0F172A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "${faculty.programmes.size} Programmes",
                     fontSize = 13.sp,
-                    color = Color(0xFF64748B)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFF94A3B8))
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
         }
     }
 }
@@ -148,11 +148,11 @@ fun ProgrammeSelectionScreen(
     onBack: () -> Unit
 ) {
     Scaffold(
-        containerColor = Color(0xFFF8FAFC),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Column(modifier = Modifier.fillMaxWidth().statusBarsPadding()) {
                 IconButton(onClick = onBack, modifier = Modifier.padding(start = 12.dp)) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF0F172A))
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground)
                 }
                 OnboardingProgressBar(currentStep = 2)
                 Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
@@ -160,12 +160,12 @@ fun ProgrammeSelectionScreen(
                         text = "Select your programme",
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
                         text = faculty.name,
                         fontSize = 15.sp,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -186,7 +186,7 @@ fun ProgrammeSelectionScreen(
                         .clip(RoundedCornerShape(16.dp))
                         .clickable { onSelectProgramme(programme) },
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Row(
@@ -198,12 +198,12 @@ fun ProgrammeSelectionScreen(
                         Box(
                             modifier = Modifier
                                 .size(44.dp)
-                                .background(Color(0xFFEFF6FF), RoundedCornerShape(12.dp)),
+                                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = programme.code.take(3),
-                                color = Color(0xFF2563EB),
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp
                             )
@@ -214,16 +214,16 @@ fun ProgrammeSelectionScreen(
                                 text = programme.code,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp,
-                                color = Color(0xFF0F172A)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = programme.name,
                                 fontSize = 13.sp,
-                                color = Color(0xFF64748B),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 2
                             )
                         }
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFF94A3B8))
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
                     }
                 }
             }
@@ -245,11 +245,11 @@ fun ClassGroupSelectionScreen(
     var selectedGroup by remember { mutableStateOf(groups.firstOrNull() ?: "${programme.code} I") }
 
     Scaffold(
-        containerColor = Color(0xFFF8FAFC),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Column(modifier = Modifier.fillMaxWidth().statusBarsPadding()) {
                 IconButton(onClick = onBack, modifier = Modifier.padding(start = 12.dp)) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF0F172A))
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground)
                 }
                 OnboardingProgressBar(currentStep = 3)
                 Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
@@ -257,19 +257,19 @@ fun ClassGroupSelectionScreen(
                         text = "Choose your class group",
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
                         text = "Select your year and group",
                         fontSize = 15.sp,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
         },
         bottomBar = {
             Surface(
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 8.dp,
                 modifier = Modifier.navigationBarsPadding()
             ) {
@@ -280,9 +280,9 @@ fun ClassGroupSelectionScreen(
                             .fillMaxWidth()
                             .height(54.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Text("Confirm", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text("Confirm", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }
@@ -306,12 +306,12 @@ fun ClassGroupSelectionScreen(
                         .clip(RoundedCornerShape(16.dp))
                         .clickable { selectedGroup = group }
                         .then(
-                            if (isSelected) Modifier.border(2.dp, Color(0xFF2563EB), RoundedCornerShape(16.dp))
-                            else Modifier
+                            if (isSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
+                            else Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
                         ),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) Color(0xFFF0F6FF) else Color.White
+                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
@@ -326,20 +326,20 @@ fun ClassGroupSelectionScreen(
                                 text = group,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 17.sp,
-                                color = Color(0xFF0F172A)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "$count timetable entries",
                                 fontSize = 14.sp,
-                                color = Color(0xFF64748B)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         if (isSelected) {
                             Box(
                                 modifier = Modifier
                                     .size(28.dp)
-                                    .background(Color(0xFF2563EB), CircleShape),
+                                    .background(MaterialTheme.colorScheme.primary, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(

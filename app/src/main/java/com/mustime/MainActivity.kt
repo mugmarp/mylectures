@@ -18,10 +18,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        window.setBackgroundDrawableResource(android.R.color.transparent)
         setContent {
             val app = application as? TimetableApplication
             val repo = app?.repository
-            val themeModeStr by (repo?.themeModePref ?: flowOf("LIGHT")).collectAsState(initial = "LIGHT")
+            val initialThemeModeStr = remember { repo?.getThemeMode() ?: "LIGHT" }
+            val themeModeStr by (repo?.themeModePref ?: flowOf(initialThemeModeStr)).collectAsState(initial = initialThemeModeStr)
             val accentIndex by (repo?.themeAccentPref ?: flowOf(0)).collectAsState(initial = 0)
 
             val themeMode = remember(themeModeStr) {

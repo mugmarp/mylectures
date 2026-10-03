@@ -96,6 +96,7 @@ data class SpecClassSession(
     val attachedNotesCount: Int = 0,
     val attachedNotePreview: String? = null,
     val isAlarmSet: Boolean = false,
+    val alarmMinutes: Int? = null,
     val isHappeningNow: Boolean = false,
     val progress: Float = 0.70f,
     val elapsedText: String = "1h 45m elapsed",

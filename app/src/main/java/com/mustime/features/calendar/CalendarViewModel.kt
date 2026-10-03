@@ -67,16 +67,15 @@ class CalendarViewModel(
         val initialDay = calendar.get(Calendar.DAY_OF_MONTH)
         recalculateMonth(selectedDay = initialDay)
 
-        if (initialProg.isNotEmpty()) {
-            loadSchedule(initialProg)
-        }
-
         // Observe saved programme and load data
         viewModelScope.launch {
             repository.programmePref.collect { pref ->
                 val prog = pref?.trim()?.ifEmpty { null }
-                if (prog != null && (prog != _uiState.value.currentProgramme || _uiState.value.entries.isEmpty())) {
+                val current = _uiState.value.currentProgramme
+                if (prog != null && prog != current) {
                     _uiState.value = _uiState.value.copy(currentProgramme = prog)
+                    loadSchedule(prog)
+                } else if (prog != null && _uiState.value.entries.isEmpty() && scheduleJob == null) {
                     loadSchedule(prog)
                 }
             }

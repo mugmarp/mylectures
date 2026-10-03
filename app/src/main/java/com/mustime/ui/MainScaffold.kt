@@ -1,11 +1,8 @@
 package com.mustime.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -63,7 +60,7 @@ fun MainScaffold() {
 
     if (repository == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = Color(0xFF2563EB))
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
         return
     }
@@ -201,12 +198,10 @@ fun MainScaffold() {
                         .background(MaterialTheme.colorScheme.background)
                 ) {
                     // Main Screen Content (flows edge-to-edge behind floating dock with smooth transitions)
-                    AnimatedContent(
+                    Crossfade(
                         targetState = selectedTab,
-                        transitionSpec = {
-                            fadeIn(animationSpec = tween(180)) togetherWith fadeOut(animationSpec = tween(120))
-                        },
-                        label = "main_tab_transition",
+                        animationSpec = tween(90),
+                        label = "main_tab_crossfade",
                         modifier = Modifier.fillMaxSize()
                     ) { tabIndex ->
                         when (tabIndex) {

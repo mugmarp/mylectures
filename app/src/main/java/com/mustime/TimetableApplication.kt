@@ -61,27 +61,6 @@ class TimetableApplication : Application() {
         // Initial load
         applicationScope.launch {
             dataLoader.loadInitialDataIfNeeded()
-            
-            // Authenticate anonymously and start sync if Firebase is available
-            try {
-                val auth = FirebaseFactory.auth
-                if (auth.currentUser == null) {
-                    auth.signInAnonymously()
-                        .addOnSuccessListener { authResult ->
-                            authResult.user?.uid?.let { uid ->
-                                syncRepository.startAllSync(uid, applicationScope)
-                            }
-                        }
-                        .addOnFailureListener { exception ->
-                            android.util.Log.i("TimetableApplication", "Firebase anonymous auth unavailable (offline or credentials pending in Firebase Console): ${exception.message}")
-                        }
-                } else {
-                    syncRepository.startAllSync(auth.currentUser!!.uid, applicationScope)
-                }
-            } catch (e: Throwable) {
-                // Firebase not initialized in local test / offline environment
-                android.util.Log.i("TimetableApplication", "Firebase not available: ${e.message}")
-            }
         }
     }
 }

@@ -84,7 +84,7 @@ fun WelcomeScreen(
                         color = primaryBlue
                     )
                     Text(
-                        text = "Lectures is an independently designed, programmed, and maintained student companion tool authored by MUGENDAWALA MARK PAUL (TiralLab).",
+                        text = "Lectures is an independent student companion tool designed for academic schedule tracking, note-taking, and coursework planning.",
                         fontSize = 12.sp,
                         color = textSecondary
                     )
@@ -114,15 +114,15 @@ fun WelcomeScreen(
                     )
 
                     Text(
-                        text = "4. Author Attribution",
+                        text = "4. Schedule Accuracy",
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
                         color = primaryBlue
                     )
                     Text(
-                        text = "Author: MUGENDAWALA MARK PAUL (TiralLab)\nContact: markpaulmu@gmail.com",
-                        fontSize = 11.sp,
-                        color = textMuted
+                        text = "Timetables are stored locally for fast offline access. Students are encouraged to consult official university notice boards for examination notices.",
+                        fontSize = 12.sp,
+                        color = textSecondary
                     )
                 }
             },
@@ -219,10 +219,9 @@ fun WelcomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 12.dp)
-                .verticalScroll(rememberScrollState()),
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             // 1. Top Hero Header: Prominent Brand Emblem, Name & Tagline
             Column(
@@ -288,15 +287,6 @@ fun WelcomeScreen(
                         color = primaryBlue,
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("•", color = textMuted, fontSize = 10.sp)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        "by TiralLab",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = textMuted
                     )
                 }
 
@@ -458,7 +448,7 @@ fun WelcomeScreen(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Lectures is an independent student companion created by TiralLab, not affiliated with MUST. Timetable slots are student-curated.",
+                        text = "Lectures is an independent student companion. Timetable slots and schedules are organized for student study convenience.",
                         fontSize = 11.sp,
                         lineHeight = 15.sp,
                         color = textSecondary

@@ -97,7 +97,7 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Lectures is an independently designed and developed academic companion tool created by Mugendawala Mark Paul (TiralLab).",
+                        text = "Lectures is an independent academic timetable and study companion designed to help students organize classes, study notes, and coursework tasks.",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -127,13 +127,13 @@ fun SettingsScreen(
                     )
 
                     Text(
-                        text = "4. Developer Attribution",
+                        text = "4. Academic Schedule Accuracy",
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Author: MUGENDAWALA MARK PAUL\nOrganization: TiralLab\nWebsite: https://tirallab.page\nGitHub: https://github.com/mugmarp\nEmail: markpaulmu@gmail.com",
+                        text = "Timetable data is maintained offline and locally on your device. Students should verify critical announcements and examinations with their respective departments.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -200,13 +200,13 @@ fun SettingsScreen(
                     )
 
                     Text(
-                        text = "4. Intellectual Property",
+                        text = "4. Data Privacy & Offline Use",
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "The application architecture, design system, and code are proprietary creations of Mugendawala Mark Paul (TiralLab).",
+                        text = "All notes, checklists, and academic timetable preferences are processed and stored locally on your device without external telemetry.",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1160,8 +1160,8 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Lectures", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Text("Author: MUGENDAWALA MARK PAUL", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
-                            Text("TiralLab • tirallab.page", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Timetable & Academic Companion", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                            Text("Version 1.0 • 100% Offline & Private", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
 

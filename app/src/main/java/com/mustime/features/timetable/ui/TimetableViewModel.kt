@@ -63,21 +63,22 @@ class TimetableViewModel(
     private var scheduleJob: Job? = null
 
     init {
-        if (initialProg.isNotEmpty()) {
-            loadSchedule(initialProg)
-        } else {
-            _uiState.value = _uiState.value.copy(isLoading = false)
-        }
-
         viewModelScope.launch {
             repository.programmePref.collect { pref ->
                 val prog = pref?.trim() ?: ""
-                if (prog != _uiState.value.programme || (prog.isNotEmpty() && _uiState.value.entries.isEmpty())) {
+                val currentProg = _uiState.value.programme
+                if (prog != currentProg) {
                     _uiState.value = _uiState.value.copy(programme = prog)
                     if (prog.isNotEmpty()) {
                         loadSchedule(prog)
                     } else {
                         _uiState.value = _uiState.value.copy(entries = emptyList(), isLoading = false)
+                    }
+                } else if (_uiState.value.entries.isEmpty() && scheduleJob == null) {
+                    if (prog.isNotEmpty()) {
+                        loadSchedule(prog)
+                    } else {
+                        _uiState.value = _uiState.value.copy(isLoading = false)
                     }
                 }
             }
