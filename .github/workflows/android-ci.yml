@@ -70,6 +70,19 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      # debug.keystore is gitignored, so it is absent on a fresh checkout and
+      # :app:validateSigningDebug fails with "Keystore file ... not found".
+      # Generate a throwaway debug keystore for CI.
+      - name: Generate debug keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore debug.keystore \
+            -storepass android -keypass android \
+            -alias androiddebugkey \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+          ls -la debug.keystore
+
       - name: Compile Kotlin (debug)
         run: ./gradlew compileDebugKotlin --stacktrace --no-daemon
 
