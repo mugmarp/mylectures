@@ -1711,22 +1711,6 @@ object UniversityDirectory {
     val PERMANENTLY_VACANT_ROOMS: List<RoomItem> = ALL_ROOMS.filter { it.isPermanentlyVacant }
 
     /**
-    fun roomsForCampus(campus: String?): List<RoomItem> =
-        if (campus.isNullOrBlank()) ALL_ROOMS
-        else ALL_ROOMS.filter { it.campus.equals(campus, ignoreCase = true) }
-
-    fun roomsForBuilding(buildingCode: String?): List<RoomItem> =
-        if (buildingCode.isNullOrBlank()) ALL_ROOMS
-        else ALL_ROOMS.filter { it.buildingCode.equals(buildingCode, ignoreCase = true) }
-
-    fun buildingsForCampus(campus: String?): List<Building> =
-        if (campus.isNullOrBlank()) BUILDINGS
-        else BUILDINGS.filter { it.campus.equals(campus, ignoreCase = true) }
-
-    /** Rooms with no scheduled sessions this semester — always available. */
-    val PERMANENTLY_VACANT_ROOMS: List<RoomItem> = ALL_ROOMS.filter { it.isPermanentlyVacant }
-
-    /**
      * Ranks free rooms as study suggestions.
      *
      * Priority order:
