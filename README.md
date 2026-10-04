@@ -91,23 +91,38 @@ Everything — timetable, notes, tasks, alarms, preferences — is stored in a p
 
 ### Network behaviour, precisely
 
+Verified by inspecting the built APK's bytecode, not by reading the build file:
+
 | | Status |
 |---|---|
-| Analytics / crash reporting / ad SDKs | **None** — not included in the build |
-| Accounts or sign-in | **None required** |
-| Network requests at runtime | **None currently made** |
-| Works with no connection | **Yes** — the timetable ships in the APK and is read from local storage |
-| Cloud sync | **Designed, not enabled** |
+| Analytics / advertising SDKs | **None packaged** — Firebase Analytics, Google Analytics, AdMob, Crashlytics, Facebook, Sentry, Amplitude, Mixpanel, AppsFlyer, Adjust, Bugsnag, New Relic all absent from the DEX |
+| Accounts or sign-in required | **No** |
+| Network requests made today | **None** — no Firebase call site is ever reached |
+| Works with no connection | **Yes** — the timetable ships in the APK |
 
-The app declares `INTERNET` and `ACCESS_NETWORK_STATE`, and a Firestore sync layer (`core/sync/SyncRepository.kt`) exists in the codebase — but it is **not wired up**: `startAllSync()` has no call sites and there is no sign-in flow, so no request is ever sent. The permission declarations are ahead of the behaviour.
+**However — Google's Firebase SDKs *are* bundled in the APK.** They are compiled in even though nothing invokes them:
+
+| SDK | In the APK |
+|---|---|
+| `firebase-common` (FirebaseApp) | yes |
+| `firebase-firestore` | yes |
+| `firebase-auth` | yes — `identitytoolkit` endpoint strings present |
+| `firebase-appcheck` (reCAPTCHA) | yes |
+| `firebase-ai` | yes — the largest single dependency |
+
+These libraries are *capable* of transmitting to Google — App Check sends attestation data, and Firebase Auth sends device and app metadata to Google's `identitytoolkit` endpoints. Because no code path invokes them, **nothing is sent today.** But that is a property of the current code, not a guarantee enforced by the build.
+
+**So the accurate claim is:** *no analytics or advertising is included, and no data is transmitted in the current version* — **not** "no third party is involved." Firebase is present in the binary.
+
+Removing the unused Firebase dependencies is a planned cleanup. It would cut roughly a third off the APK and shrink the privacy surface to what is actually used.
 
 An **opt-in** cloud sync is planned, so notes and tasks can follow you between devices. When that lands it will be:
 
 - off by default, enabled per user
 - restricted to student email addresses (`@std.must.ac.ug`)
-- limited to user-authored content — notes, tasks, custom events — never your schedule, and never analytics
+- limited to user-authored content — notes, tasks, custom events — never your schedule
 
-**Telemetry will remain absent regardless.** Syncing your own notes to your own account is not telemetry, and no third-party analytics will be added.
+**Analytics will remain absent regardless.** Syncing your own notes to your own account is not telemetry, and no behavioural tracking will be added.
 
 ### Permissions
 
@@ -118,7 +133,7 @@ An **opt-in** cloud sync is planned, so notes and tasks can follow you between d
 | `RECEIVE_BOOT_COMPLETED` | Re-arm alarms after a restart |
 | `WAKE_LOCK` | Deliver an alarm while the device is asleep |
 | `VIBRATE` | Alarm vibration |
-| `INTERNET`, `ACCESS_NETWORK_STATE` | Reserved for the planned opt-in sync — **currently unused** |
+| `INTERNET`, `ACCESS_NETWORK_STATE` | Required by the bundled Firebase SDKs — **no request is currently made** |
 
 ---
 

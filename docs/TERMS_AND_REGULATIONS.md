@@ -60,8 +60,14 @@ Under no circumstances shall the developer (**Mark Paul M**) be held liable for 
 5.1. **100% Local On-Device Storage**:  
 Lectures stores all user preferences, academic programme selections, coursework tasks, lecture notes, and alarm schedules strictly locally on the user's Android device using private AndroidX Room (SQLite) database files.
 
-5.2. **Zero Telemetry**:  
-The application contains no analytics tracking, surveillance SDKs, advertising frameworks, or data harvesting scripts. No behavioural, usage, or diagnostic data is collected or transmitted.
+5.2. **No Analytics or Advertising**:  
+The application contains no analytics tracking, advertising frameworks, or data harvesting scripts. No behavioural or usage data is collected or transmitted. This has been verified by inspecting the compiled application binary.
+
+5.2.1. **Bundled Third-Party Components**:  
+The application binary includes certain Google Firebase software development kits (Firebase Common, Firestore, Authentication, App Check, and Firebase AI). These components are compiled into the application but are **not invoked** by the current version: no authentication, database, or attestation call is made, and no request is sent to any server. They are present in anticipation of the optional cloud synchronisation described in clause 5.5. Users are advised that these libraries are capable of transmitting data to Google if activated; they are not currently activated.
+
+5.2.2. **Planned Dependency Removal**:  
+Unused third-party components are scheduled for removal from the application binary, which will reduce both the application size and the scope of third-party code distributed to users.
 
 5.3. **No Commercial Data Sharing**:  
 No user content or schedule habits are ever collected, sold, rented, or transmitted to third parties for any commercial purpose.
