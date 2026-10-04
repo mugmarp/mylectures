@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mustime.core.util.TimeUtil
 import com.mustime.features.timetable.domain.TimetableEntry
+import com.mustime.ui.components.RoomFloorBadge
 
 @Composable
 fun NextUpCard(entry: TimetableEntry, minutesUntil: Int, onClick: () -> Unit) {
@@ -120,6 +121,8 @@ fun NextUpCard(entry: TimetableEntry, minutesUntil: Int, onClick: () -> Unit) {
                     Icon(Icons.Outlined.MeetingRoom, contentDescription = "Venue", tint = Color.White, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(roomText, color = Color.White, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    RoomFloorBadge(roomName = roomText, compact = true, useContrastColor = true)
                 }
             }
 

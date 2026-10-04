@@ -108,7 +108,7 @@ fun WelcomeScreen(
                         color = primaryBlue
                     )
                     Text(
-                        text = "Schedule slots are student-compiled for personal assistance. Students should cross-reference official university physical notice boards for official announcements.",
+                        text = "Schedule slots are compiled for personal student assistance. Students should cross-reference official university online portals (timetable.must.ac.ug) for official announcements.",
                         fontSize = 12.sp,
                         color = textSecondary
                     )
@@ -120,7 +120,7 @@ fun WelcomeScreen(
                         color = primaryBlue
                     )
                     Text(
-                        text = "Timetables are stored locally for fast offline access. Students are encouraged to consult official university notice boards for examination notices.",
+                        text = "Timetables are stored locally for fast offline access. Students are encouraged to consult official university online systems for examination and room allocation updates.",
                         fontSize = 12.sp,
                         color = textSecondary
                     )

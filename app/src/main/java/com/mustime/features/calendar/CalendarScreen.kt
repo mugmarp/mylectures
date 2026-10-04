@@ -45,6 +45,7 @@ import com.mustime.features.timetable.ui.LectureCard
 import com.mustime.features.timetable.ui.LectureDetailSheet
 import com.mustime.ui.components.AcademicProfileSheet
 import com.mustime.ui.components.NotificationCenterSheet
+import com.mustime.ui.components.RoomFloorBadge
 
 private sealed class CalendarItem(val startTime: String) {
     data class Lecture(val entry: TimetableEntry) : CalendarItem(entry.startTime)
@@ -612,10 +613,14 @@ fun CalendarScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     if (event.location.isNotBlank()) {
-                        Text(
-                            text = "Venue: ${event.location}",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Venue: ${event.location}",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            RoomFloorBadge(roomName = event.location, compact = true)
+                        }
                     }
                     if (event.notes.isNotBlank()) {
                         Text(
