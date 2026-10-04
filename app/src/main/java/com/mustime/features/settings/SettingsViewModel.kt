@@ -26,7 +26,7 @@ data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.LIGHT,
     val darkMode: Boolean = false,
     val notificationsEnabled: Boolean = true,
-    val classAlarmLeadMinutes: Int = 15,
+    val classAlarmLeadMinutes: Int = 30,
     val taskReminderLeadHours: Int = 2,
     val alarmVibration: Boolean = true,
     val alarmSound: String = "Chime",

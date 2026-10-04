@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.mustime.core.util.TimeUtil
 import com.mustime.features.timetable.domain.ActivityCategory
 import com.mustime.features.timetable.domain.CustomEvent
+import com.mustime.ui.components.RoomFloorBadge
 
 @Composable
 fun ActivityCard(
@@ -190,6 +191,8 @@ fun ActivityCard(
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        RoomFloorBadge(roomName = event.location, compact = true)
                     }
                 }
 

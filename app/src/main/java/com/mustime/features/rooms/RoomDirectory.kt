@@ -1643,6 +1643,74 @@ object UniversityDirectory {
     /** Legacy alias kept for backward compatibility. */
     val FCI_ROOMS: List<RoomItem> = ALL_ROOMS.filter { it.buildingCode == "FCI" }
 
+    /** Finds a room matching any query, code, name or alias. */
+    fun findRoom(queryRoom: String?): RoomItem? {
+        if (queryRoom.isNullOrBlank()) return null
+        val clean = queryRoom.trim()
+        if (clean.equals("TBA", ignoreCase = true) || clean.equals("TBD", ignoreCase = true) ||
+            clean.equals("NONE", ignoreCase = true) || clean.equals("N/A", ignoreCase = true)) {
+            return null
+        }
+        return ALL_ROOMS.firstOrNull { it.matchesRoomString(clean) }
+    }
+
+    /**
+     * Resolves the floor/level for any room string or room code.
+     * Checks authoritative room directory first, and falls back to smart naming heuristics.
+     */
+    fun resolveLevel(queryRoom: String?): BuildingLevel? {
+        if (queryRoom.isNullOrBlank()) return null
+        val clean = queryRoom.trim()
+        if (clean.equals("TBA", ignoreCase = true) || clean.equals("TBD", ignoreCase = true) ||
+            clean.equals("NONE", ignoreCase = true) || clean.equals("N/A", ignoreCase = true)) {
+            return null
+        }
+        val found = findRoom(clean)
+        if (found != null) return found.level
+
+        // Smart heuristics for room codes / custom room inputs
+        val upper = clean.uppercase()
+        return when {
+            upper.contains("GROUND") || upper.contains("GRND") || upper.contains("GF") ||
+                    upper.contains("LG") || upper.contains("G0") || upper.contains("G-") ||
+                    Regex(".*[A-Z]?G\\d{1,3}.*").matches(upper) -> BuildingLevel.GROUND
+
+            upper.contains("4TH") || upper.contains("FOURTH") || upper.contains("LEVEL 4") ||
+                    upper.contains("FLOOR 4") || upper.contains("L4") ||
+                    Regex(".*[A-Z]?4\\d{2}.*").matches(upper) -> BuildingLevel.FOURTH
+
+            upper.contains("3RD") || upper.contains("THIRD") || upper.contains("LEVEL 3") ||
+                    upper.contains("FLOOR 3") || upper.contains("L3") ||
+                    Regex(".*[A-Z]?3\\d{2}.*").matches(upper) -> BuildingLevel.THIRD
+
+            upper.contains("2ND") || upper.contains("SECOND") || upper.contains("LEVEL 2") ||
+                    upper.contains("FLOOR 2") || upper.contains("L2") ||
+                    Regex(".*[A-Z]?2\\d{2}.*").matches(upper) -> BuildingLevel.SECOND
+
+            upper.contains("1ST") || upper.contains("FIRST") || upper.contains("LEVEL 1") ||
+                    upper.contains("FLOOR 1") || upper.contains("L1") ||
+                    Regex(".*[A-Z]?1\\d{2}.*").matches(upper) -> BuildingLevel.FIRST
+
+            else -> null
+        }
+    }
+
+    fun roomsForCampus(campus: String?): List<RoomItem> =
+        if (campus.isNullOrBlank()) ALL_ROOMS
+        else ALL_ROOMS.filter { it.campus.equals(campus, ignoreCase = true) }
+
+    fun roomsForBuilding(buildingCode: String?): List<RoomItem> =
+        if (buildingCode.isNullOrBlank()) ALL_ROOMS
+        else ALL_ROOMS.filter { it.buildingCode.equals(buildingCode, ignoreCase = true) }
+
+    fun buildingsForCampus(campus: String?): List<Building> =
+        if (campus.isNullOrBlank()) BUILDINGS
+        else BUILDINGS.filter { it.campus.equals(campus, ignoreCase = true) }
+
+    /** Rooms with no scheduled sessions this semester — always available. */
+    val PERMANENTLY_VACANT_ROOMS: List<RoomItem> = ALL_ROOMS.filter { it.isPermanentlyVacant }
+
+    /**
     fun roomsForCampus(campus: String?): List<RoomItem> =
         if (campus.isNullOrBlank()) ALL_ROOMS
         else ALL_ROOMS.filter { it.campus.equals(campus, ignoreCase = true) }

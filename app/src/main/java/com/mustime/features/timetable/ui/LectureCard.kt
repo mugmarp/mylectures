@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mustime.core.util.TimeUtil
 import com.mustime.features.timetable.domain.TimetableEntry
+import com.mustime.ui.LocalAppTheme
+import com.mustime.ui.components.RoomFloorBadge
 
 @Composable
 fun LectureCard(entry: TimetableEntry, onClick: () -> Unit) {
@@ -110,6 +112,8 @@ fun LectureCard(entry: TimetableEntry, onClick: () -> Unit) {
                         Icon(Icons.Outlined.MeetingRoom, contentDescription = "Venue", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(roomText, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        RoomFloorBadge(roomName = roomText, compact = true, isDark = LocalAppTheme.current.isDark)
                     }
                 }
 

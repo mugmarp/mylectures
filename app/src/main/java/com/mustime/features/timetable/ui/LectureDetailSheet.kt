@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mustime.features.timetable.domain.TimetableEntry
 import com.mustime.ui.LocalAppTheme
+import com.mustime.ui.components.RoomFloorBadge
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -45,7 +46,7 @@ fun LectureDetailSheet(
     val isCustomInitial = initialReminder != null && initialReminder !in standardReminderOptions
     var isCustomReminder by remember { mutableStateOf(isCustomInitial) }
     var customReminderText by remember { mutableStateOf(if (isCustomInitial) initialReminder.toString() else "") }
-    var selectedReminder by remember { mutableStateOf<Int?>(initialReminder ?: 15) }
+    var selectedReminder by remember { mutableStateOf<Int?>(initialReminder ?: 30) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -110,7 +111,15 @@ fun LectureDetailSheet(
             // Details rows
             val roomVal = entry.room?.trim()
             if (!roomVal.isNullOrBlank() && roomVal.uppercase() !in listOf("TBA", "TBD", "NONE", "N/A")) {
-                DetailRow(icon = Icons.Outlined.MeetingRoom, label = "Venue / Room", value = roomVal, isDark = isDark)
+                DetailRow(
+                    icon = Icons.Outlined.MeetingRoom,
+                    label = "Venue / Room",
+                    value = roomVal,
+                    isDark = isDark,
+                    trailingContent = {
+                        RoomFloorBadge(roomName = roomVal, compact = false, isDark = isDark)
+                    }
+                )
                 Spacer(modifier = Modifier.height(12.dp))
             }
             val lecturerVal = entry.lecturer?.trim()
@@ -176,7 +185,7 @@ fun LectureDetailSheet(
                         .clickable {
                             isCustomReminder = !isCustomReminder
                             if (!isCustomReminder) {
-                                selectedReminder = 15
+                                selectedReminder = 30
                             }
                         }
                         .padding(horizontal = 14.dp, vertical = 8.dp),
@@ -271,7 +280,8 @@ private fun DetailRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     value: String,
-    isDark: Boolean
+    isDark: Boolean,
+    trailingContent: (@Composable () -> Unit)? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -290,11 +300,19 @@ private fun DetailRow(
             fontSize = 14.sp,
             modifier = Modifier.weight(1f)
         )
-        Text(
-            value,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 14.sp,
-            color = if (isDark) Color.White else Color(0xFF0F172A)
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                value,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+                color = if (isDark) Color.White else Color(0xFF0F172A)
+            )
+            if (trailingContent != null) {
+                trailingContent()
+            }
+        }
     }
 }

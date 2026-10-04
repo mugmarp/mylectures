@@ -41,6 +41,7 @@ import com.mustime.features.timetable.domain.TimetableEntry
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.components.AcademicProfileSheet
 import com.mustime.ui.components.NotificationCenterSheet
+import com.mustime.ui.components.RoomFloorBadge
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -864,6 +865,7 @@ private fun TimetableEntry.toSpecClassSession(
         attachedNotesCount = if (cleanNotePreview != null) 1 else 0,
         attachedNotePreview = cleanNotePreview,
         isAlarmSet = note?.alarmMinutes != null,
+        alarmMinutes = note?.alarmMinutes,
         isHappeningNow = isLive,
         progress = progress?.progress ?: 0.5f,
         elapsedText = elapsedStr,
@@ -1036,6 +1038,8 @@ private fun GlobalNextUpHeroCard(
                                 fontSize = 13.sp,
                                 color = Color.White.copy(alpha = 0.9f)
                             )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            RoomFloorBadge(roomName = roomText, compact = true, useContrastColor = true)
                         }
                     }
 

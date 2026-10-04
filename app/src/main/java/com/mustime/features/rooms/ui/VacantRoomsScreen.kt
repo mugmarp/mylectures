@@ -34,6 +34,7 @@ import com.mustime.features.rooms.UniversityDirectory
 import com.mustime.features.timetable.domain.TimetableEntry
 import com.mustime.features.timetable.ui.*
 import com.mustime.ui.LocalAppTheme
+import com.mustime.ui.components.FloorIndicatorBadge
 import com.mustime.ui.components.DedicatedDayPickerDialog
 import com.mustime.ui.components.DedicatedTimePickerDialog
 import java.util.Calendar
@@ -852,16 +853,26 @@ fun RoomVacancyCard(
                         color = textPrimary
                     )
 
+                    // Dedicated floor level badge directly beside Room Identifier
+                    FloorIndicatorBadge(
+                        level = room.level,
+                        compact = true,
+                        isDark = isDark
+                    )
+
                     Box(
                         modifier = Modifier
-                            .background(PrimaryBlue.copy(alpha = 0.08f), RoundedCornerShape(6.dp))
+                            .background(
+                                if (isDark) Color(0xFF334155).copy(alpha = 0.5f) else Color(0xFFF1F5F9),
+                                RoundedCornerShape(6.dp)
+                            )
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = "${room.level.shortName} · ${room.type.displayName}",
+                            text = room.type.displayName,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
-                            color = PrimaryBlue
+                            color = textMuted
                         )
                     }
 
@@ -973,16 +984,24 @@ fun RoomScheduleDetailDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             Text(
-                                text = "${room.code} · ${room.type.displayName}",
-                                fontSize = 17.sp,
+                                text = room.code,
+                                fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = textPrimary
                             )
+                            FloorIndicatorBadge(
+                                level = room.level,
+                                compact = false,
+                                isDark = isDark
+                            )
                         }
                         Text(
-                            text = "${room.buildingName} · ${room.level.displayName} · $dayOfWeek",
+                            text = "${room.buildingName} · ${room.type.displayName} · $dayOfWeek",
                             fontSize = 12.sp,
                             color = textMuted
                         )

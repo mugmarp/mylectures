@@ -739,14 +739,15 @@ fun NextUpHeroCard(
                     shape = ActionButtonShape,
                     contentPadding = PaddingValues(horizontal = 12.dp)
                 ) {
+                    val leadMins = session.alarmMinutes ?: 30
                     Icon(
                         imageVector = if (session.isAlarmSet) Icons.Outlined.CheckCircle else Icons.Outlined.Alarm,
-                        contentDescription = if (session.isAlarmSet) "Alarm is active" else "Set 15m Alarm",
+                        contentDescription = if (session.isAlarmSet) "Alarm active ($leadMins min before)" else "Set ${leadMins}m Alarm",
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (session.isAlarmSet) "Alarm Set (15m)" else "Set 15m Alarm",
+                        text = if (session.isAlarmSet) "Alarm Set (${leadMins}m)" else "Set ${leadMins}m Alarm",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )

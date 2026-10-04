@@ -7,7 +7,7 @@
         android:width="140dp"
         android:height="140dp" />
     <item
-        android:drawable="@drawable/ic_splash_branding"
+        android:drawable="@drawable/ic_splash_branding_night"
         android:gravity="bottom|center_horizontal"
         android:width="150dp"
         android:height="40dp"
