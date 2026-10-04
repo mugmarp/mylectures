@@ -2,8 +2,7 @@
 
 **Effective Date**: September 30, 2026  
 **Application Name**: **Lectures**  
-**Author & Developer**: **MUGENDAWALA MARK PAUL**  
-**Development Organization / Studio**: [TiralLab](https://tirallab.page)  
+**Author**: **Mark Paul M**  
 **GitHub**: [@mugmarp](https://github.com/mugmarp)  
 **Website**: [https://tirallab.page](https://tirallab.page)  
 **Contact Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
@@ -13,7 +12,7 @@
 ## 1. ⚠️ Institutional Non-Affiliation Disclaimer
 
 1.1. **Independent Creation**:  
-**Lectures** is an independently conceived, designed, and developed academic companion application created by **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page)).
+**Lectures** is an independently conceived, designed, and developed academic companion application created by **Mark Paul M**.
 
 1.2. **No Official Affiliation or Endorsement**:  
 **Lectures is NOT an official application of, nor is it endorsed by, affiliated with, sponsored by, authorized by, or in any way officially connected to Mbarara University of Science and Technology (MUST) or any other academic university, institution, faculty, department, or administrative entity.**
@@ -39,10 +38,10 @@ Users agree to use Lectures in compliance with all applicable local, national, a
 ## 3. Disclaimer of Warranties ("AS IS")
 
 3.1. **No Warranty**:  
-To the maximum extent permitted by applicable law, Lectures is provided on an **"AS IS"** and **"AS AVAILABLE"** basis. The developer (**MUGENDAWALA MARK PAUL**) and **TiralLab** disclaim all warranties of any kind, whether express, statutory, or implied, including but not limited to the implied warranties of merchantability, fitness for a particular purpose, and non-infringement.
+To the maximum extent permitted by applicable law, Lectures is provided on an **"AS IS"** and **"AS AVAILABLE"** basis. The developer (**Mark Paul M**) disclaims all warranties of any kind, whether express, statutory, or implied, including but not limited to the implied warranties of merchantability, fitness for a particular purpose, and non-infringement.
 
 3.2. **Schedule & Alarm Reliability**:  
-Neither the developer nor TiralLab guarantees that the application will operate error-free, uninterrupted, or without delays. While every reasonable effort is made to maintain schedule fidelity, the developer assumes no legal liability for:
+The developer does not guarantee that the application will operate error-free, uninterrupted, or without delays. While every reasonable effort is made to maintain schedule fidelity, the developer assumes no legal liability for:
 * Discrepancies between the app's offline timetable and actual university physical lectures.
 * Late arrivals or missed lectures, tests, or examinations.
 * Device battery optimization settings, OS restrictions, or third-party process killers terminating background alarms scheduled via Android `AlarmManager`.
@@ -52,7 +51,7 @@ Neither the developer nor TiralLab guarantees that the application will operate 
 
 ## 4. Limitation of Liability
 
-Under no circumstances shall the developer (**MUGENDAWALA MARK PAUL**) or **TiralLab** be held liable for any direct, indirect, incidental, special, consequential, or punitive damages arising from the use of, or inability to use, this application, even if advised of the possibility of such damages.
+Under no circumstances shall the developer (**Mark Paul M**) be held liable for any direct, indirect, incidental, special, consequential, or punitive damages arising from the use of, or inability to use, this application, even if advised of the possibility of such damages.
 
 ---
 
@@ -71,7 +70,7 @@ No user content or schedule habits are ever collected, sold, rented, or transmit
 
 ## 6. Intellectual Property Rights
 
-All rights, titles, and interests in and to **Lectures**, including but not limited to application architecture, software code, UI design systems, icons, graphics, and documentation, are the exclusive intellectual property of **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page)).
+All rights, titles, and interests in and to **Lectures**, including but not limited to application architecture, software code, UI design systems, icons, graphics, and documentation, are the exclusive intellectual property of **Mark Paul M** .
 
 ---
 
@@ -80,7 +79,7 @@ All rights, titles, and interests in and to **Lectures**, including but not limi
 The developer reserves the right to modify these Regulations and Terms at any time. Updates will be reflected in application releases and in this repository.
 
 For questions or inquiries regarding these terms, please contact:
-* **Developer**: MUGENDAWALA MARK PAUL
+* **Developer**: Mark Paul M
 * **Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
 * **Website**: [https://tirallab.page](https://tirallab.page)
 * **GitHub**: [https://github.com/mugmarp](https://github.com/mugmarp)
