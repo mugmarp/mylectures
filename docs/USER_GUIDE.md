@@ -9,7 +9,7 @@ Welcome to **Lectures**! This user manual walks you through all the academic fea
 ---
 
 > ### ⚠️ Notice of Non-Affiliation
-> Lectures is an independently developed academic student companion created by Mark Paul M. **Lectures is NOT an official app of, nor is it endorsed by, affiliated with, or sponsored by Mbarara University of Science and Technology (MUST).** Always check your faculty's official physical notice board and university portal for official schedule announcements, test dates, and room changes.
+> Lectures is an independently developed academic student companion created by Mark Paul M. **Lectures is NOT an official app of, nor is it endorsed by, affiliated with, or sponsored by Mbarara University of Science and Technology (MUST).** Always check the official university sources — [timetable.must.ac.ug](https://timetable.must.ac.ug) and the [student portal](https://systems.must.ac.ug) — for schedule announcements, test dates, and room changes.
 
 ---
 

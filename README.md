@@ -11,13 +11,47 @@
 
 ---
 
-## The problem
+## Why this exists
 
-Timetables at MUST are published as PDFs pinned in WhatsApp class groups. There is no reliable way to check them on a phone, no way to know which lecture rooms are free between classes, and the official portal is frequently unavailable.
+MUST publishes its timetables online at [timetable.must.ac.ug](https://timetable.must.ac.ug) — teaching timetables, room allocations, and examination schedules. The data is public and current, and it is listed on the university's own [digital systems directory](https://systems.must.ac.ug).
 
-The practical result: students walk between buildings looking for a vacant room, and lose time doing it.
+But it is published as **one large HTML table per programme**, and a separate set of tables **per room**. Answering a simple question — *"what do I have next, and where can I sit down?"* — means finding your programme's table, scanning it, then cross-referencing the room tables to work out what's free. On a phone, and often on a slow connection.
 
-**Lectures** solves that. Your timetable lives on your phone, works with no connection, and tells you which rooms are free right now.
+So in practice, most students never open it. Instead the timetable gets re-shared into WhatsApp class groups and pinned there — a screenshot or export of your own section's table, which is faster to glance at than the real source. It works, but it is a convenience copy: it lives in a chat thread, it goes stale when the timetable is revised, and it tells you nothing about rooms.
+
+The university's official **Pulse** app covers a lot of ground — timetable, attendance tracking, announcements, campus maps, academic calendar — but it is credential-gated and server-backed, so it answers nothing without a connection.
+
+That leaves a narrow but real gap:
+
+**your own schedule, on your device, with no login and no signal — and a direct answer to which rooms are free right now.**
+
+Lectures fills it. Your timetable is stored locally, works fully offline, and cross-references every room's bookings to show what's vacant before you start walking.
+
+---
+
+## How this differs from the official Pulse app
+
+MUST has an official app — **Pulse** ([Android](https://play.google.com/store/apps/details?id=com.kuyeso.mustapp) / [iOS](https://apps.apple.com/us/app/mbarara-university/id6752959871)) — and it is good at what it does. Lectures is not a replacement for it, and does not try to be.
+
+| | **Pulse** (official) | **Lectures** |
+|---|---|---|
+| Timetable | ✅ | ✅ |
+| Academic calendar | ✅ | ✅ |
+| Announcements & news | ✅ | — |
+| Attendance tracking (location-verified) | ✅ | — |
+| Campus maps & navigation | ✅ | — |
+| Student services / support tickets | ✅ | — |
+| Sign-in required | University credentials + biometrics | **none** |
+| Works offline | Server-backed | **yes, fully** |
+| Per-class notes | — | ✅ |
+| Assignment & deadline tracking | — | ✅ |
+| Exact background alarms | — | ✅ |
+| **Vacant room finder** | — | ✅ |
+| Telemetry | — | **none** |
+
+**The two real differences:** Pulse needs a login and a connection; Lectures needs neither. And Pulse does not answer *"which room is free right now?"*
+
+If you want announcements, attendance, or campus maps — use Pulse. If you want your schedule to work on a bad connection, and to stop walking between buildings looking for a seat — that is what Lectures is for.
 
 ---
 
@@ -202,7 +236,7 @@ Room campus assignment is **derived from the faculties of the cohorts that actua
 
 All university names, faculty titles, and course codes are referenced solely to describe and categorise schedules. Trademarks belong to their respective owners.
 
-**Always cross-check official notice boards and administrative portals** for announcements, venue changes, and examination timetables. The app is provided "as is", without warranty — the developer accepts no liability for missed classes, test clashes, or schedule discrepancies.
+**Always cross-check the official university sources** — [timetable.must.ac.ug](https://timetable.must.ac.ug) and the [student portal](https://systems.must.ac.ug) — for announcements, venue changes, and examination timetables. The app is provided "as is", without warranty — the developer accepts no liability for missed classes, test clashes, or schedule discrepancies.
 
 ---
 

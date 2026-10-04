@@ -21,7 +21,7 @@
 Any reference to "Mbarara University of Science and Technology", "MUST", faculty names, departmental codes, or course titles is used solely for informational, identification, and schedule categorization purposes for students. All trademarks, registered logos, and institutional titles belong to their respective proprietary holders. The use of these names does not imply any sponsorship, endorsement, or partnership by the respective institutions.
 
 1.4. **Informational & Educational Nature**:  
-All academic timetable information, course codes, hall venues, and schedules bundled in or rendered by Lectures are provided solely for personal organizational assistance and convenience. Students are strictly advised and required to consult official university physical notice boards, official faculty emails, and administrative portals for official announcements, room changes, lecture cancellations, and examination timetables.
+All academic timetable information, course codes, hall venues, and schedules bundled in or rendered by Lectures are provided solely for personal organizational assistance and convenience. Students are strictly advised and required to consult the official university timetable site (timetable.must.ac.ug) and the university's administrative portals for official announcements, room changes, lecture cancellations, and examination timetables.
 
 ---
 
