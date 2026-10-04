@@ -27,6 +27,8 @@ import androidx.compose.ui.window.Dialog
 import com.mustime.TimetableApplication
 import com.mustime.core.util.TimeUtil
 import com.mustime.features.rooms.BuildingLevel
+import com.mustime.features.rooms.Campus
+import com.mustime.features.rooms.SuggestionValue
 import com.mustime.features.rooms.RoomVacancyStatus
 import com.mustime.features.rooms.UniversityDirectory
 import com.mustime.features.timetable.domain.TimetableEntry
@@ -36,10 +38,21 @@ import com.mustime.ui.components.DedicatedDayPickerDialog
 import com.mustime.ui.components.DedicatedTimePickerDialog
 import java.util.Calendar
 
+/**
+ * Campus Vacant Room Finder.
+ *
+ * Room catalog is sourced from the authoritative MUST Room Allocation page
+ * (index_rooms_teaching.html). Campus is DERIVED from the faculties of the
+ * cohorts that actually use each room, so filtering by campus is reliable.
+ *
+ * Campus is auto-detected from the student's enrolled programme on first open,
+ * and can be overridden with the campus chip row.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VacantRoomsScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    enrolledProgramme: String? = null
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as? TimetableApplication
@@ -70,10 +83,19 @@ fun VacantRoomsScreen(
     var queryTime by remember { mutableStateOf(initialTimeStr) }
     var isLiveNow by remember { mutableStateOf(true) }
 
+    // ---- Campus: auto-detect from enrolled programme, overridable ----
+    val detectedCampus = remember(enrolledProgramme) {
+        campusForProgramme(enrolledProgramme)
+    }
+    var selectedCampus by remember { mutableStateOf(detectedCampus) } // null = All campuses
+    var selectedBuilding by remember { mutableStateOf<String?>(null) } // null = All buildings
+
     // Filters
-    var minGapMinutes by remember { mutableIntStateOf(30) } // Default 30 min as requested
+    var minGapMinutes by remember { mutableIntStateOf(30) } // Default 30 min
     var selectedLevel by remember { mutableStateOf<BuildingLevel?>(null) } // null = All levels
     var studyFriendlyOnly by remember { mutableStateOf(true) }
+    var showPermanentlyVacant by remember { mutableStateOf(true) }
+    var hideLibrary by remember { mutableStateOf(false) }  // libraries rank last (known baseline)
     var searchQuery by remember { mutableStateOf("") }
 
     // Pickers visibility
@@ -81,37 +103,74 @@ fun VacantRoomsScreen(
     var showDayPicker by remember { mutableStateOf(false) }
     var selectedRoomForSchedule by remember { mutableStateOf<RoomVacancyStatus?>(null) }
 
-    // Calculate Room Vacancy algorithmically
-    val vacancyStatuses = remember(allEntries, customEvents, queryDay, queryTime, minGapMinutes) {
+    // Reset building when campus changes (a building belongs to one campus)
+    LaunchedEffect(selectedCampus) {
+        if (selectedBuilding != null) {
+            val b = UniversityDirectory.BUILDINGS.firstOrNull { it.code == selectedBuilding }
+            if (b != null && !b.campus.equals(selectedCampus, ignoreCase = true)) {
+                selectedBuilding = null
+            }
+        }
+    }
+
+    val campusBuildings = remember(selectedCampus) {
+        UniversityDirectory.buildingsForCampus(selectedCampus)
+    }
+
+    // Calculate Room Vacancy algorithmically (scoped by campus + building)
+    val vacancyStatuses = remember(allEntries, customEvents, queryDay, queryTime, minGapMinutes,
+                                   selectedCampus, selectedBuilding) {
         UniversityDirectory.calculateRoomVacancy(
             allEntries = allEntries,
             dayOfWeek = queryDay,
             queryTimeStr = queryTime,
             minGapMinutes = minGapMinutes,
-            customEvents = customEvents
+            customEvents = customEvents,
+            campusFilter = selectedCampus,
+            buildingFilter = selectedBuilding
         )
     }
 
     // Filter results
-    val filteredRooms = remember(vacancyStatuses, selectedLevel, studyFriendlyOnly, minGapMinutes, searchQuery) {
-        vacancyStatuses.filter { status ->
+    val filteredRooms = remember(vacancyStatuses, selectedLevel, studyFriendlyOnly, minGapMinutes,
+                                 searchQuery, showPermanentlyVacant, hideLibrary) {
+        val base = vacancyStatuses.filter { status ->
             val matchesLevel = selectedLevel == null || status.room.level == selectedLevel
             val matchesStudy = !studyFriendlyOnly || status.room.isStudyFriendly
             val matchesSearch = searchQuery.isBlank() ||
                     status.room.name.contains(searchQuery, ignoreCase = true) ||
-                    status.room.code.contains(searchQuery, ignoreCase = true)
+                    status.room.code.contains(searchQuery, ignoreCase = true) ||
+                    status.room.aliases.any { it.contains(searchQuery, ignoreCase = true) }
+
+            val matchesVacantFlag = showPermanentlyVacant || !status.room.isPermanentlyVacant
 
             // When studyFriendlyOnly and free, apply the minimum gap requirement
             val matchesGap = if (!status.isOccupied && minGapMinutes > 0 && studyFriendlyOnly) {
                 status.gapMinutes >= minGapMinutes || status.freeUntil == "Rest of day"
             } else true
 
-            matchesLevel && matchesStudy && matchesSearch && matchesGap
+            matchesLevel && matchesStudy && matchesSearch && matchesGap && matchesVacantFlag
         }
+        // Rank by how much NEW information each suggestion carries: class rooms and
+        // labs first (their availability is the unknown), libraries last (everyone
+        // already assumes the library is free). Then longest free window, then code.
+        base
+            .filter { !hideLibrary || it.room.suggestionValue != SuggestionValue.LIBRARY }
+            .sortedWith(
+                compareBy(
+                    { it.room.suggestionValue.suggestionRank },
+                    { if (it.isOccupied) 1 else 0 },
+                    { -it.gapMinutes },
+                    { it.room.code }
+                )
+            )
     }
 
-    val freeCount = vacancyStatuses.count { !it.isOccupied && (it.gapMinutes >= minGapMinutes || it.freeUntil == "Rest of day") && it.room.isStudyFriendly }
+    val freeCount = vacancyStatuses.count {
+        !it.isOccupied && (it.gapMinutes >= minGapMinutes || it.freeUntil == "Rest of day") && it.room.isStudyFriendly
+    }
     val occupiedCount = vacancyStatuses.count { it.isOccupied && it.room.isStudyFriendly }
+    val permanentCount = vacancyStatuses.count { it.room.isPermanentlyVacant && it.room.isStudyFriendly }
 
     Scaffold(
         containerColor = bgColor,
@@ -133,7 +192,7 @@ fun VacantRoomsScreen(
                                     .padding(horizontal = 6.dp, vertical = 2.dp)
                             ) {
                                 Text(
-                                    text = "FCI Building",
+                                    text = "${vacancyStatuses.size} rooms",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = StatusGreenLive
@@ -141,7 +200,13 @@ fun VacantRoomsScreen(
                             }
                         }
                         Text(
-                            text = "Kihumuro Campus · Real-time Study Gaps",
+                            text = buildString {
+                                append(selectedCampus?.let { Campus.entries.firstOrNull { c -> c.displayName == it }?.shortName } ?: "All Campuses")
+                                if (selectedBuilding != null) {
+                                    val b = UniversityDirectory.BUILDINGS.firstOrNull { it.code == selectedBuilding }
+                                    if (b != null) append(" · ${b.name}")
+                                }
+                            },
                             fontSize = 12.sp,
                             color = textMuted
                         )
@@ -167,8 +232,96 @@ fun VacantRoomsScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            item(key = "header_spacer") {
-                Spacer(modifier = Modifier.height(2.dp))
+            item(key = "header_spacer") { Spacer(modifier = Modifier.height(2.dp)) }
+
+            // SECTION 0: CAMPUS SELECTOR
+            item(key = "campus_selector") {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Campus",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = textPrimary
+                        )
+                        if (detectedCampus != null && selectedCampus != detectedCampus) {
+                            Text(
+                                text = "Detected: $detectedCampus",
+                                fontSize = 11.sp,
+                                color = PrimaryBlue,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.clickable { selectedCampus = detectedCampus }
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        item {
+                            FilterChip(
+                                selected = selectedCampus == null,
+                                onClick = { selectedCampus = null },
+                                label = { Text("All Campuses", fontSize = 12.sp) },
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+                        items(Campus.entries.toTypedArray()) { campus ->
+                            val isSelected = selectedCampus == campus.displayName
+                            val count = remember(campus) {
+                                UniversityDirectory.roomsForCampus(campus.displayName).size
+                            }
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { selectedCampus = campus.displayName },
+                                label = { Text("${campus.shortName} ($count)", fontSize = 12.sp) },
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // SECTION 0b: BUILDING SELECTOR
+            if (campusBuildings.isNotEmpty()) {
+                item(key = "building_selector") {
+                    Column {
+                        Text(
+                            text = "Building",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = textPrimary
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            item {
+                                FilterChip(
+                                    selected = selectedBuilding == null,
+                                    onClick = { selectedBuilding = null },
+                                    label = { Text("All Buildings", fontSize = 12.sp) },
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                            }
+                            items(campusBuildings) { b ->
+                                val isSelected = selectedBuilding == b.code
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { selectedBuilding = b.code },
+                                    label = { Text("${b.name} (${b.studyFriendlyRooms})", fontSize = 12.sp) },
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             // SECTION 1: INTERACTIVE TIME & DAY CONTROLS
@@ -216,13 +369,14 @@ fun VacantRoomsScreen(
                                 }
                             }
 
-                            // Quick "Now" Reset Chip
                             FilterChip(
                                 selected = isLiveNow,
                                 onClick = {
                                     val now = Calendar.getInstance()
                                     queryDay = TimeUtil.todayName()
-                                    queryTime = "%02d:%02d".format(now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE))
+                                    queryTime = "%02d:%02d".format(
+                                        now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE)
+                                    )
                                     isLiveNow = true
                                 },
                                 label = {
@@ -242,7 +396,6 @@ fun VacantRoomsScreen(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        // Dedicated Pickers Row
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -280,7 +433,6 @@ fun VacantRoomsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Free Rooms Card
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = Color(0xFFDCFCE7).copy(alpha = if (isDark) 0.15f else 0.8f),
@@ -317,7 +469,6 @@ fun VacantRoomsScreen(
                         }
                     }
 
-                    // Occupied Rooms Card
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = Color(0xFFFEE2E2).copy(alpha = if (isDark) 0.15f else 0.8f),
@@ -347,7 +498,7 @@ fun VacantRoomsScreen(
                                 color = if (isDark) Color.White else Color(0xFF7F1D1D)
                             )
                             Text(
-                                text = "Tap room to view slot",
+                                text = "$permanentCount unused this sem",
                                 fontSize = 11.sp,
                                 color = if (isDark) Color(0xFFFCA5A5) else Color(0xFF991B1B)
                             )
@@ -356,7 +507,7 @@ fun VacantRoomsScreen(
                 }
             }
 
-            // SECTION 3: MINIMUM GAP FILTER (ALGORITHM FIX)
+            // SECTION 3: MINIMUM GAP FILTER
             item(key = "algorithm_gap_filter") {
                 Column {
                     Row(
@@ -394,7 +545,13 @@ fun VacantRoomsScreen(
                             FilterChip(
                                 selected = isSelected,
                                 onClick = { minGapMinutes = value },
-                                label = { Text(label, fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                                label = {
+                                    Text(
+                                        label,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
                                 shape = RoundedCornerShape(10.dp)
                             )
                         }
@@ -437,7 +594,28 @@ fun VacantRoomsScreen(
                             FilterChip(
                                 selected = !studyFriendlyOnly,
                                 onClick = { studyFriendlyOnly = !studyFriendlyOnly },
-                                label = { Text(if (studyFriendlyOnly) "Classrooms Only" else "Include Offices/Board", fontSize = 12.sp) },
+                                label = {
+                                    Text(
+                                        if (studyFriendlyOnly) "Classrooms Only" else "Include Offices/Board",
+                                        fontSize = 12.sp
+                                    )
+                                },
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+                        item {
+                            FilterChip(
+                                selected = showPermanentlyVacant,
+                                onClick = { showPermanentlyVacant = !showPermanentlyVacant },
+                                label = { Text("Show Unused Rooms", fontSize = 12.sp) },
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+                        item {
+                            FilterChip(
+                                selected = hideLibrary,
+                                onClick = { hideLibrary = !hideLibrary },
+                                label = { Text("Hide Library", fontSize = 12.sp) },
                                 shape = RoundedCornerShape(10.dp)
                             )
                         }
@@ -450,7 +628,7 @@ fun VacantRoomsScreen(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search room (e.g. LR1, CR3, Library)") },
+                    placeholder = { Text("Search room (e.g. LR1, CR3, Library, S204)") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = textMuted) },
                     trailingIcon = if (searchQuery.isNotEmpty()) {
                         {
@@ -495,7 +673,7 @@ fun VacantRoomsScreen(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Try lowering the minimum gap threshold or clearing the search query.",
+                                text = "Try lowering the minimum gap threshold, switching campus, or clearing the search query.",
                                 fontSize = 12.sp,
                                 color = textMuted,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -508,13 +686,14 @@ fun VacantRoomsScreen(
                     RoomVacancyCard(
                         status = status,
                         isDark = isDark,
+                        showCampus = selectedCampus == null,
                         onClick = { selectedRoomForSchedule = status }
                     )
                 }
             }
 
-            // Footer info regarding FAST building
-            item(key = "fast_building_notice") {
+            // Footer: data provenance
+            item(key = "data_provenance_notice") {
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = surfaceColor.copy(alpha = 0.6f),
@@ -533,7 +712,10 @@ fun VacantRoomsScreen(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "FCI Building catalog verified from directory sign. FAST Complex building directory will be added once finalized.",
+                            text = "Room catalog and campus assignment sourced from the MUST Room Allocation " +
+                                    "timetable (2026/2027 Semester I). ${UniversityDirectory.ALL_ROOMS.size} rooms " +
+                                    "across ${UniversityDirectory.BUILDINGS.size} buildings. Verify venue changes on " +
+                                    "official faculty notice boards.",
                             fontSize = 12.sp,
                             color = textMuted
                         )
@@ -568,7 +750,6 @@ fun VacantRoomsScreen(
         )
     }
 
-    // Room Day Schedule Modal
     selectedRoomForSchedule?.let { status ->
         RoomScheduleDetailDialog(
             status = status,
@@ -580,12 +761,33 @@ fun VacantRoomsScreen(
 }
 
 /**
+ * Maps an enrolled programme group (e.g. "BCS II", "MBR III") to a campus display name.
+ * Returns null when the programme cannot be resolved (=> All Campuses).
+ */
+fun campusForProgramme(programme: String?): String? {
+    if (programme.isNullOrBlank()) return null
+    val head = programme.trim().split(Regex("[\\s\\-_]+")).firstOrNull()?.uppercase() ?: return null
+    val alias = mapOf("MLC" to "MLS", "BNC" to "BNS", "BSPC" to "BSP", "PEM" to "PEEM", "CIV" to "CVE", "BAF" to "BSAF")
+    val code = alias[head] ?: head
+    return when (code) {
+        "BCS", "BIT", "BSE" -> Campus.KIHUMURO.displayName
+        "BME", "EEE", "PEEM", "CVE", "MIE" -> Campus.KIHUMURO.displayName
+        "MBR", "PHA", "BNS", "MLS", "BSP", "PHS", "DCM", "DEM", "DCAM" -> Campus.TOWN.displayName
+        "BS", "DLT" -> Campus.TOWN.displayName
+        "BBA", "BSAF", "ECO", "BPSM" -> Campus.TOWN.displayName
+        "BSAL", "BGWH", "BPCD" -> Campus.TOWN.displayName
+        else -> null
+    }
+}
+
+/**
  * Visual Room Card displaying availability status, "Free until X", gap minutes, and level tag.
  */
 @Composable
 fun RoomVacancyCard(
     status: RoomVacancyStatus,
     isDark: Boolean,
+    showCampus: Boolean = false,
     onClick: () -> Unit
 ) {
     val room = status.room
@@ -597,6 +799,7 @@ fun RoomVacancyCard(
     val statusColor = when {
         !room.isStudyFriendly -> Color(0xFF8B5CF6)
         status.isOccupied -> Color(0xFFEF4444)
+        room.isPermanentlyVacant -> Color(0xFF0EA5E9)
         status.gapMinutes >= 60 || status.freeUntil == "Rest of day" -> Color(0xFF16A34A)
         else -> Color(0xFFF59E0B)
     }
@@ -615,7 +818,6 @@ fun RoomVacancyCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon indicator
             Box(
                 modifier = Modifier
                     .size(46.dp)
@@ -627,6 +829,7 @@ fun RoomVacancyCard(
                     imageVector = when {
                         !room.isStudyFriendly -> Icons.Outlined.Lock
                         status.isOccupied -> Icons.Outlined.School
+                        room.isPermanentlyVacant -> Icons.Outlined.EventAvailable
                         else -> Icons.Outlined.MeetingRoom
                     },
                     contentDescription = null,
@@ -638,7 +841,6 @@ fun RoomVacancyCard(
             Spacer(modifier = Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                // Room Code and Level Pill
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -662,19 +864,36 @@ fun RoomVacancyCard(
                             color = PrimaryBlue
                         )
                     }
+
+                    // Libraries are the known baseline — mark them so the student knows
+                    // this suggestion carries no new information.
+                    if (room.suggestionValue == SuggestionValue.LIBRARY) {
+                        Box(
+                            modifier = Modifier
+                                .background(StatusGreenLive.copy(alpha = 0.14f), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "Known",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = StatusGreenLive
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
-                    text = room.name,
+                    text = if (showCampus) "${room.buildingName} · ${room.campus}" else room.buildingName,
                     fontSize = 13.sp,
-                    color = textMuted
+                    color = textMuted,
+                    maxLines = 1
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Availability Badge & Detail
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
@@ -690,7 +909,6 @@ fun RoomVacancyCard(
                     )
                 }
 
-                // Next session hint if available
                 if (!status.isOccupied && status.nextSession != null) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
@@ -749,7 +967,6 @@ fun RoomScheduleDetailDialog(
                     .fillMaxWidth()
                     .padding(20.dp)
             ) {
-                // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -758,17 +975,24 @@ fun RoomScheduleDetailDialog(
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "${room.code} · ${room.name}",
+                                text = "${room.code} · ${room.type.displayName}",
                                 fontSize = 17.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = textPrimary
                             )
                         }
                         Text(
-                            text = "${room.level.displayName} · $dayOfWeek Schedule",
+                            text = "${room.buildingName} · ${room.level.displayName} · $dayOfWeek",
                             fontSize = 12.sp,
                             color = textMuted
                         )
+                        if (room.usedByFaculties.isNotEmpty()) {
+                            Text(
+                                text = "Used by: ${room.usedByFaculties.joinToString(", ")}",
+                                fontSize = 11.sp,
+                                color = PrimaryBlue
+                            )
+                        }
                     }
                     IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
                         Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(18.dp))
@@ -810,7 +1034,12 @@ fun RoomScheduleDetailDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = StatusGreenLive, modifier = Modifier.size(36.dp))
+                            Icon(
+                                Icons.Outlined.CheckCircle,
+                                contentDescription = null,
+                                tint = StatusGreenLive,
+                                modifier = Modifier.size(36.dp)
+                            )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Entire Day is Free!",
@@ -830,7 +1059,7 @@ fun RoomScheduleDetailDialog(
                         modifier = Modifier.weight(1f, fill = false),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(sessions) { session ->
+                        items(sessions) { session: TimetableEntry ->
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
                                 color = if (isDark) DarkSurfaceBase else Color(0xFFF8FAFC),
@@ -859,7 +1088,10 @@ fun RoomScheduleDetailDialog(
                                     }
 
                                     Spacer(modifier = Modifier.width(10.dp))
-                                    VerticalDivider(modifier = Modifier.height(34.dp), color = textMuted.copy(alpha = 0.3f))
+                                    VerticalDivider(
+                                        modifier = Modifier.height(34.dp),
+                                        color = textMuted.copy(alpha = 0.3f)
+                                    )
                                     Spacer(modifier = Modifier.width(10.dp))
 
                                     Column(modifier = Modifier.weight(1f)) {
