@@ -78,7 +78,7 @@ fun QuickAddBottomSheet(
     var activityStartTime by remember { mutableStateOf("14:00") }
     var activityEndTime by remember { mutableStateOf("15:30") }
     var activityLocation by remember { mutableStateOf("") }
-    var activityAlarmMinutes by remember { mutableStateOf<Int?>(15) }
+    var activityAlarmMinutes by remember { mutableStateOf<Int?>(30) }
     var isActivityCustomAlarm by remember { mutableStateOf(false) }
     var activityCustomMinutesText by remember { mutableStateOf("") }
     var activityNotes by remember { mutableStateOf("") }

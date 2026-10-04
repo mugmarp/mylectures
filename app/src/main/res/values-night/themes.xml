@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar">
-        <item name="android:windowBackground">@drawable/launch_screen</item>
+        <item name="android:windowBackground">@drawable/launch_screen_night</item>
         <item name="android:statusBarColor">@color/launch_background</item>
         <item name="android:windowLightStatusBar">false</item>
 
         <!-- Android 12+ (API 31+) Launching / Splash Screen -->
         <item name="android:windowSplashScreenBackground">@color/launch_background</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/app_logo</item>
-        <item name="android:windowSplashScreenIconBackgroundColor">#0F172A</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#FFFFFF</item>
+        <item name="android:windowSplashScreenBrandingImage">@drawable/ic_splash_branding_night</item>
     </style>
 </resources>

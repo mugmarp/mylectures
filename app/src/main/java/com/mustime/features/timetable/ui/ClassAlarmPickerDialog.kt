@@ -42,7 +42,7 @@ fun ClassAlarmPickerDialog(
     val standardPresets = listOf(5, 10, 15, 30, 45, 60)
     val isCustomInitial = currentMinutes != null && currentMinutes !in standardPresets
 
-    var selectedMinutes by remember { mutableStateOf<Int?>(currentMinutes ?: 15) }
+    var selectedMinutes by remember { mutableStateOf<Int?>(currentMinutes ?: 30) }
     var isCustomSelected by remember { mutableStateOf(isCustomInitial) }
     var customText by remember { mutableStateOf(if (isCustomInitial) currentMinutes.toString() else "") }
 

@@ -45,7 +45,7 @@ fun LectureDetailSheet(
     val isCustomInitial = initialReminder != null && initialReminder !in standardReminderOptions
     var isCustomReminder by remember { mutableStateOf(isCustomInitial) }
     var customReminderText by remember { mutableStateOf(if (isCustomInitial) initialReminder.toString() else "") }
-    var selectedReminder by remember { mutableStateOf<Int?>(initialReminder ?: 15) }
+    var selectedReminder by remember { mutableStateOf<Int?>(initialReminder ?: 30) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -176,7 +176,7 @@ fun LectureDetailSheet(
                         .clickable {
                             isCustomReminder = !isCustomReminder
                             if (!isCustomReminder) {
-                                selectedReminder = 15
+                                selectedReminder = 30
                             }
                         }
                         .padding(horizontal = 14.dp, vertical = 8.dp),

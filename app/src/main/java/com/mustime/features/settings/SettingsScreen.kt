@@ -76,6 +76,61 @@ fun SettingsScreen(
     var showDisclaimerDialog by remember { mutableStateOf(false) }
     var showTermsDialog by remember { mutableStateOf(false) }
     var showPrivacyDialog by remember { mutableStateOf(false) }
+    var showCustomLeadDialog by remember { mutableStateOf(false) }
+    var customLeadInput by remember { mutableStateOf("") }
+
+    // Custom Alarm Lead Time Dialog
+    if (showCustomLeadDialog) {
+        AlertDialog(
+            onDismissRequest = { showCustomLeadDialog = false },
+            icon = { Icon(Icons.Default.Alarm, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+            title = { Text("Custom Lecture Reminder", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Enter how many minutes before class start you want to be reminded (e.g. 20, 30, 40):",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = customLeadInput,
+                        onValueChange = { input ->
+                            if (input.all { it.isDigit() } && input.length <= 3) {
+                                customLeadInput = input
+                            }
+                        },
+                        placeholder = { Text("30") },
+                        singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val mins = customLeadInput.toIntOrNull()
+                        if (mins != null && mins > 0) {
+                            viewModel.setClassAlarmLeadMinutes(mins)
+                        }
+                        showCustomLeadDialog = false
+                    },
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCustomLeadDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     // Disclaimer Dialog
     if (showDisclaimerDialog) {
@@ -642,15 +697,17 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     val classLeadOptions = listOf(
-                        0 to "At start",
-                        10 to "10m before",
-                        15 to "15m before",
-                        30 to "30m before"
+                        10 to "10m",
+                        15 to "15m",
+                        30 to "30m",
+                        45 to "45m",
+                        60 to "60m"
                     )
+                    val isCustomActive = uiState.classAlarmLeadMinutes !in listOf(10, 15, 30, 45, 60)
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         classLeadOptions.forEach { (mins, label) ->
                             val isSelected = uiState.classAlarmLeadMinutes == mins
@@ -674,91 +731,34 @@ fun SettingsScreen(
                                 )
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = "• Reminders include lecture hall venue, course code, and lecturer name.",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Card 3: Academic Tasks & Coursework Deadlines
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Custom Chip
+                        val customChipBg = if (isCustomActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                        val customChipText = if (isCustomActive) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
-                                .background(Color(0xFFD97706).copy(alpha = 0.12f), CircleShape),
+                                .weight(1.3f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(customChipBg)
+                                .clickable {
+                                    customLeadInput = uiState.classAlarmLeadMinutes.toString()
+                                    showCustomLeadDialog = true
+                                }
+                                .padding(vertical = 8.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.TaskAlt, contentDescription = null, tint = Color(0xFFD97706), modifier = Modifier.size(20.dp))
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
                             Text(
-                                "Assignment & Task Deadlines",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                "Alert lead time for assignments, tests & projects",
+                                text = if (isCustomActive) "${uiState.classAlarmLeadMinutes}m" else "Custom",
                                 fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                fontWeight = if (isCustomActive) FontWeight.Bold else FontWeight.Medium,
+                                color = customChipText
                             )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    val taskLeadOptions = listOf(
-                        1 to "1 hr before",
-                        2 to "2 hrs before",
-                        24 to "1 day before"
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        taskLeadOptions.forEach { (hours, label) ->
-                            val isSelected = uiState.taskReminderLeadHours == hours
-                            val chipBg = if (isSelected) Color(0xFFD97706) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                            val chipText = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(chipBg)
-                                    .clickable { viewModel.setTaskReminderLeadHours(hours) }
-                                    .padding(vertical = 8.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = label,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = chipText
-                                )
-                            }
                         }
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "• Tap 'Mark Done' right from the notification drawer to complete tasks.",
+                        text = "• Default is 30 minutes before lecture start. Reminders include lecture hall venue, course code, and lecturer.",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                     )

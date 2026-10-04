@@ -864,6 +864,7 @@ private fun TimetableEntry.toSpecClassSession(
         attachedNotesCount = if (cleanNotePreview != null) 1 else 0,
         attachedNotePreview = cleanNotePreview,
         isAlarmSet = note?.alarmMinutes != null,
+        alarmMinutes = note?.alarmMinutes,
         isHappeningNow = isLive,
         progress = progress?.progress ?: 0.5f,
         elapsedText = elapsedStr,

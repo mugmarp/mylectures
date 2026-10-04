@@ -202,7 +202,7 @@ class TimetableRepository(
                     content = "Keep track of your course schedules, lecture notes, revision tasks, and assignment deadlines all in one place.\n• Attach your notes to your scheduled timetable lectures.\n• Set customizable pre-class alerts so you never miss a lecture.\n• Use markdown formatting and attach key files or voice recordings.",
                     updatedAt = System.currentTimeMillis() - 3600000L,
                     colourTag = "#2563EB",
-                    alarmMinutes = 15,
+                    alarmMinutes = 30,
                     tag = "Study Guide",
                     attachedClass = "GEN101: University Studies · Monday, 09:00 – 11:00",
                     attachmentName = null,
