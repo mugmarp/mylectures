@@ -42,12 +42,12 @@ MUST has an official app — **Pulse** ([Android](https://play.google.com/store/
 | Campus maps & navigation | ✅ | — |
 | Student services / support tickets | ✅ | — |
 | Sign-in required | University credentials + biometrics | **none** |
-| Works offline | Server-backed | **yes, fully** |
+| Works offline | Server-backed | **yes, fully** (timetable ships in the app) |
 | Per-class notes | — | ✅ |
 | Assignment & deadline tracking | — | ✅ |
 | Exact background alarms | — | ✅ |
 | **Vacant room finder** | — | ✅ |
-| Telemetry | — | **none** |
+| Analytics / tracking | (see its policy) | **none** |
 
 **The two real differences:** Pulse needs a login and a connection; Lectures needs neither. And Pulse does not answer *"which room is free right now?"*
 
@@ -58,7 +58,7 @@ If you want announcements, attendance, or campus maps — use Pulse. If you want
 ## Features
 
 ### 📅 Timetable that works offline
-Seven-day schedule with a live "Happening Now" tracker — real-time progress bar, elapsed and remaining minutes, and a countdown to the next class. Filter by lectures, labs, or student associations. Set a reminder 10, 15, or 30 minutes before any class.
+The full semester timetable is bundled in the app, so it is available the moment you install it — no download, no login, no signal. Seven-day schedule with a live "Happening Now" tracker: real-time progress bar, elapsed and remaining minutes, and a countdown to the next class. Filter by lectures, labs, or student associations, and set a reminder 10, 15, or 30 minutes before any class.
 
 ### 🏫 Vacant Room Finder
 Derived from the university's own room allocation data: **92 rooms across 7 buildings and 2 campuses**.
@@ -85,16 +85,40 @@ Circular clock dial for times, unified day+time picker for tasks, and `+1 hr` / 
 
 ## Privacy
 
-**No accounts. No telemetry. No network calls.**
+**No accounts. No analytics. No tracking. Fully usable without a connection.**
 
-Everything — timetable, notes, tasks, alarms, preferences — is stored in a private SQLite database on your device. The app does not collect, transmit, or sell anything.
+Everything — timetable, notes, tasks, alarms, preferences — is stored in a private SQLite database on your device. Nothing is collected, transmitted, or sold.
 
-Permissions are limited to what local notifications require:
+### Network behaviour, precisely
+
+| | Status |
+|---|---|
+| Analytics / crash reporting / ad SDKs | **None** — not included in the build |
+| Accounts or sign-in | **None required** |
+| Network requests at runtime | **None currently made** |
+| Works with no connection | **Yes** — the timetable ships in the APK and is read from local storage |
+| Cloud sync | **Designed, not enabled** |
+
+The app declares `INTERNET` and `ACCESS_NETWORK_STATE`, and a Firestore sync layer (`core/sync/SyncRepository.kt`) exists in the codebase — but it is **not wired up**: `startAllSync()` has no call sites and there is no sign-in flow, so no request is ever sent. The permission declarations are ahead of the behaviour.
+
+An **opt-in** cloud sync is planned, so notes and tasks can follow you between devices. When that lands it will be:
+
+- off by default, enabled per user
+- restricted to student email addresses (`@std.must.ac.ug`)
+- limited to user-authored content — notes, tasks, custom events — never your schedule, and never analytics
+
+**Telemetry will remain absent regardless.** Syncing your own notes to your own account is not telemetry, and no third-party analytics will be added.
+
+### Permissions
 
 | Permission | Why |
 |---|---|
 | `POST_NOTIFICATIONS` | Ring class and deadline reminders |
 | `SCHEDULE_EXACT_ALARM` | Fire them on time, even in Doze mode |
+| `RECEIVE_BOOT_COMPLETED` | Re-arm alarms after a restart |
+| `WAKE_LOCK` | Deliver an alarm while the device is asleep |
+| `VIBRATE` | Alarm vibration |
+| `INTERNET`, `ACCESS_NETWORK_STATE` | Reserved for the planned opt-in sync — **currently unused** |
 
 ---
 
@@ -156,9 +180,9 @@ app/src/main/java/com/mustime/
 ├── core/
 │   ├── alarm/                     schedulers, receivers, boot re-arm
 │   ├── database/                  AppDatabase, DAOs, converters
-│   ├── network/                   Firebase factory
+│   ├── network/                   Firebase factory (sync not yet wired)
 │   ├── notification/              notification helper
-│   ├── sync/                      Firestore sync repository
+│   ├── sync/                      Firestore sync — present but not started
 │   └── util/                      TimeUtil, permissions
 ├── features/
 │   ├── calendar/                  month grid + unified day timeline
@@ -214,6 +238,20 @@ Timetable and room data come from the university's public timetable pages:
 - `index_rooms_teaching.html` — one table per room (92 rooms, 892 sessions)
 
 Room campus assignment is **derived from the faculties of the cohorts that actually use each room**, not guessed from room names. See [`docs/`](docs/) for the full analysis.
+
+### How updates reach the app
+
+**Currently: they don't, automatically.** The dataset is bundled at build time and read from local storage on first launch. If the university revises a timetable mid-semester, the app will not know until a new build ships.
+
+This is a known limitation, not an oversight. Keeping the app genuinely offline-first means the data has to be *in* the app; adding live sync brings back the connection dependency the app exists to avoid. The plan is to make any refresh **opt-in and additive**:
+
+1. **Manual refresh** — a "check for timetable updates" action, showing what changed
+2. **Silent background check** — a periodic, low-cost comparison against the published page, downloading only when it differs
+3. **Change notifications** — alert you if a class you have a note or alarm attached to moves or is cancelled
+
+Until that is built, treat the timetable as a snapshot of when you installed it, and cross-check the official site for late changes.
+
+There is also a **partial, unwired** sync layer in the codebase (`core/sync/SyncRepository.kt`) built for Firestore. It has never been started, and a real implementation needs three things that do not exist yet: a sign-in flow, Firestore security rules in the repo, and a merge strategy for local edits.
 
 ---
 

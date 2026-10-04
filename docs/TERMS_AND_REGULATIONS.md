@@ -61,10 +61,23 @@ Under no circumstances shall the developer (**Mark Paul M**) be held liable for 
 Lectures stores all user preferences, academic programme selections, coursework tasks, lecture notes, and alarm schedules strictly locally on the user's Android device using private AndroidX Room (SQLite) database files.
 
 5.2. **Zero Telemetry**:  
-The application contains no analytics tracking, surveillance SDKs, advertising frameworks, or data harvesting scripts.
+The application contains no analytics tracking, surveillance SDKs, advertising frameworks, or data harvesting scripts. No behavioural, usage, or diagnostic data is collected or transmitted.
 
 5.3. **No Commercial Data Sharing**:  
-No user content or schedule habits are ever collected, sold, rented, or transmitted to third parties.
+No user content or schedule habits are ever collected, sold, rented, or transmitted to third parties for any commercial purpose.
+
+5.4. **Timetable Data**:  
+Timetable and venue information is bundled with the application at build time and read from local storage. The application does not currently contact any server at runtime. The bundled dataset is a snapshot taken at build time and may not reflect subsequent university revisions; students must cross-check the official university timetable site.
+
+5.5. **Planned Opt-In Cloud Sync**:  
+A future version may offer optional, user-initiated cloud synchronisation of user-authored content (lecture notes, tasks, and custom events) so that it is available across a user's own devices. If introduced, such synchronisation shall be:
+
+* **off by default**, requiring explicit opt-in by the user;
+* restricted to institutional student email addresses;
+* limited to user-authored content, and shall not include timetable data, device identifiers, or usage analytics;
+* revocable, with account and data deletion available on request.
+
+No form of analytics or behavioural tracking shall be introduced under any circumstance, whether or not cloud synchronisation is enabled. This section will be updated, and the effective date revised, before any such feature is released.
 
 ---
 
