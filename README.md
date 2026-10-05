@@ -289,14 +289,14 @@ There is also a **partial, unwired** sync layer in the codebase (`core/sync/Sync
 
 All university names, faculty titles, and course codes are referenced solely to describe and categorise schedules. Trademarks belong to their respective owners.
 
-**Always cross-check the official university sources** — [timetable.must.ac.ug](https://timetable.must.ac.ug) and the [student portal](https://systems.must.ac.ug) — for announcements, venue changes, and examination timetables. The app is provided "as is", without warranty — the developer accepts no liability for missed classes, test clashes, or schedule discrepancies.
+**Always cross-check the official university sources** — [timetable.must.ac.ug](https://timetable.must.ac.ug) and the [systems.must.ac.ug](https://systems.must.ac.ug) — for announcements, venue changes, and examination timetables or any official communication. The app is provided "AS IS" software, without warranty — the developer `SHALL NOT` be held liable for ANY missed classes, test clashes, or schedule discrepancies.
 
 ---
 
-## Author
+## Developer
 
-**Mark Paul M** · [@mugmarp](https://github.com/mugmarp)
-
+**Mark Paul MUGENDAWALA** · [@mugmarp](https://github.com/mugmarp)
+- Year 2 2026 SWE Student at MUST
 ---
 
 ## License
