@@ -1671,25 +1671,20 @@ object UniversityDirectory {
         // Smart heuristics for room codes / custom room inputs
         val upper = clean.uppercase()
         return when {
-            upper.contains("GROUND") || upper.contains("GRND") || upper.contains("GF") ||
-                    upper.contains("LG") || upper.contains("G0") || upper.contains("G-") ||
-                    Regex(".*[A-Z]?G\\d{1,3}.*").matches(upper) -> BuildingLevel.GROUND
+            Regex(".*\\b(GROUND\\s+FLOOR|GRND\\s+FLOOR|GROUND|GRND|GF|LG)\\b.*").matches(upper) ||
+                    Regex(".*[A-Z]?G\\d{1,3}\\b.*").matches(upper) -> BuildingLevel.GROUND
 
-            upper.contains("4TH") || upper.contains("FOURTH") || upper.contains("LEVEL 4") ||
-                    upper.contains("FLOOR 4") || upper.contains("L4") ||
-                    Regex(".*[A-Z]?4\\d{2}.*").matches(upper) -> BuildingLevel.FOURTH
+            Regex(".*\\b(4TH|FOURTH|LEVEL\\s+4|FLOOR\\s+4|L4)\\b.*").matches(upper) ||
+                    Regex(".*[A-Z]?4\\d{2}\\b.*").matches(upper) -> BuildingLevel.FOURTH
 
-            upper.contains("3RD") || upper.contains("THIRD") || upper.contains("LEVEL 3") ||
-                    upper.contains("FLOOR 3") || upper.contains("L3") ||
-                    Regex(".*[A-Z]?3\\d{2}.*").matches(upper) -> BuildingLevel.THIRD
+            Regex(".*\\b(3RD|THIRD|LEVEL\\s+3|FLOOR\\s+3|L3)\\b.*").matches(upper) ||
+                    Regex(".*[A-Z]?3\\d{2}\\b.*").matches(upper) -> BuildingLevel.THIRD
 
-            upper.contains("2ND") || upper.contains("SECOND") || upper.contains("LEVEL 2") ||
-                    upper.contains("FLOOR 2") || upper.contains("L2") ||
-                    Regex(".*[A-Z]?2\\d{2}.*").matches(upper) -> BuildingLevel.SECOND
+            Regex(".*\\b(2ND|SECOND|LEVEL\\s+2|FLOOR\\s+2|L2)\\b.*").matches(upper) ||
+                    Regex(".*[A-Z]?2\\d{2}\\b.*").matches(upper) -> BuildingLevel.SECOND
 
-            upper.contains("1ST") || upper.contains("FIRST") || upper.contains("LEVEL 1") ||
-                    upper.contains("FLOOR 1") || upper.contains("L1") ||
-                    Regex(".*[A-Z]?1\\d{2}.*").matches(upper) -> BuildingLevel.FIRST
+            Regex(".*\\b(1ST|FIRST|LEVEL\\s+1|FLOOR\\s+1|L1)\\b.*").matches(upper) ||
+                    Regex(".*[A-Z]?1\\d{2}\\b.*").matches(upper) -> BuildingLevel.FIRST
 
             else -> null
         }

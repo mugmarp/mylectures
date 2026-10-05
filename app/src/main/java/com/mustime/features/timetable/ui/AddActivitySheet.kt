@@ -30,6 +30,7 @@ import com.mustime.core.util.TimeUtil
 import com.mustime.features.timetable.domain.ActivityCategory
 import com.mustime.features.timetable.domain.CustomEvent
 import com.mustime.ui.components.DedicatedTimePickerDialog
+import com.mustime.ui.components.RoomFloorBadge
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -320,6 +321,11 @@ fun AddActivitySheet(
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = {
                         Icon(Icons.Outlined.MeetingRoom, contentDescription = "Venue", modifier = Modifier.size(18.dp))
+                    },
+                    trailingIcon = {
+                        if (location.isNotBlank()) {
+                            RoomFloorBadge(roomName = location, compact = true)
+                        }
                     }
                 )
 

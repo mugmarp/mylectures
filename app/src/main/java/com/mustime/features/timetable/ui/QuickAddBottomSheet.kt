@@ -38,6 +38,7 @@ import com.mustime.ui.components.DedicatedCoursePickerDialog
 import com.mustime.ui.components.DedicatedDayPickerDialog
 import com.mustime.ui.components.DedicatedSchedulePickerDialog
 import com.mustime.ui.components.DedicatedTimePickerDialog
+import com.mustime.ui.components.RoomFloorBadge
 
 enum class QuickAddMode(val title: String, val subtitle: String) {
     ACTIVITY("Timetable Activity", "Scheduled session on timetable"),
@@ -479,6 +480,11 @@ fun QuickAddBottomSheet(
                         placeholder = { Text("e.g. Main Library, Room 204, Sports Field") },
                         leadingIcon = {
                             Icon(Icons.Outlined.MeetingRoom, contentDescription = "Venue", modifier = Modifier.size(18.dp))
+                        },
+                        trailingIcon = {
+                            if (activityLocation.isNotBlank()) {
+                                RoomFloorBadge(roomName = activityLocation, compact = true)
+                            }
                         },
                         modifier = Modifier
                             .fillMaxWidth()

@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.domain.TimetableEntry
 import com.mustime.ui.components.AcademicProfileSheet
+import com.mustime.ui.components.RoomFloorBadge
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -494,7 +495,13 @@ fun NoteEditorScreen(
                                 Column(modifier = Modifier.padding(12.dp)) {
                                     Text("${entry.courseCode} · ${entry.courseTitle}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                     val roomPart = if (!entry.room.isNullOrBlank() && entry.room.trim().uppercase() !in listOf("TBA", "TBD", "NONE", "N/A")) " · ${entry.room.trim()}" else ""
-                                    Text("${entry.day} ${entry.startTime} - ${entry.endTime}$roomPart", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("${entry.day} ${entry.startTime} - ${entry.endTime}$roomPart", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        if (!entry.room.isNullOrBlank() && entry.room.trim().uppercase() !in listOf("TBA", "TBD", "NONE", "N/A")) {
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            RoomFloorBadge(roomName = entry.room, compact = true)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1126,12 +1133,19 @@ fun NoteEditorScreen(
                                     )
                                 }
 
-                                Text(
-                                    attachedLocation,
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                    fontWeight = FontWeight.Medium
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        attachedLocation,
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    val roomClean = attachedLocation.removePrefix("📍").trim()
+                                    if (roomClean.isNotBlank()) {
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        RoomFloorBadge(roomName = roomClean, compact = true)
+                                    }
+                                }
                             }
 
                             Spacer(modifier = Modifier.height(6.dp))

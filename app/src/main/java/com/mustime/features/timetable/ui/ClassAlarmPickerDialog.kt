@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.mustime.core.util.TimeUtil
 import com.mustime.features.timetable.domain.TimetableEntry
 import com.mustime.ui.LocalAppTheme
+import com.mustime.ui.components.RoomFloorBadge
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -90,6 +91,23 @@ fun ClassAlarmPickerDialog(
                     fontSize = 13.sp,
                     color = textSub
                 )
+                val roomText = entry.room?.trim()
+                if (!roomText.isNullOrEmpty() && roomText.uppercase() !in listOf("TBA", "TBD", "NONE", "N/A")) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "📍 $roomText",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = textSub
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        RoomFloorBadge(roomName = roomText, compact = true, isDark = isDark)
+                    }
+                }
             }
         },
         text = {
