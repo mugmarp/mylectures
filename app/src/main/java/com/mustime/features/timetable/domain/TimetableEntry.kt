@@ -25,7 +25,8 @@ data class TimetableEntry(
     val session_type: String?,
     val lecturer: String?,
     val room: String?,
-    val shared_with: List<String> = emptyList()
+    val shared_with: List<String> = emptyList(),
+    val floor: Int? = null
 ) {
     val id: Long get() = (natural_key.hashCode().toLong() and 0x7FFFFFFFL)
     val naturalKey: String get() = natural_key
@@ -34,6 +35,9 @@ data class TimetableEntry(
     val courseCode: String get() = course_code
     val courseTitle: String get() = course_title
     val startTime: String get() = start_time
+    val floorLevel: com.mustime.features.rooms.BuildingLevel?
+        get() = com.mustime.features.rooms.BuildingLevel.fromFloorNumber(floor)
+            ?: com.mustime.features.rooms.UniversityDirectory.resolveLevel(room)
     val endTime: String
         get() {
             if (!end_time.isNullOrBlank()) return end_time

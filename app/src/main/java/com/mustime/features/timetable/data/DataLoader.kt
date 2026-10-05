@@ -161,7 +161,8 @@ class DataLoader(private val context: Context, private val db: AppDatabase) {
                                     session_type = sessionType,
                                     lecturer = lecturer,
                                     room = room,
-                                    shared_with = sharedWith
+                                    shared_with = sharedWith,
+                                    floor = com.mustime.features.rooms.UniversityDirectory.resolveLevel(room)?.floorNumber
                                 )
                             )
                         }

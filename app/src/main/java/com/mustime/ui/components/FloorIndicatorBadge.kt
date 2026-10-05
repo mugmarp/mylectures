@@ -89,20 +89,39 @@ fun FloorIndicatorBadge(
 }
 
 /**
- * Convenient helper to resolve and render a FloorIndicatorBadge directly from any room name / identifier string.
- * Automatically resolves room directory level or applies smart campus naming heuristics.
+ * Convenient helper to resolve and render a FloorIndicatorBadge from a lecture model or room identifier.
+ * Uses the database floor integer column if available, or resolves via directory / smart naming heuristics.
  */
 @Composable
-fun RoomFloorBadge(
-    roomName: String?,
+fun LectureFloorBadge(
+    entry: com.mustime.features.timetable.domain.TimetableEntry,
     modifier: Modifier = Modifier,
     compact: Boolean = true,
     isDark: Boolean = false,
     useContrastColor: Boolean = false
 ) {
-    if (roomName.isNullOrBlank()) return
-    val level = androidx.compose.runtime.remember(roomName) {
-        com.mustime.features.rooms.UniversityDirectory.resolveLevel(roomName)
+    val level = entry.floorLevel ?: return
+    FloorIndicatorBadge(
+        level = level,
+        modifier = modifier,
+        compact = compact,
+        isDark = isDark,
+        useContrastColor = useContrastColor
+    )
+}
+
+@Composable
+fun RoomFloorBadge(
+    roomName: String?,
+    floor: Int? = null,
+    modifier: Modifier = Modifier,
+    compact: Boolean = true,
+    isDark: Boolean = false,
+    useContrastColor: Boolean = false
+) {
+    val level = androidx.compose.runtime.remember(roomName, floor) {
+        com.mustime.features.rooms.BuildingLevel.fromFloorNumber(floor)
+            ?: com.mustime.features.rooms.UniversityDirectory.resolveLevel(roomName)
     } ?: return
 
     FloorIndicatorBadge(

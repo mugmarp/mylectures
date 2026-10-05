@@ -167,7 +167,8 @@ fun MainScaffold() {
                     isVacantRoomsOpen = false
                 }
                 com.mustime.features.rooms.ui.VacantRoomsScreen(
-                    onBack = { isVacantRoomsOpen = false }
+                    onBack = { isVacantRoomsOpen = false },
+                    enrolledProgramme = savedProgramme
                 )
             } else if (isSettingsOpen) {
                 BackHandler {

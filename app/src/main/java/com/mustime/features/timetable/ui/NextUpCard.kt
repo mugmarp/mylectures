@@ -122,7 +122,7 @@ fun NextUpCard(entry: TimetableEntry, minutesUntil: Int, onClick: () -> Unit) {
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(roomText, color = Color.White, fontSize = 14.sp)
                     Spacer(modifier = Modifier.width(6.dp))
-                    RoomFloorBadge(roomName = roomText, compact = true, useContrastColor = true)
+                    RoomFloorBadge(roomName = roomText, floor = entry.floor, compact = true, useContrastColor = true)
                 }
             }
 

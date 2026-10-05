@@ -1,7 +1,7 @@
 # Features Specification — Lectures
 
 **Application Name**: **Lectures**  
-**Author**: **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page))  
+**Author**: **Mark Paul M**  
 **GitHub**: [@mugmarp](https://github.com/mugmarp) • **Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
 
 This document details the functional specifications, user interface behaviors, and business rules implemented across all screens in **Lectures**.
@@ -96,11 +96,34 @@ This document details the functional specifications, user interface behaviors, a
 
 ## 6. 🏫 Campus Vacant Rooms Finder
 
-* **Real-Time Availability**: Scans all campus lecture halls, laboratories, and seminar rooms against current active classes.
+* **Coverage**: **92 rooms across 7 buildings and 2 campuses**, derived from the university's
+  own room allocation timetable (2026/2027 Semester I).
+* **Campus Filter**: `All Campuses` / `Kihumuro` / `Town`, with live room counts. Kihumuro and
+  Town are ~7 km apart, so this filter is the primary control.
+* **Campus Auto-Detection**: On open, the campus is inferred from the enrolled programme
+  (BCS/BIT/BSE/BME/EEE/PEEM/CVE/MIE → Kihumuro; MBR/PHA/BNS/MLS/BSP/PHS/BS/DLT/BBA/BSAF/ECO/BPSM/BSAL/BGWH/BPCD → Town).
+  A tappable "Detected: …" affordance restores the inferred value.
+* **Building Filter**: Repopulates per campus and clears automatically when the campus changes.
+  * Kihumuro — FCI Building, FAST Building, Kihumuro Library
+  * Town — Science Block, Pharmacy / Health Complex, IMS / Business Building, Clinical / Hospital
+* **Minimum Study Gap**: `30 min (default)` / `15` / `45` / `1 hour` / `Any free`. Prevents
+  suggesting a room that is free for only a minute or two between back-to-back classes.
+* **Suggestion Ranking**: Results are ordered by *how much new information* a suggestion carries —
+  lecture rooms and labs first (their availability is the unknown), **libraries last** (everyone
+  already assumes the library is free). Then by longest free window, then by room code.
+  A `Hide Library` toggle removes libraries entirely.
 * **Status Indicators**:
-  * **Vacant Now**: Marked in green with duration until the next class starts (e.g. `Free for next 1h 45m`).
-  * **Occupied**: Marked in red with active class code and scheduled end time.
-* **Campus Building Filters**: Filter rooms across university faculties (Science, Computing, Engineering, Medicine).
+  * **Vacant Now** — green, with time until the next class (`Free until 14:30 (1h 45m)`)
+  * **Occupied** — red, with the active course code, programme group, and end time
+  * **Permanently Vacant** — blue, for the 19 rooms with no scheduled sessions this semester
+    (`Free all semester (no scheduled classes)`)
+* **Landmark Marking**: Library cards carry a `Known` badge, signalling the suggestion carries
+  no new information.
+* **Search**: Matches room name, code, and aliases (so `DS LAB 4`, `LR1`, `CR3`, `S204` all work).
+* **Room Detail**: Tap any room to see its full day schedule — every session with times, course
+  codes, programme groups, plus the building, level, and which faculties use the room.
+* **Day & Time Picker**: Query "now" or any day/time combination via the circular clock and
+  day pickers.
 
 ---
 
@@ -109,6 +132,6 @@ This document details the functional specifications, user interface behaviors, a
 * **Academic Profile Reconfiguration**: Change faculty, enrolled programme, and semester anytime.
 * **Display Theming**: Choose between System Default, AMOLED Pure Dark, and Clean Light mode.
 * **Legal Regulations & Disclaimer Dialogs**:
-  * Independent Developer Attribution to **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page)).
+  * Independent Developer Attribution to **Mark Paul M** .
   * Full institutional non-affiliation disclaimer stating that Lectures is NOT an official app of Mbarara University of Science and Technology (MUST).
   * Direct access to Terms of Service and Privacy Policy.

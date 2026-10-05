@@ -105,7 +105,7 @@ fun ClassAlarmPickerDialog(
                             color = textSub
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        RoomFloorBadge(roomName = roomText, compact = true, isDark = isDark)
+                        RoomFloorBadge(roomName = roomText, floor = entry.floor, compact = true, isDark = isDark)
                     }
                 }
             }

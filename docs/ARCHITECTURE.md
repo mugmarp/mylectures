@@ -1,7 +1,7 @@
 # Architecture Guide — Lectures
 
 **Application Name**: **Lectures**  
-**Author**: **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page))  
+**Author**: **Mark Paul M**  
 **GitHub**: [@mugmarp](https://github.com/mugmarp) • **Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
 
 ---
@@ -38,7 +38,7 @@
 1. **Unidirectional Data Flow (UDF)**:
    * UI elements emit user events up to the ViewModel.
    * ViewModels process business logic, interact with the Repository, and expose immutable `StateFlow<UiState>`.
-   * UI Composables observe state via `.collectAsState()` and update declaratively.
+   * UI Composables observe state via `.collectAsState` and update declaratively.
 2. **Offline-First Storage**:
    * The app is fully operational without an internet connection.
    * Schedule data, custom activities, lecture notes, and tasks are stored in a local SQLite database via AndroidX Room.
@@ -57,6 +57,14 @@
   2. `1 -> CalendarScreen` (Academic Calendar)
   3. `2 -> NotesScreen` (Academic Notes & Editor)
   4. `3 -> TasksScreen` (Assignment & Task Manager)
+
+  Two further screens are **modal overlays**, not dock destinations — they are pushed over the
+  current tab and dismissed with the system back button:
+  * `VacantRoomsScreen` (`features/rooms/ui`) — the Campus Vacant Rooms Finder
+  * `SettingsScreen` (`features/settings`) — theme, accent, academic profile, legal dialogs
+
+  Both are driven by boolean state in `MainScaffold` (`isVacantRoomsOpen`, `isSettingsOpen`)
+  rather than by the nav library, so opening one does not disturb the selected tab.
 * **Smooth Transitions**: Screen tab switching uses `AnimatedContent` with crossfade easing to prevent visual blinks and frame drops.
 * **Component Architecture**: Reusable UI components (`DedicatedPickers.kt`, `TimelineClassCard`, `LectureCard`, `ActivityCard`) are separated into modular, testable composables.
 
@@ -86,7 +94,7 @@ Lectures features exact alarm scheduling for lectures and task deadlines:
 
 * **`AlarmScheduler`** (`com.mustime.core.alarm.AlarmScheduler`):
   * Schedules alerts for upcoming university classes (e.g. 10m, 15m, or 30m prior to start time).
-  * Uses `AlarmManager.setExactAndAllowWhileIdle()` to guarantee delivery even when the device is in Doze mode.
+  * Uses `AlarmManager.setExactAndAllowWhileIdle` to guarantee delivery even when the device is in Doze mode.
 * **`TaskAlarmScheduler`** (`com.mustime.core.alarm.TaskAlarmScheduler`):
   * Schedules alerts for task due dates.
 * **`AlarmReceiver`**:
@@ -100,7 +108,7 @@ Several deliberate architectural optimizations were applied to ensure peak 60–
 
 1. **Elimination of `IntrinsicSize.Min`**:
    * Previously, timeline cards used `IntrinsicSize.Min` to stretch the left accent bar. This caused a heavy two-pass layout on every card as it entered the screen.
-   * Refactored to use `Modifier.matchParentSize()` inside a parent `Box`, achieving zero-overhead single-pass measurement.
+   * Refactored to use `Modifier.matchParentSize` inside a parent `Box`, achieving zero-overhead single-pass measurement.
 2. **Pointer Event Decoupling**:
    * Removed full-screen horizontal drag gesture interceptors from `LazyColumn` containers, allowing native vertical scrolling without touch slop delays.
 3. **Stable Identity Keys**:

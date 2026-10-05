@@ -16,7 +16,7 @@ import com.mustime.features.timetable.domain.TimetableEntry
         CustomEvent::class,
         Assignment::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @androidx.room.TypeConverters(Converters::class)
@@ -101,6 +101,12 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE lecture_notes ADD COLUMN attachedClass TEXT")
                 db.execSQL("ALTER TABLE lecture_notes ADD COLUMN attachmentName TEXT")
                 db.execSQL("ALTER TABLE lecture_notes ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE timetable ADD COLUMN floor INTEGER DEFAULT NULL")
             }
         }
     }

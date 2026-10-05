@@ -31,12 +31,16 @@ enum class RoomType(val displayName: String, val isStudyFriendlyDefault: Boolean
     CLINICAL("Clinical / Ward Venue", false)
 }
 
-enum class BuildingLevel(val displayName: String, val shortName: String) {
-    GROUND("Ground Floor", "Ground"),
-    FIRST("First Floor", "1st Floor"),
-    SECOND("Second Floor", "2nd Floor"),
-    THIRD("Third Floor", "3rd Floor"),
-    FOURTH("Fourth Floor", "4th Floor")
+enum class BuildingLevel(val displayName: String, val shortName: String, val floorNumber: Int) {
+    GROUND("Ground Floor", "Ground", 0),
+    FIRST("First Floor", "1st Floor", 1),
+    SECOND("Second Floor", "2nd Floor", 2),
+    THIRD("Third Floor", "3rd Floor", 3),
+    FOURTH("Fourth Floor", "4th Floor", 4);
+
+    companion object {
+        fun fromFloorNumber(floor: Int?): BuildingLevel? = entries.firstOrNull { it.floorNumber == floor }
+    }
 }
 
 enum class Campus(val displayName: String, val shortName: String) {

@@ -122,7 +122,8 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toTimetableEntry(): T
             session_type = getString("session_type"),
             lecturer = getString("lecturer"),
             room = getString("room"),
-            shared_with = sharedList
+            shared_with = sharedList,
+            floor = getLong("floor")?.toInt() ?: com.mustime.features.rooms.UniversityDirectory.resolveLevel(getString("room"))?.floorNumber
         )
     } catch (e: Exception) { null }
 }

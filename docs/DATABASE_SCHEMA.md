@@ -1,7 +1,7 @@
 # Database Schema — Lectures
 
 **Application Name**: **Lectures**  
-**Author**: **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page))  
+**Author**: **Mark Paul M**  
 **GitHub**: [@mugmarp](https://github.com/mugmarp) • **Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
 
 This document details the local database architecture implemented using **AndroidX Room** (SQLite) in **Lectures**.
@@ -34,6 +34,7 @@ Stores academic lecture sessions, practical labs, and clinical rotations.
 | `startTime` | `TEXT` | ❌ | Format `HH:mm` (e.g. `08:00`) |
 | `endTime` | `TEXT` | ❌ | Format `HH:mm` (e.g. `10:00`) |
 | `room` | `TEXT` | ❌ | Classroom / Hall name (e.g. `LT 1`) |
+| `floor` | `INTEGER` | ❌ | Building floor index (0 = Ground, 1 = 1st, 2 = 2nd, 3 = 3rd, 4 = 4th; nullable) |
 | `lecturer` | `TEXT` | ❌ | Lecturer / Professor name |
 | `sessionType` | `TEXT` | ❌ | `Lecture`, `Lab`, `Clinical`, `Association` |
 | `programmeGroup` | `TEXT` | ❌ | Associated academic programme |
@@ -101,7 +102,7 @@ fun getScheduleForProgramme(programme: String): Flow<List<TimetableEntry>>
 suspend fun insertEntries(entries: List<TimetableEntry>)
 
 @Query("SELECT * FROM lecture_notes ORDER BY updatedAt DESC")
-fun getAllNotes(): Flow<List<LectureNote>>
+fun getAllNotes: Flow<List<LectureNote>>
 
 @Insert(onConflict = OnConflictStrategy.REPLACE)
 suspend fun saveNote(note: LectureNote)
@@ -110,7 +111,7 @@ suspend fun saveNote(note: LectureNote)
 ### `AssignmentDao`
 ```kotlin
 @Query("SELECT * FROM assignments ORDER BY isCompleted ASC, id DESC")
-fun getAllAssignments(): Flow<List<Assignment>>
+fun getAllAssignments: Flow<List<Assignment>>
 
 @Insert(onConflict = OnConflictStrategy.REPLACE)
 suspend fun insertAssignment(assignment: Assignment): Long
@@ -125,7 +126,7 @@ suspend fun deleteAssignment(id: Long)
 ### `CustomEventDao`
 ```kotlin
 @Query("SELECT * FROM custom_events ORDER BY startTime ASC")
-fun getAllCustomEvents(): Flow<List<CustomEvent>>
+fun getAllCustomEvents: Flow<List<CustomEvent>>
 
 @Insert(onConflict = OnConflictStrategy.REPLACE)
 suspend fun insertCustomEvent(event: CustomEvent): Long

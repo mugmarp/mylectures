@@ -1,7 +1,7 @@
 # Developer Guide — Lectures
 
 **Application Name**: **Lectures**  
-**Author & Lead Engineer**: **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page))  
+**Author**: **Mark Paul M**  
 **GitHub**: [@mugmarp](https://github.com/mugmarp) • **Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
 
 This guide assists software engineers and contributors in setting up, maintaining, and extending **Lectures**.
@@ -79,10 +79,10 @@ Timetable schedules are bundled inside the assets folder:
 
 When developing new features:
 1. **Never use `IntrinsicSize.Min` or `IntrinsicSize.Max` inside `LazyColumn` items**:
-   * Use `Box` with `Modifier.matchParentSize()` for decorative backgrounds and accent bars to preserve single-pass layout rendering.
+   * Use `Box` with `Modifier.matchParentSize` for decorative backgrounds and accent bars to preserve single-pass layout rendering.
 2. **Avoid Full-Screen Pointer Gesture Interceptors**:
    * Do not place horizontal drag listeners over root containers holding vertical scrollers.
-3. **Always supply stable keys to `items()` in Lazy lists**:
+3. **Always supply stable keys to `items` in Lazy lists**:
    * Example: `items(notes, key = { it.naturalKey }) { ... }`
 4. **Wrap expensive calculations in `remember`**:
    * Date formatting, filtering, and regex operations should be memoized with their inputs.

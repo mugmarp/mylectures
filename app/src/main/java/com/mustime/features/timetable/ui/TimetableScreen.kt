@@ -1039,7 +1039,7 @@ private fun GlobalNextUpHeroCard(
                                 color = Color.White.copy(alpha = 0.9f)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            RoomFloorBadge(roomName = roomText, compact = true, useContrastColor = true)
+                            RoomFloorBadge(roomName = roomText, floor = entry.floor, compact = true, useContrastColor = true)
                         }
                     }
 

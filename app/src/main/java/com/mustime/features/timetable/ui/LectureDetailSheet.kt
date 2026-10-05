@@ -117,7 +117,7 @@ fun LectureDetailSheet(
                     value = roomVal,
                     isDark = isDark,
                     trailingContent = {
-                        RoomFloorBadge(roomName = roomVal, compact = false, isDark = isDark)
+                        RoomFloorBadge(roomName = roomVal, floor = entry.floor, compact = false, isDark = isDark)
                     }
                 )
                 Spacer(modifier = Modifier.height(12.dp))

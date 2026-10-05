@@ -1,7 +1,7 @@
 # User Guide — Lectures
 
 **Application Name**: **Lectures**  
-**Author**: **MUGENDAWALA MARK PAUL** ([TiralLab](https://tirallab.page))  
+**Author**: **Mark Paul M**  
 **GitHub**: [@mugmarp](https://github.com/mugmarp) • **Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
 
 Welcome to **Lectures**! This user manual walks you through all the academic features on your Android device.
@@ -9,7 +9,7 @@ Welcome to **Lectures**! This user manual walks you through all the academic fea
 ---
 
 > ### ⚠️ Notice of Non-Affiliation
-> Lectures is an independently developed academic student companion created by Mugendawala Mark Paul (TiralLab). **Lectures is NOT an official app of, nor is it endorsed by, affiliated with, or sponsored by Mbarara University of Science and Technology (MUST).** Always check your faculty's official physical notice board and university portal for official schedule announcements, test dates, and room changes.
+> Lectures is an independently developed academic student companion created by Mark Paul M. **Lectures is NOT an official app of, nor is it endorsed by, affiliated with, or sponsored by Mbarara University of Science and Technology (MUST).** Always check the official university sources — [timetable.must.ac.ug](https://timetable.must.ac.ug) and the [student portal](https://systems.must.ac.ug) — for schedule announcements, test dates, and room changes.
 
 ---
 
@@ -78,8 +78,25 @@ Lectures uses a Google Clock-inspired circular dial:
 ## 6. Finding Vacant Study Rooms on Campus
 
 1. From the Timetable screen, tap the **Building/Door** icon in the top app bar.
-2. The **Vacant Rooms** directory opens.
-3. Browse campus lecture halls and seminar rooms:
-   * **Green Badge**: The room is currently empty, showing how much free time remains before the next scheduled class.
-   * **Red Badge**: The room is currently occupied by an active lecture.
-4. Filter by faculty building to find a quiet study spot near you.
+2. The **Vacant Rooms** directory opens. Your campus is detected automatically from your
+   enrolled programme — if it guessed wrong, tap **Detected: …** to switch, or use the
+   **Campus** chips (`All Campuses` / `Kihumuro` / `Town`).
+
+   > Kihumuro and Town are about 7 km apart, so pick the campus you are actually on before
+   > walking anywhere.
+
+3. Narrow down with the **Building** chips (FCI, FAST, Kihumuro Library on Kihumuro;
+   Science Block, Pharmacy, IMS, Clinical on Town).
+4. Set the **Minimum Study Gap** — how long you need the room for. `30 min` is the default;
+   choose `1 hour` if you are settling in to work.
+5. Browse the list. Rooms are ordered so the most useful suggestions come first:
+   * **Lecture rooms and labs first** — their availability is what you could not have known
+   * **Libraries last** — marked `Known`, because you already know the library is free.
+     Tap **Hide Library** to remove them entirely.
+6. Read the status badge:
+   * 🟢 **Green** — free now, e.g. `Free until 14:30 (1h 45m)`
+   * 🔴 **Red** — occupied, e.g. `Occupied until 16:00`, with the course code in session
+   * 🔵 **Blue** — `Free all semester (no scheduled classes)`, for rooms with no bookings at all
+7. Tap any room to see its **full day schedule** — every session, with times, course codes,
+   and which programmes use it. Use the clock and calendar buttons at the top to check a
+   different time or day.
