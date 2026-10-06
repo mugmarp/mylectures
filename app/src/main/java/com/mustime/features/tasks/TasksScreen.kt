@@ -1080,16 +1080,15 @@ fun AddTaskDialog(
     var title by remember(initialTask) { mutableStateOf(initialCatAndTitle.second) }
     var category by remember(initialTask) { mutableStateOf(initialCatAndTitle.first) }
     var course by remember(initialTask) { mutableStateOf(initialTask?.courseCode ?: "") }
-    var dueDate by remember(initialTask) { mutableStateOf(initialTask?.dueDate ?: "Tomorrow • 17:00") }
+    var dueDate by remember(initialTask) { mutableStateOf(initialTask?.dueDate ?: "Tomorrow") }
     var priority by remember(initialTask) { mutableStateOf(initialTask?.priority ?: "Medium") }
-    var reminderMinutes by remember(initialTask) { mutableStateOf<Int?>(initialTask?.reminderMinutes ?: 30) }
+    var reminderMinutes by remember(initialTask) { mutableStateOf<Int?>(initialTask?.reminderMinutes ?: 1440) }
     var notes by remember(initialTask) { mutableStateOf(initialTask?.notes ?: "") }
 
     var showCoursePicker by remember { mutableStateOf(false) }
-    var showDueSchedulePicker by remember { mutableStateOf(false) }
-    var showDueDayPicker by remember { mutableStateOf(false) }
-    var showDueTimePicker by remember { mutableStateOf(false) }
-    var tempDueDay by remember { mutableStateOf("Tomorrow") }
+    var showDueCalendarPicker by remember { mutableStateOf(false) }
+    var titleTouched by remember { mutableStateOf(false) }
+    var courseTouched by remember { mutableStateOf(false) }
 
     val primaryColor = MaterialTheme.colorScheme.primary
     val textPrimary = if (isDark) Color.White else TextPrimaryLight
@@ -1127,9 +1126,16 @@ fun AddTaskDialog(
             ) {
                 OutlinedTextField(
                     value = title,
-                    onValueChange = { title = it },
+                    onValueChange = {
+                        title = it
+                        titleTouched = true
+                    },
                     label = { Text("Task title *") },
                     placeholder = { Text("e.g. Lab report submission") },
+                    isError = titleTouched && title.isBlank(),
+                    supportingText = if (titleTouched && title.isBlank()) {
+                        { Text("Title is required", color = MaterialTheme.colorScheme.error, fontSize = 11.sp) }
+                    } else null,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -1172,9 +1178,16 @@ fun AddTaskDialog(
                 // Course Code input with picker
                 OutlinedTextField(
                     value = course,
-                    onValueChange = { course = it },
+                    onValueChange = {
+                        course = it
+                        courseTouched = true
+                    },
                     label = { Text("Course code *") },
                     placeholder = { Text("e.g. PHA3102") },
+                    isError = courseTouched && course.isBlank(),
+                    supportingText = if (courseTouched && course.isBlank()) {
+                        { Text("Course code is required", color = MaterialTheme.colorScheme.error, fontSize = 11.sp) }
+                    } else null,
                     trailingIcon = {
                         IconButton(onClick = { showCoursePicker = true }) {
                             Icon(Icons.Default.ArrowDropDown, contentDescription = "Pick Course", tint = primaryColor)
@@ -1184,9 +1197,35 @@ fun AddTaskDialog(
                     singleLine = true
                 )
 
-                // Due Date & Time Scheduler Card (Google Clock inspired)
+                // Quick course selection chips from student's enrolled courses
+                if (availableCourses.isNotEmpty()) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(availableCourses.take(5)) { (cCode, _) ->
+                            val isSelected = course.equals(cCode, ignoreCase = true)
+                            SuggestionChip(
+                                onClick = {
+                                    course = cCode
+                                    courseTouched = false
+                                },
+                                label = {
+                                    Text(
+                                        cCode,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Due Date Card (Tapping opens the full interactive Calendar)
                 Surface(
-                    onClick = { showDueSchedulePicker = true },
+                    onClick = { showDueCalendarPicker = true },
                     shape = RoundedCornerShape(12.dp),
                     color = if (isDark) DarkSurfaceCard else Color(0xFFF1F5F9),
                     border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else Color(0xFFCBD5E1)),
@@ -1195,7 +1234,7 @@ fun AddTaskDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                            .padding(horizontal = 12.dp, vertical = 9.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -1209,59 +1248,65 @@ fun AddTaskDialog(
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text(
-                                    text = dueDate.ifBlank { "Tomorrow • 17:00" },
+                                    text = dueDate.ifBlank { "Tomorrow" },
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (isDark) Color.White else Color(0xFF0F172A)
                                 )
                                 Text(
-                                    text = "Tap to change schedule",
+                                    text = "Tap to pick from Calendar",
                                     fontSize = 10.sp,
                                     color = textSecondary
                                 )
                             }
                         }
                         Icon(
-                            Icons.Default.AccessTime,
-                            contentDescription = "Change Schedule",
+                            Icons.Default.DateRange,
+                            contentDescription = "Pick Date",
                             tint = primaryColor,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
 
-                // Quick Due Date Presets
+                // Quick Day Selection (Today & Tomorrow) + Calendar Shortcut
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    listOf("Today • 17:00", "Tomorrow • 12:00", "Friday • 17:00").forEach { preset ->
-                        val isSelected = dueDate == preset
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(
-                                    if (isSelected) {
-                                        if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) else Color(0xFFEFF6FF)
-                                    } else {
-                                        if (isDark) DarkSurfaceBase else Color(0xFFF1F5F9)
-                                    }
-                                )
-                                .border(
-                                    1.dp,
-                                    if (isSelected) primaryColor else Color.Transparent,
-                                    RoundedCornerShape(8.dp)
-                                )
-                                .clickable { dueDate = preset }
-                                .padding(horizontal = 8.dp, vertical = 3.dp)
-                        ) {
-                            Text(
-                                preset,
-                                fontSize = 10.sp,
-                                color = if (isSelected) primaryColor else textSecondary
-                            )
-                        }
-                    }
+                    val isToday = dueDate.equals("Today", ignoreCase = true)
+                    val isTomorrow = dueDate.equals("Tomorrow", ignoreCase = true)
+
+                    FilterChip(
+                        selected = isToday,
+                        onClick = { dueDate = "Today" },
+                        label = { Text("Today", fontSize = 11.5.sp) },
+                        leadingIcon = if (isToday) {
+                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(13.dp)) }
+                        } else null,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    FilterChip(
+                        selected = isTomorrow,
+                        onClick = { dueDate = "Tomorrow" },
+                        label = { Text("Tomorrow", fontSize = 11.5.sp) },
+                        leadingIcon = if (isTomorrow) {
+                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(13.dp)) }
+                        } else null,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    FilterChip(
+                        selected = !isToday && !isTomorrow && dueDate.isNotBlank(),
+                        onClick = { showDueCalendarPicker = true },
+                        label = { Text("Calendar 📅", fontSize = 11.5.sp) },
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.weight(1.2f)
+                    )
                 }
 
                 // Priority & Reminder in compact rows
@@ -1299,11 +1344,10 @@ fun AddTaskDialog(
                 ) {
                     Text("Alert: ", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = textSecondary)
                     val reminderOptions = listOf(
-                        15 to "15m",
-                        30 to "30m",
-                        60 to "1h",
-                        120 to "2h",
-                        0 to "Due time",
+                        0 to "On due date",
+                        1440 to "1d before",
+                        2880 to "2d before",
+                        60 to "1h before",
                         null to "None"
                     )
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1374,6 +1418,8 @@ fun AddTaskDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    titleTouched = true
+                    courseTouched = true
                     if (title.isNotBlank() && course.isNotBlank()) {
                         onConfirm(
                             title.trim(),
@@ -1403,44 +1449,23 @@ fun AddTaskDialog(
         DedicatedCoursePickerDialog(
             selectedCourse = course,
             availableCourses = availableCourses,
-            onCourseSelected = { code, _ -> course = code },
+            onCourseSelected = { code, _ ->
+                course = code
+                courseTouched = false
+            },
             onDismiss = { showCoursePicker = false }
         )
     }
 
-    if (showDueSchedulePicker) {
-        DedicatedSchedulePickerDialog(
-            initialSchedule = dueDate,
-            title = "Set Task Schedule",
-            onScheduleSelected = { picked ->
+    if (showDueCalendarPicker) {
+        DedicatedCalendarDatePickerDialog(
+            initialDate = dueDate,
+            title = "Select Task Due Date",
+            onDateSelected = { picked ->
                 dueDate = picked
-                showDueSchedulePicker = false
+                showDueCalendarPicker = false
             },
-            onDismiss = { showDueSchedulePicker = false }
-        )
-    }
-
-    if (showDueDayPicker) {
-        DedicatedDayPickerDialog(
-            selectedDay = tempDueDay,
-            onDaySelected = { day ->
-                tempDueDay = day
-                showDueDayPicker = false
-                showDueTimePicker = true
-            },
-            onDismiss = { showDueDayPicker = false }
-        )
-    }
-
-    if (showDueTimePicker) {
-        DedicatedTimePickerDialog(
-            initialTime = "17:00",
-            title = "Set Due Time ($tempDueDay)",
-            onTimeSelected = { time ->
-                dueDate = "$tempDueDay • $time"
-                showDueTimePicker = false
-            },
-            onDismiss = { showDueTimePicker = false }
+            onDismiss = { showDueCalendarPicker = false }
         )
     }
 }

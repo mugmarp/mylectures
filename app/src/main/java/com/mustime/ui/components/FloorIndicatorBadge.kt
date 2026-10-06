@@ -61,23 +61,24 @@ fun FloorIndicatorBadge(
         }
     }
 
-    val label = if (compact) level.shortName else level.displayName
+    val label = if (compact) {
+        when (level) {
+            BuildingLevel.GROUND -> "Ground"
+            BuildingLevel.FIRST -> "1st"
+            BuildingLevel.SECOND -> "2nd"
+            BuildingLevel.THIRD -> "3rd"
+            BuildingLevel.FOURTH -> "4th"
+        }
+    } else level.displayName
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
+    Box(
         modifier = modifier
             .clip(RoundedCornerShape(6.dp))
             .background(badgeBg)
             .border(1.dp, badgeBorder, RoundedCornerShape(6.dp))
-            .padding(horizontal = 6.dp, vertical = 2.dp)
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = if (level == BuildingLevel.GROUND) Icons.Outlined.Layers else Icons.Outlined.Stairs,
-            contentDescription = "Floor level: ${level.displayName}",
-            tint = badgeText,
-            modifier = Modifier.size(11.dp)
-        )
         Text(
             text = label,
             fontSize = 11.sp,

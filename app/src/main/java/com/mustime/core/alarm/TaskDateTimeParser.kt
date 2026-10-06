@@ -8,12 +8,14 @@ object TaskDateTimeParser {
 
     private val TIME_REGEX = Pattern.compile("(\\b[01]?[0-9]|2[0-3]):([0-5][0-9])")
     private val DATE_FORMATS = listOf(
-        SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()),
-        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()),
-        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()),
-        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()),
-        SimpleDateFormat("MMM d, yyyy HH:mm", Locale.getDefault()),
+        SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault()),
+        SimpleDateFormat("EEE, MMM d yyyy", Locale.getDefault()),
         SimpleDateFormat("MMM d, yyyy", Locale.getDefault()),
+        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()),
+        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()),
+        SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()),
+        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()),
+        SimpleDateFormat("MMM d, yyyy HH:mm", Locale.getDefault()),
         SimpleDateFormat("MMM d HH:mm", Locale.getDefault()),
         SimpleDateFormat("EEE, MMM d HH:mm", Locale.getDefault())
     )
@@ -48,6 +50,14 @@ object TaskDateTimeParser {
                     if (cal.get(Calendar.YEAR) < 2000) {
                         cal.set(Calendar.YEAR, now.get(Calendar.YEAR))
                     }
+                    val pattern = format.toPattern()
+                    if (!pattern.contains("HH") && !pattern.contains("hh")) {
+                        // Date only: set to 23:59:59 (end of day) so the task remains active and valid all day long
+                        cal.set(Calendar.HOUR_OF_DAY, 23)
+                        cal.set(Calendar.MINUTE, 59)
+                        cal.set(Calendar.SECOND, 59)
+                        cal.set(Calendar.MILLISECOND, 999)
+                    }
                     return cal.timeInMillis
                 }
             } catch (_: Exception) {}
@@ -55,18 +65,15 @@ object TaskDateTimeParser {
 
         // 2. Extract Time component (HH:mm)
         val timeMatcher = TIME_REGEX.matcher(trimmed)
-        var hour = 17 // Default 5:00 PM if no time specified
-        var minute = 0
-        if (timeMatcher.find()) {
-            hour = timeMatcher.group(1)?.toIntOrNull() ?: 17
-            minute = timeMatcher.group(2)?.toIntOrNull() ?: 0
-        }
+        val hasExplicitTime = timeMatcher.find()
+        var hour = if (hasExplicitTime) timeMatcher.group(1)?.toIntOrNull() ?: 17 else 23
+        var minute = if (hasExplicitTime) timeMatcher.group(2)?.toIntOrNull() ?: 0 else 59
 
         val lower = trimmed.lowercase(Locale.ROOT)
         val targetCal = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, hour)
             set(Calendar.MINUTE, minute)
-            set(Calendar.SECOND, 0)
+            set(Calendar.SECOND, if (hasExplicitTime) 0 else 59)
             set(Calendar.MILLISECOND, 0)
         }
 
@@ -74,7 +81,6 @@ object TaskDateTimeParser {
         when {
             lower.contains("today") -> {
                 // targetCal is already today at hour:minute
-                // If the time already passed today, don't move to yesterday
             }
             lower.contains("tomorrow") -> {
                 targetCal.add(Calendar.DAY_OF_YEAR, 1)
@@ -134,13 +140,15 @@ object TaskDateTimeParser {
      * Formats an epoch millisecond into a human-readable reminder schedule time.
      */
     fun formatSchedulePreview(dueDateStr: String, reminderMinutes: Int?): String {
+        if (reminderMinutes == null) return "No alarm reminder set"
         val trigger = calculateTriggerTimeMillis(dueDateStr, reminderMinutes)
-            ?: return "No active reminder"
+            ?: return "Reminder disabled or date passed"
         val sdf = SimpleDateFormat("EEE, MMM d • HH:mm", Locale.getDefault())
-        val leadText = if (reminderMinutes == null || reminderMinutes == 0) {
-            "at due time"
-        } else {
-            "${reminderMinutes}m before"
+        val leadText = when {
+            reminderMinutes == 0 -> "on due date"
+            reminderMinutes >= 1440 -> "${reminderMinutes / 1440}d before"
+            reminderMinutes >= 60 -> "${reminderMinutes / 60}h before"
+            else -> "${reminderMinutes}m before"
         }
         return "Alarm scheduled: ${sdf.format(Date(trigger))} ($leadText)"
     }

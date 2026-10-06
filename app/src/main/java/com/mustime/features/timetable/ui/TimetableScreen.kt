@@ -860,6 +860,7 @@ private fun TimetableEntry.toSpecClassSession(
         endTime = endTime,
         type = specType,
         venue = cleanVenue,
+        floor = this.floor,
         lecturer = cleanLecturer,
         startsInText = startsInText,
         attachedNotesCount = if (cleanNotePreview != null) 1 else 0,

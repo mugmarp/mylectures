@@ -2,6 +2,7 @@ package com.mustime.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,7 +13,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.School
@@ -23,10 +27,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.mustime.features.timetable.ui.PrimaryBlue
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 /**
  * Dedicated Time Picker Dialog featuring the official Google Clock circular dial clock (TimePicker),
@@ -106,6 +114,402 @@ fun DedicatedTimePickerDialog(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("OK", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Dedicated Calendar Date Picker Dialog tailored for Academic Tasks & Deadlines.
+ * Features quick pick chips ("Today", "Tomorrow") at the top, and a full interactive monthly calendar grid as the main centerpiece.
+ * Eliminates mandatory time picking friction and ensures students can select real calendar dates effortlessly.
+ */
+@Composable
+fun DedicatedCalendarDatePickerDialog(
+    initialDate: String = "Tomorrow",
+    title: String = "Select Due Date",
+    onDateSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val todayCal = remember { Calendar.getInstance() }
+    val tomorrowCal = remember {
+        (Calendar.getInstance().clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }
+    }
+
+    // Determine initial active date
+    val initialCal = remember(initialDate) {
+        val cal = Calendar.getInstance()
+        val trimmed = initialDate.split("•", "-").firstOrNull()?.trim() ?: initialDate.trim()
+        when {
+            trimmed.equals("today", ignoreCase = true) -> cal
+            trimmed.equals("tomorrow", ignoreCase = true) -> {
+                cal.add(Calendar.DAY_OF_YEAR, 1)
+                cal
+            }
+            else -> {
+                try {
+                    val formats = listOf(
+                        SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault()),
+                        SimpleDateFormat("MMM d, yyyy", Locale.getDefault()),
+                        SimpleDateFormat("EEE, MMM d", Locale.getDefault()),
+                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()),
+                        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                    )
+                    var parsed: java.util.Date? = null
+                    for (f in formats) {
+                        try {
+                            f.isLenient = false
+                            parsed = f.parse(trimmed)
+                            if (parsed != null) break
+                        } catch (_: Exception) {}
+                    }
+                    if (parsed != null) {
+                        cal.time = parsed
+                        if (cal.get(Calendar.YEAR) < 2000) {
+                            cal.set(Calendar.YEAR, todayCal.get(Calendar.YEAR))
+                        }
+                    }
+                } catch (_: Exception) {}
+                cal
+            }
+        }
+    }
+
+    var viewYear by remember { mutableIntStateOf(initialCal.get(Calendar.YEAR)) }
+    var viewMonth by remember { mutableIntStateOf(initialCal.get(Calendar.MONTH)) } // 0..11
+    var selectedYear by remember { mutableIntStateOf(initialCal.get(Calendar.YEAR)) }
+    var selectedMonth by remember { mutableIntStateOf(initialCal.get(Calendar.MONTH)) }
+    var selectedDayOfMonth by remember { mutableIntStateOf(initialCal.get(Calendar.DAY_OF_MONTH)) }
+
+    // Helper to calculate whether selected is today or tomorrow
+    val isSelectedToday = remember(selectedYear, selectedMonth, selectedDayOfMonth) {
+        selectedYear == todayCal.get(Calendar.YEAR) &&
+        selectedMonth == todayCal.get(Calendar.MONTH) &&
+        selectedDayOfMonth == todayCal.get(Calendar.DAY_OF_MONTH)
+    }
+
+    val isSelectedTomorrow = remember(selectedYear, selectedMonth, selectedDayOfMonth) {
+        selectedYear == tomorrowCal.get(Calendar.YEAR) &&
+        selectedMonth == tomorrowCal.get(Calendar.MONTH) &&
+        selectedDayOfMonth == tomorrowCal.get(Calendar.DAY_OF_MONTH)
+    }
+
+    // Format display string
+    val currentDisplayString = remember(selectedYear, selectedMonth, selectedDayOfMonth, isSelectedToday, isSelectedTomorrow) {
+        when {
+            isSelectedToday -> "Today"
+            isSelectedTomorrow -> "Tomorrow"
+            else -> {
+                val c = Calendar.getInstance().apply {
+                    set(Calendar.YEAR, selectedYear)
+                    set(Calendar.MONTH, selectedMonth)
+                    set(Calendar.DAY_OF_MONTH, selectedDayOfMonth)
+                }
+                SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault()).format(c.time)
+            }
+        }
+    }
+
+    // Calendar month grid calculations
+    val monthCal = remember(viewYear, viewMonth) {
+        Calendar.getInstance().apply {
+            set(Calendar.YEAR, viewYear)
+            set(Calendar.MONTH, viewMonth)
+            set(Calendar.DAY_OF_MONTH, 1)
+        }
+    }
+
+    val monthTitle = remember(monthCal) {
+        SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(monthCal.time)
+    }
+
+    val daysInMonth = remember(monthCal) {
+        monthCal.getActualMaximum(Calendar.DAY_OF_MONTH)
+    }
+
+    // First day of week offset (Monday = 0, Sunday = 6)
+    val firstDayOffset = remember(monthCal) {
+        val dow = monthCal.get(Calendar.DAY_OF_WEEK) // 1=Sunday, 2=Monday...
+        (dow + 5) % 7
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            tint = primaryColor,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = title,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(18.dp))
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Quick Pick Strip: ONLY Today and Tomorrow
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = isSelectedToday,
+                        onClick = {
+                            selectedYear = todayCal.get(Calendar.YEAR)
+                            selectedMonth = todayCal.get(Calendar.MONTH)
+                            selectedDayOfMonth = todayCal.get(Calendar.DAY_OF_MONTH)
+                            viewYear = selectedYear
+                            viewMonth = selectedMonth
+                        },
+                        label = {
+                            Text(
+                                "Today",
+                                fontWeight = if (isSelectedToday) FontWeight.Bold else FontWeight.Medium
+                            )
+                        },
+                        leadingIcon = if (isSelectedToday) {
+                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                        } else null,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    FilterChip(
+                        selected = isSelectedTomorrow,
+                        onClick = {
+                            selectedYear = tomorrowCal.get(Calendar.YEAR)
+                            selectedMonth = tomorrowCal.get(Calendar.MONTH)
+                            selectedDayOfMonth = tomorrowCal.get(Calendar.DAY_OF_MONTH)
+                            viewYear = selectedYear
+                            viewMonth = selectedMonth
+                        },
+                        label = {
+                            Text(
+                                "Tomorrow",
+                                fontWeight = if (isSelectedTomorrow) FontWeight.Bold else FontWeight.Medium
+                            )
+                        },
+                        leadingIcon = if (isSelectedTomorrow) {
+                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                        } else null,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Month & Year Navigation Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = {
+                            if (viewMonth == 0) {
+                                viewMonth = 11
+                                viewYear -= 1
+                            } else {
+                                viewMonth -= 1
+                            }
+                        },
+                        modifier = Modifier.size(34.dp)
+                    ) {
+                        Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month")
+                    }
+
+                    Text(
+                        text = monthTitle,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    IconButton(
+                        onClick = {
+                            if (viewMonth == 11) {
+                                viewMonth = 0
+                                viewYear += 1
+                            } else {
+                                viewMonth += 1
+                            }
+                        },
+                        modifier = Modifier.size(34.dp)
+                    ) {
+                        Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Day of Week Labels
+                val dayHeaders = listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceAround
+                ) {
+                    dayHeaders.forEach { name ->
+                        Text(
+                            text = name,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.width(36.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Calendar Days Grid (Centerpiece)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    var dayCounter = 1
+                    for (row in 0..5) {
+                        if (dayCounter > daysInMonth) break
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceAround
+                        ) {
+                            for (col in 0..6) {
+                                val cellIndex = row * 7 + col
+                                if (cellIndex < firstDayOffset || dayCounter > daysInMonth) {
+                                    Box(modifier = Modifier.size(36.dp))
+                                } else {
+                                    val currentDay = dayCounter
+                                    val isCellSelected = (viewYear == selectedYear && viewMonth == selectedMonth && currentDay == selectedDayOfMonth)
+                                    val isCellToday = (viewYear == todayCal.get(Calendar.YEAR) && viewMonth == todayCal.get(Calendar.MONTH) && currentDay == todayCal.get(Calendar.DAY_OF_MONTH))
+
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(
+                                                when {
+                                                    isCellSelected -> primaryColor
+                                                    isCellToday -> primaryColor.copy(alpha = 0.14f)
+                                                    else -> Color.Transparent
+                                                }
+                                            )
+                                            .then(
+                                                if (isCellToday && !isCellSelected) {
+                                                    Modifier.border(1.5.dp, primaryColor, RoundedCornerShape(10.dp))
+                                                } else Modifier
+                                            )
+                                            .clickable {
+                                                selectedYear = viewYear
+                                                selectedMonth = viewMonth
+                                                selectedDayOfMonth = currentDay
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "$currentDay",
+                                            fontSize = 13.sp,
+                                            fontWeight = if (isCellSelected || isCellToday) FontWeight.Bold else FontWeight.Medium,
+                                            color = when {
+                                                isCellSelected -> Color.White
+                                                isCellToday -> primaryColor
+                                                else -> MaterialTheme.colorScheme.onSurface
+                                            }
+                                        )
+                                    }
+                                    dayCounter++
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Selection Preview Tile
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = primaryColor.copy(alpha = 0.08f),
+                    border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.CalendarToday,
+                            contentDescription = null,
+                            tint = primaryColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Due: $currentDisplayString",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Action Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Cancel")
+                    }
+                    Button(
+                        onClick = {
+                            onDateSelected(currentDisplayString)
+                            onDismiss()
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
+                    ) {
+                        Text("Confirm Date ✓", fontWeight = FontWeight.Bold)
                     }
                 }
             }

@@ -21,9 +21,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mustime.ui.LocalAppTheme
+import com.mustime.ui.components.RoomFloorBadge
 
 // Design Tokens & Theme Colors from Specification
 val SurfaceBaseLight = Color(0xFFFAF8FF)
@@ -91,6 +93,7 @@ data class SpecClassSession(
     val endTime: String,
     val type: SpecSessionType,
     val venue: String?,
+    val floor: Int? = null,
     val lecturer: String?,
     val startsInText: String? = null,
     val attachedNotesCount: Int = 0,
@@ -670,14 +673,28 @@ fun NextUpHeroCard(
                                 )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
-                            Column {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text("Venue", fontSize = 10.sp, color = Color.White.copy(0.7f))
-                                Text(
-                                    text = session.venue!!,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.White
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = session.venue!!,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.White,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false)
+                                    )
+                                    RoomFloorBadge(
+                                        roomName = session.venue,
+                                        floor = session.floor,
+                                        compact = true,
+                                        useContrastColor = true
+                                    )
+                                }
                             }
                         }
                     }
@@ -1007,14 +1024,28 @@ fun HappeningNowHeroCard(
                                 )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
-                            Column {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text("Venue", fontSize = 10.sp, color = Color.White.copy(0.7f))
-                                Text(
-                                    text = session.venue!!,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.White
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = session.venue!!,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.White,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false)
+                                    )
+                                    RoomFloorBadge(
+                                        roomName = session.venue,
+                                        floor = session.floor,
+                                        compact = true,
+                                        useContrastColor = true
+                                    )
+                                }
                             }
                         }
                     }
@@ -1344,18 +1375,20 @@ fun TimelineClassCard(
                         if (hasVenue) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.MeetingRoom,
-                                    contentDescription = "Venue",
-                                    tint = textSecondary,
-                                    modifier = Modifier.size(14.dp)
-                                )
                                 Text(
                                     text = session.venue!!,
                                     fontSize = 12.sp,
-                                    color = textSecondary
+                                    color = textSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                RoomFloorBadge(
+                                    roomName = session.venue,
+                                    floor = session.floor,
+                                    compact = true,
+                                    isDark = isDark
                                 )
                             }
                         }

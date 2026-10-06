@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,6 +30,7 @@ import com.mustime.TimetableApplication
 import com.mustime.core.util.TimeUtil
 import com.mustime.features.rooms.BuildingLevel
 import com.mustime.features.rooms.Campus
+import com.mustime.features.rooms.RoomType
 import com.mustime.features.rooms.SuggestionValue
 import com.mustime.features.rooms.RoomVacancyStatus
 import com.mustime.features.rooms.UniversityDirectory
@@ -165,16 +167,18 @@ fun VacantRoomsScreen(
 
             matchesFree && matchesLevel && matchesStudy && matchesSearch && matchesGap && matchesVacantFlag
         }
-        // Rank by how much NEW information each suggestion carries: class rooms and
-        // labs first (their availability is the unknown), libraries last (everyone
-        // already assumes the library is free). Then longest free window, then code.
+        // Sort strictly by availability:
+        // 1. Free rooms first (occupied rooms last)
+        // 2. Longest uninterrupted free window first (Rest of day, 3h, 2h, 1h...)
+        // 3. Class rooms & labs before libraries (where students need new info)
+        // 4. Room code for stable ordering
         base
             .filter { !hideLibrary || it.room.suggestionValue != SuggestionValue.LIBRARY }
             .sortedWith(
                 compareBy(
-                    { it.room.suggestionValue.suggestionRank },
                     { if (it.isOccupied) 1 else 0 },
-                    { -it.gapMinutes },
+                    { if (it.freeUntil == "Rest of day") -99999 else -it.gapMinutes },
+                    { it.room.suggestionValue.suggestionRank },
                     { it.room.code }
                 )
             )
@@ -325,13 +329,15 @@ fun VacantRoomsScreen(
                                                     )
                                                 }
                                             }
-                                        }
-                                    },
-                                    leadingIcon = {
-                                        if (isSelected) {
-                                            Icon(Icons.Default.Check, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
-                                        } else {
-                                            Spacer(modifier = Modifier.size(16.dp))
+                                            if (isSelected) {
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = "Selected",
+                                                    tint = PrimaryBlue,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
                                         }
                                     },
                                     onClick = {
@@ -348,18 +354,25 @@ fun VacantRoomsScreen(
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                             DropdownMenuItem(
                                 text = {
-                                    Text(
-                                        text = "All Campuses",
-                                        fontSize = 13.sp,
-                                        fontWeight = if (selectedCampus == null) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (selectedCampus == null) PrimaryBlue else textPrimary
-                                    )
-                                },
-                                leadingIcon = {
-                                    if (selectedCampus == null) {
-                                        Icon(Icons.Default.Check, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
-                                    } else {
-                                        Spacer(modifier = Modifier.size(16.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "All Campuses",
+                                            fontSize = 13.sp,
+                                            fontWeight = if (selectedCampus == null) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (selectedCampus == null) PrimaryBlue else textPrimary
+                                        )
+                                        if (selectedCampus == null) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = "Selected",
+                                                tint = PrimaryBlue,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
                                     }
                                 },
                                 onClick = {
@@ -383,7 +396,8 @@ fun VacantRoomsScreen(
                             onExpandedChange = { buildingDropdownExpanded = it },
                             modifier = Modifier.weight(1f),
                             isDark = isDark,
-                            badgeText = if (isFacultyBuildingSelected) "Faculty" else null
+                            badgeText = if (isFacultyBuildingSelected) "Faculty" else null,
+                            menuAlignmentEnd = true
                         ) {
                             campusBuildings.forEach { b ->
                                 val isSelected = selectedBuilding == b.code
@@ -425,13 +439,15 @@ fun VacantRoomsScreen(
                                                     )
                                                 }
                                             }
-                                        }
-                                    },
-                                    leadingIcon = {
-                                        if (isSelected) {
-                                            Icon(Icons.Default.Check, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
-                                        } else {
-                                            Spacer(modifier = Modifier.size(16.dp))
+                                            if (isSelected) {
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = "Selected",
+                                                    tint = PrimaryBlue,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
                                         }
                                     },
                                     onClick = {
@@ -446,18 +462,25 @@ fun VacantRoomsScreen(
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                             DropdownMenuItem(
                                 text = {
-                                    Text(
-                                        text = if (selectedCampus != null) "All ${selectedCampus} Buildings" else "All Buildings",
-                                        fontSize = 13.sp,
-                                        fontWeight = if (selectedBuilding == null) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (selectedBuilding == null) PrimaryBlue else textPrimary
-                                    )
-                                },
-                                leadingIcon = {
-                                    if (selectedBuilding == null) {
-                                        Icon(Icons.Default.Check, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
-                                    } else {
-                                        Spacer(modifier = Modifier.size(16.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = if (selectedCampus != null) "All ${selectedCampus} Buildings" else "All Buildings",
+                                            fontSize = 13.sp,
+                                            fontWeight = if (selectedBuilding == null) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (selectedBuilding == null) PrimaryBlue else textPrimary
+                                        )
+                                        if (selectedBuilding == null) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = "Selected",
+                                                tint = PrimaryBlue,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
                                     }
                                 },
                                 onClick = {
@@ -1031,6 +1054,7 @@ fun LocationDropdownSelector(
     modifier: Modifier = Modifier,
     isDark: Boolean,
     badgeText: String? = null,
+    menuAlignmentEnd: Boolean = false,
     menuContent: @Composable ColumnScope.() -> Unit
 ) {
     val surfaceColor = if (isDark) DarkSurfaceCard else Color.White
@@ -1045,7 +1069,7 @@ fun LocationDropdownSelector(
             border = BorderStroke(1.2.dp, if (expanded) PrimaryBlue else borderSubtle),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(54.dp)
+                .height(62.dp)
                 .clickable { onExpandedChange(!expanded) }
         ) {
             Row(
@@ -1067,7 +1091,10 @@ fun LocationDropdownSelector(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Text(
                             text = label.uppercase(),
                             fontSize = 9.5.sp,
@@ -1076,10 +1103,9 @@ fun LocationDropdownSelector(
                             letterSpacing = 0.5.sp
                         )
                         if (badgeText != null) {
-                            Spacer(modifier = Modifier.width(4.dp))
                             Box(
                                 modifier = Modifier
-                                    .background(PrimaryBlue.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                                    .background(PrimaryBlue.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                                     .padding(horizontal = 4.dp, vertical = 1.dp)
                             ) {
                                 Text(
@@ -1091,6 +1117,7 @@ fun LocationDropdownSelector(
                             }
                         }
                     }
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = value,
                         fontSize = 13.sp,
@@ -1115,13 +1142,30 @@ fun LocationDropdownSelector(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { onExpandedChange(false) },
+            offset = if (menuAlignmentEnd) androidx.compose.ui.unit.DpOffset(x = (-60).dp, y = 4.dp) else androidx.compose.ui.unit.DpOffset(x = 0.dp, y = 4.dp),
             modifier = Modifier
-                .widthIn(min = 230.dp, max = 290.dp)
+                .widthIn(min = 220.dp, max = 275.dp)
                 .background(surfaceColor, RoundedCornerShape(14.dp)),
             properties = androidx.compose.ui.window.PopupProperties(focusable = true)
         ) {
             menuContent()
         }
+    }
+}
+
+/**
+ * Formats room code for display, stripping redundant suffixes and library redundancies.
+ */
+fun formatRoomDisplayCode(room: com.mustime.features.rooms.RoomItem): String {
+    val raw = room.code
+    return when {
+        raw.contains("Kihumuro Library Room 1", ignoreCase = true) -> "Study Room 1"
+        raw.contains("Kihumuro Library Room 2", ignoreCase = true) -> "Study Room 2"
+        raw.contains("Kihumuro Library Room 3", ignoreCase = true) -> "Study Room 3"
+        raw.contains("Kihumuro Library Room 4", ignoreCase = true) -> "Study Room 4"
+        raw.contains("FCI Library 1", ignoreCase = true) -> "Library Room 1"
+        raw.contains("FCI Library 2", ignoreCase = true) -> "Library Room 2"
+        else -> raw
     }
 }
 
@@ -1160,39 +1204,18 @@ fun RoomVacancyCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(statusColor.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = when {
-                        !room.isStudyFriendly -> Icons.Outlined.Lock
-                        status.isOccupied -> Icons.Outlined.School
-                        room.isPermanentlyVacant -> Icons.Outlined.EventAvailable
-                        else -> Icons.Outlined.MeetingRoom
-                    },
-                    contentDescription = null,
-                    tint = statusColor,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(14.dp))
-
             Column(modifier = Modifier.weight(1f)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    val displayCode = formatRoomDisplayCode(room)
                     Text(
-                        text = room.code,
+                        text = displayCode,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = textPrimary,
@@ -1208,40 +1231,30 @@ fun RoomVacancyCard(
                         isDark = isDark
                     )
 
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                if (isDark) Color(0xFF334155).copy(alpha = 0.5f) else Color(0xFFF1F5F9),
-                                RoundedCornerShape(6.dp)
-                            )
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = room.type.displayName,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = textMuted,
-                            maxLines = 1
-                        )
-                    }
-
-                    if (room.suggestionValue == SuggestionValue.LIBRARY) {
+                    // Suppress redundant type badges: Libraries and Classrooms don't need a duplicate tag
+                    val isLibrary = room.type == RoomType.LIBRARY || room.buildingName.contains("Library", ignoreCase = true)
+                    val showTypeBadge = !isLibrary && room.type != RoomType.CLASSROOM
+                    if (showTypeBadge) {
                         Box(
                             modifier = Modifier
-                                .background(StatusGreenLive.copy(alpha = 0.14f), RoundedCornerShape(6.dp))
+                                .background(
+                                    if (isDark) Color(0xFF334155).copy(alpha = 0.5f) else Color(0xFFF1F5F9),
+                                    RoundedCornerShape(6.dp)
+                                )
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = "Library",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = StatusGreenLive
+                                text = room.type.displayName,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = textMuted,
+                                maxLines = 1
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(3.dp))
 
                 Text(
                     text = if (showCampus) "${room.buildingName} · ${room.campus}" else room.buildingName,
@@ -1285,6 +1298,8 @@ fun RoomVacancyCard(
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.width(8.dp))
 
             Icon(
                 Icons.Outlined.ChevronRight,
@@ -1336,7 +1351,7 @@ fun RoomScheduleDetailDialog(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = room.code,
+                                text = formatRoomDisplayCode(room),
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = textPrimary
@@ -1348,7 +1363,7 @@ fun RoomScheduleDetailDialog(
                             )
                         }
                         Text(
-                            text = "${room.buildingName} · ${room.type.displayName} · $dayOfWeek",
+                            text = "${room.buildingName} · $dayOfWeek",
                             fontSize = 12.sp,
                             color = textMuted
                         )
@@ -1393,31 +1408,88 @@ fun RoomScheduleDetailDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 if (sessions.isEmpty()) {
-                    Box(
+                    val isLibraryVenue = room.type == RoomType.LIBRARY || room.buildingName.contains("Library", ignoreCase = true)
+                    val isPermanentlyVacant = room.isPermanentlyVacant || room.sessionsThisSemester == 0
+
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (isDark) DarkSurfaceBase else Color(0xFFF0FDF4),
+                        border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else Color(0xFFBBF7D0)),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 36.dp),
-                        contentAlignment = Alignment.Center
+                            .padding(vertical = 10.dp)
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                Icons.Outlined.CheckCircle,
-                                contentDescription = null,
-                                tint = StatusGreenLive,
-                                modifier = Modifier.size(36.dp)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .background(StatusGreenLive.copy(alpha = 0.15f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isLibraryVenue) Icons.Outlined.LocalLibrary else Icons.Outlined.CheckCircle,
+                                    contentDescription = null,
+                                    tint = StatusGreenLive,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "Entire Day is Free!",
+                                text = when {
+                                    isLibraryVenue -> "Open for Self-Study & Reading"
+                                    isPermanentlyVacant -> "Unallocated Classroom · Free All Day"
+                                    else -> "No Scheduled Lectures on $dayOfWeek"
+                                },
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = textPrimary
+                                fontSize = 15.5.sp,
+                                color = textPrimary,
+                                textAlign = TextAlign.Center
                             )
+                            Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "No lectures scheduled in this room on $dayOfWeek.",
+                                text = when {
+                                    isLibraryVenue -> "This is a dedicated academic library / study facility. No lectures are timetable-allocated here, so it is freely accessible for individual study, reading, and research throughout $dayOfWeek."
+                                    isPermanentlyVacant -> "This venue has zero scheduled teaching sessions in the 2026/2027 Semester I timetable. You can freely use it for quiet revision, coursework, or group discussions."
+                                    else -> "No teaching sessions are allocated to this room on $dayOfWeek. It is open and available for student study, revision, or coursework."
+                                },
                                 fontSize = 12.sp,
-                                color = textMuted
+                                color = textMuted,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 17.sp
                             )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = StatusGreenLive.copy(alpha = 0.12f)
+                                ) {
+                                    Text(
+                                        text = if (isLibraryVenue) "✓ Quiet Study Friendly" else "✓ Full Day Free",
+                                        color = StatusGreenLive,
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = PrimaryBlue.copy(alpha = 0.12f)
+                                ) {
+                                    Text(
+                                        text = room.level.displayName,
+                                        color = PrimaryBlue,
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 } else {

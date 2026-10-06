@@ -34,6 +34,7 @@ import com.mustime.core.util.TimeUtil
 import com.mustime.features.timetable.domain.ActivityCategory
 import com.mustime.features.timetable.domain.CustomEvent
 import com.mustime.features.timetable.domain.TaskCategory
+import com.mustime.ui.components.DedicatedCalendarDatePickerDialog
 import com.mustime.ui.components.DedicatedCoursePickerDialog
 import com.mustime.ui.components.DedicatedDayPickerDialog
 import com.mustime.ui.components.DedicatedSchedulePickerDialog
@@ -92,11 +93,10 @@ fun QuickAddBottomSheet(
         mutableStateOf(availableCourses.firstOrNull() ?: "PHA3102")
     }
     var taskDueDate by remember {
-        val defaultDay = if (initialDayOfWeek.isNotBlank()) initialDayOfWeek else "Tomorrow"
-        mutableStateOf("$defaultDay • 17:00")
+        mutableStateOf("Tomorrow")
     }
     var taskPriority by remember { mutableStateOf("Medium") }
-    var taskReminderMinutes by remember { mutableStateOf<Int?>(30) }
+    var taskReminderMinutes by remember { mutableStateOf<Int?>(1440) }
     var isTaskCustomReminder by remember { mutableStateOf(false) }
     var taskCustomMinutesText by remember { mutableStateOf("") }
     var taskNotes by remember { mutableStateOf("") }
@@ -105,9 +105,7 @@ fun QuickAddBottomSheet(
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
     var showCoursePicker by remember { mutableStateOf(false) }
-    var showDueSchedulePicker by remember { mutableStateOf(false) }
-    var showDueDayPicker by remember { mutableStateOf(false) }
-    var showDueTimePicker by remember { mutableStateOf(false) }
+    var showDueCalendarPicker by remember { mutableStateOf(false) }
     var tempDueDay by remember { mutableStateOf(initialDayOfWeek) }
 
     val daysOfWeek = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
@@ -744,16 +742,16 @@ fun QuickAddBottomSheet(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Due Date & Time Scheduler Card (Google Clock inspired)
+                    // Due Date Card (Tapping opens the full interactive Calendar)
                     Text(
-                        text = "Due Date & Time *",
+                        text = "Due Date *",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Surface(
-                        onClick = { showDueSchedulePicker = true },
+                        onClick = { showDueCalendarPicker = true },
                         shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
@@ -776,45 +774,66 @@ fun QuickAddBottomSheet(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
                                     Text(
-                                        text = taskDueDate.ifBlank { "Tomorrow • 17:00" },
+                                        text = taskDueDate.ifBlank { "Tomorrow" },
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = "Google Clock style Time Scheduler",
+                                        text = "Tap to pick from Calendar",
                                         fontSize = 11.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
                             Icon(
-                                Icons.Default.AccessTime,
-                                contentDescription = "Change Schedule",
+                                Icons.Default.DateRange,
+                                contentDescription = "Pick Date",
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
                     }
 
-                    // Quick Due Date Presets
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.padding(top = 6.dp)
+                    // Quick Due Date Presets: ONLY Today, Tomorrow, and Calendar shortcut
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp)
                     ) {
-                        val presets = listOf(
-                            "Today • 17:00",
-                            "Tomorrow • 17:00",
-                            "$initialDayOfWeek • 18:00",
-                            "Friday • 23:59",
-                            "Sunday • 20:00"
-                        ).distinct()
-                        items(presets) { preset ->
-                            SuggestionChip(
-                                onClick = { taskDueDate = preset },
-                                label = { Text(preset, fontSize = 11.sp) }
-                            )
-                        }
+                        val isToday = taskDueDate.equals("Today", ignoreCase = true)
+                        val isTomorrow = taskDueDate.equals("Tomorrow", ignoreCase = true)
+
+                        FilterChip(
+                            selected = isToday,
+                            onClick = { taskDueDate = "Today" },
+                            label = { Text("Today", fontSize = 12.sp) },
+                            leadingIcon = if (isToday) {
+                                { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                            } else null,
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        FilterChip(
+                            selected = isTomorrow,
+                            onClick = { taskDueDate = "Tomorrow" },
+                            label = { Text("Tomorrow", fontSize = 12.sp) },
+                            leadingIcon = if (isTomorrow) {
+                                { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                            } else null,
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        FilterChip(
+                            selected = !isToday && !isTomorrow && taskDueDate.isNotBlank(),
+                            onClick = { showDueCalendarPicker = true },
+                            label = { Text("Calendar 📅", fontSize = 12.sp) },
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1.2f)
+                        )
                     }
 
                     // Schedule Preview
@@ -1062,39 +1081,15 @@ fun QuickAddBottomSheet(
         )
     }
 
-    if (showDueSchedulePicker) {
-        DedicatedSchedulePickerDialog(
-            initialSchedule = taskDueDate,
-            title = "Set Task Schedule",
-            onScheduleSelected = { picked ->
+    if (showDueCalendarPicker) {
+        DedicatedCalendarDatePickerDialog(
+            initialDate = taskDueDate,
+            title = "Select Task Due Date",
+            onDateSelected = { picked ->
                 taskDueDate = picked
-                showDueSchedulePicker = false
+                showDueCalendarPicker = false
             },
-            onDismiss = { showDueSchedulePicker = false }
-        )
-    }
-
-    if (showDueDayPicker) {
-        DedicatedDayPickerDialog(
-            selectedDay = tempDueDay,
-            onDaySelected = { day ->
-                tempDueDay = day
-                showDueDayPicker = false
-                showDueTimePicker = true
-            },
-            onDismiss = { showDueDayPicker = false }
-        )
-    }
-
-    if (showDueTimePicker) {
-        DedicatedTimePickerDialog(
-            initialTime = "17:00",
-            title = "Set Due Time ($tempDueDay)",
-            onTimeSelected = { time ->
-                taskDueDate = "$tempDueDay • $time"
-                showDueTimePicker = false
-            },
-            onDismiss = { showDueTimePicker = false }
+            onDismiss = { showDueCalendarPicker = false }
         )
     }
 }
