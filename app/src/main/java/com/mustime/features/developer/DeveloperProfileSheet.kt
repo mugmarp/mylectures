@@ -69,7 +69,7 @@ fun DeveloperProfileSheet(
     val devName = "MUGENDAWALA MARK PAUL"
     val studentRole = "Student Software Developer & Creator"
     val labUrl = "https://tirallab.page"
-    val githubUrl = "https://github.com/markpaulmu"
+    val githubUrl = "https://github.com/mugmarp"
     val emailContact = "markpaulmu@gmail.com"
 
     ModalBottomSheet(
@@ -199,7 +199,7 @@ fun DeveloperProfileSheet(
             DeveloperLinkRow(
                 icon = Icons.Default.Code,
                 title = "GitHub Account",
-                subtitle = "github.com/markpaulmu",
+                subtitle = "github.com/mugmarp",
                 onClick = {
                     openBrowser(context, githubUrl)
                 }

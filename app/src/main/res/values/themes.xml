@@ -8,7 +8,7 @@
 
         <!-- Android 12+ (API 31+) Launching / Splash Screen -->
         <item name="android:windowSplashScreenBackground">@color/launch_background</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/app_logo</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo_safe</item>
         <item name="android:windowSplashScreenIconBackgroundColor">#FFFFFF</item>
         <item name="android:windowSplashScreenBrandingImage">@drawable/ic_splash_branding</item>
     </style>

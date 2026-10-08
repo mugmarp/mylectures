@@ -266,10 +266,11 @@ class SettingsViewModel(
                 courseCode = "BCS2101",
                 courseTitle = "Data Structures & Algorithms",
                 room = "Comp Lab 2 (Main Campus)",
-                startTime = "09:00 AM"
+                startTime = "09:00 AM",
+                lecturer = "Dr. Mugisha"
             )
             _uiState.value = _uiState.value.copy(
-                successMessage = "Test lecture alarm notification posted! Check your status bar."
+                successMessage = "Test class reminder notification posted! Check your status bar."
             )
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(

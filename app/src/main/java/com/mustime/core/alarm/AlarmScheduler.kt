@@ -55,6 +55,7 @@ class AlarmScheduler(private val context: Context) {
             putExtra("COURSE_TITLE", entry.courseTitle)
             putExtra("ROOM", entry.room ?: "TBD")
             putExtra("START_TIME", entry.startTime)
+            putExtra("LECTURER", entry.lecturer ?: "")
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
@@ -110,6 +111,7 @@ class AlarmScheduler(private val context: Context) {
             putExtra("COURSE_TITLE", entry.courseTitle)
             putExtra("ROOM", entry.room ?: "TBD")
             putExtra("START_TIME", entry.startTime)
+            putExtra("LECTURER", entry.lecturer ?: "")
         }
         val pendingIntent = PendingIntent.getBroadcast(
             context,

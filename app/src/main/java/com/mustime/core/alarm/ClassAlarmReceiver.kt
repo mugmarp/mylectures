@@ -13,15 +13,17 @@ class ClassAlarmReceiver : BroadcastReceiver() {
         val courseTitle = intent.getStringExtra("COURSE_TITLE") ?: "Class"
         val room = intent.getStringExtra("ROOM") ?: "Classroom"
         val startTime = intent.getStringExtra("START_TIME") ?: "Soon"
+        val lecturer = intent.getStringExtra("LECTURER") ?: ""
 
-        Log.d("ClassAlarmReceiver", "Class alarm fired for $courseCode in $room at $startTime")
+        Log.d("ClassAlarmReceiver", "Class reminder fired for $courseCode in $room at $startTime")
 
         NotificationHelper.showClassReminderNotification(
             context = context,
             courseCode = courseCode,
             courseTitle = courseTitle,
             room = room,
-            startTime = startTime
+            startTime = startTime,
+            lecturer = lecturer
         )
     }
 }

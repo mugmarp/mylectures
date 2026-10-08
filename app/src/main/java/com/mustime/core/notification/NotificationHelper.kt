@@ -145,7 +145,8 @@ object NotificationHelper {
         courseCode: String,
         courseTitle: String,
         room: String,
-        startTime: String
+        startTime: String,
+        lecturer: String = ""
     ) {
         createNotificationChannels(context)
 
@@ -162,14 +163,17 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val title = "Class Reminder: $courseCode"
+        val subtitle = "📍 Room: $room • Starts at $startTime"
+        val lecturerDetails = if (lecturer.isNotBlank()) "\nLecturer: $lecturer" else ""
+        val detailedText = "$courseTitle\n📍 Venue: $room\n⏰ Starts at: $startTime$lecturerDetails\nOpen timetable to view study materials."
+
         val builder = NotificationCompat.Builder(context, CHANNEL_CLASSES)
             .setSmallIcon(R.drawable.ic_stat_notification)
-            .setContentTitle("Upcoming Class: $courseCode")
-            .setContentText("$courseTitle in $room at $startTime")
+            .setContentTitle(title)
+            .setContentText(subtitle)
             .setStyle(
-                NotificationCompat.BigTextStyle().bigText(
-                    "Your class $courseCode ($courseTitle) starts at $startTime in $room. Don't forget your materials!"
-                )
+                NotificationCompat.BigTextStyle().bigText(detailedText)
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_EVENT)
