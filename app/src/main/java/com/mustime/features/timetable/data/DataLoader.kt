@@ -57,7 +57,7 @@ class DataLoader(private val context: Context, private val db: AppDatabase) {
                         id = 0,
                         title = "Semester Coursework Assignment",
                         courseCode = "GEN101",
-                        dueDate = "Friday, 17:00",
+                        dueDate = "Friday",
                         reminderMinutes = 60,
                         priority = "Medium",
                         notes = "Check course outline and submit deliverables before the deadline.",

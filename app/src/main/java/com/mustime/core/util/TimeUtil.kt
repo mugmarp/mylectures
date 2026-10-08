@@ -13,6 +13,46 @@ data class SessionProgress(
 object TimeUtil {
     val DAYS = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 
+    /**
+     * MUST 2026/2027 Academic Year Semester I commenced around late August / early September.
+     * Calculates current active semester week (e.g. "Week 6 • Semester 1").
+     */
+    fun currentSemesterWeekLabel(): String {
+        val now = Calendar.getInstance()
+        val year = now.get(Calendar.YEAR)
+        val month = now.get(Calendar.MONTH) // 0-based: Jan = 0, Aug = 7, Sep = 8
+
+        // Semester 1 reference start date: Last Monday of August / First Monday of September
+        val semStart = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            if (month >= Calendar.AUGUST) {
+                set(Calendar.YEAR, year)
+                set(Calendar.MONTH, Calendar.AUGUST)
+                set(Calendar.DAY_OF_MONTH, 24) // Late August start
+            } else {
+                // Semester 2: Starts mid-January / February
+                set(Calendar.YEAR, year)
+                set(Calendar.MONTH, Calendar.JANUARY)
+                set(Calendar.DAY_OF_MONTH, 19)
+            }
+        }
+
+        val diffMillis = now.timeInMillis - semStart.timeInMillis
+        val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
+        val weekNum = (diffDays / 7) + 1
+        val semesterNumber = if (month >= Calendar.AUGUST || month <= Calendar.JANUARY) 1 else 2
+
+        val clampedWeek = when {
+            weekNum in 1..17 -> "Week $weekNum"
+            weekNum > 17 -> "Recess / Exams"
+            else -> "Week 1"
+        }
+        return "$clampedWeek • Sem $semesterNumber"
+    }
+
     fun todayName(): String {
         val calendar = Calendar.getInstance()
         return when (calendar.get(Calendar.DAY_OF_WEEK)) {

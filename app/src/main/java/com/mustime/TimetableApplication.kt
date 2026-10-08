@@ -21,6 +21,7 @@ class TimetableApplication : Application() {
     lateinit var repository: TimetableRepository
     lateinit var syncRepository: SyncRepository
     lateinit var dataLoader: DataLoader
+    lateinit var feedbackManager: com.mustime.features.feedback.FeedbackManager
     
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -58,6 +59,7 @@ class TimetableApplication : Application() {
         )
 
         syncRepository = SyncRepository(database)
+        feedbackManager = com.mustime.features.feedback.FeedbackManager(this, etagStore)
         
         // Initial load
         applicationScope.launch {

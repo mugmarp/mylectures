@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mustime.core.util.TimeUtil
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.components.RoomFloorBadge
 
@@ -113,7 +114,7 @@ data class SpecClassSession(
 @Composable
 fun TimetableTopAppBar(
     program: String,
-    subtitle: String = "Academic Schedule",
+    subtitle: String = TimeUtil.currentSemesterWeekLabel(),
     hasUnreadNotifications: Boolean = false,
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
@@ -128,11 +129,18 @@ fun TimetableTopAppBar(
     val borderSubtle = if (isDark) DarkBorderSubtle else BorderSubtleLight
     val iconTint = if (isDark) Color(0xFFCBD5E1) else TextSecondaryLight
 
+    val barBg = if (isDark) {
+        DarkSurfaceBase.copy(alpha = 0.82f)
+    } else {
+        SurfaceBaseLight.copy(alpha = 0.85f)
+    }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .background(barBg)
             .statusBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

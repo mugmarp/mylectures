@@ -146,7 +146,7 @@ fun WelcomeScreen(
             icon = { Icon(Icons.Default.Gavel, contentDescription = null, tint = primaryBlue) },
             title = {
                 Text(
-                    text = "Terms of Service",
+                    text = "Disclaimer & Terms",
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp,
                     color = textPrimary
@@ -166,7 +166,7 @@ fun WelcomeScreen(
                         color = primaryBlue
                     )
                     Text(
-                        text = "Lectures is provided for personal, non-commercial academic schedule tracking, note-taking, and task planning.",
+                        text = "Lectures is provided for personal, non-commercial academic schedule tracking, note-taking, and coursework management.",
                         fontSize = 12.sp,
                         color = textSecondary
                     )
@@ -184,7 +184,19 @@ fun WelcomeScreen(
                     )
 
                     Text(
-                        text = "3. Local Privacy Guarantee",
+                        text = "3. Developer Details",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = primaryBlue
+                    )
+                    Text(
+                        text = "Developed by MUGENDAWALA MARK PAUL as an independent student tool for academic schedule tracking, vacant study hall finding, and offline coursework productivity.",
+                        fontSize = 12.sp,
+                        color = textSecondary
+                    )
+
+                    Text(
+                        text = "4. Local Privacy Guarantee",
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
                         color = primaryBlue
@@ -202,7 +214,7 @@ fun WelcomeScreen(
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = primaryBlue)
                 ) {
-                    Text("Accept Terms")
+                    Text("I accept the Terms of Service & Disclaimer.")
                 }
             }
         )
@@ -283,7 +295,7 @@ fun WelcomeScreen(
                     }
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        "Smart Campus Companion",
+                        "Campus Companion",
                         color = primaryBlue,
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp
@@ -387,7 +399,7 @@ fun WelcomeScreen(
                 }
             }
 
-            // 3. Campus Notice & Agreement Card (Notice title clearly NOT "MUST Terms...")
+            // 3. Disclaimer & Terms Notice Card
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = cardBg,
@@ -410,7 +422,7 @@ fun WelcomeScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Campus Notice & Terms",
+                                text = "Disclaimer & Terms",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = textPrimary
@@ -453,36 +465,6 @@ fun WelcomeScreen(
                         lineHeight = 15.sp,
                         color = textSecondary
                     )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    // Interactive Checkbox row
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { termsAcknowledged = !termsAcknowledged }
-                            .padding(vertical = 2.dp)
-                    ) {
-                        Checkbox(
-                            checked = termsAcknowledged,
-                            onCheckedChange = { termsAcknowledged = it },
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = primaryBlue,
-                                uncheckedColor = if (isDark) Color(0xFF64748B) else Color(0xFF94A3B8)
-                            ),
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "I agree to the Terms of Service & Campus Notice.",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (termsAcknowledged) textPrimary else textSecondary,
-                            lineHeight = 14.sp
-                        )
-                    }
                 }
             }
 
@@ -493,15 +475,13 @@ fun WelcomeScreen(
             ) {
                 Button(
                     onClick = onGetStarted,
-                    enabled = termsAcknowledged,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp)
                         .testTag("get_started_button"),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = primaryBlue,
-                        disabledContainerColor = if (isDark) Color(0xFF334155) else Color(0xFFE2E8F0)
+                        containerColor = primaryBlue
                     )
                 ) {
                     Row(
@@ -512,26 +492,25 @@ fun WelcomeScreen(
                             "Get Started",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (termsAcknowledged) Color.White else (if (isDark) Color(0xFF64748B) else Color(0xFF94A3B8))
+                            color = Color.White
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowForward,
                             contentDescription = null,
-                            tint = if (termsAcknowledged) Color.White else (if (isDark) Color(0xFF64748B) else Color(0xFF94A3B8)),
+                            tint = Color.White,
                             modifier = Modifier.size(18.dp)
                         )
                     }
                 }
 
-                if (!termsAcknowledged) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Please accept the notice above to continue.",
-                        fontSize = 10.sp,
-                        color = textMuted
-                    )
-                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "By clicking Get Started, you agree to our Disclaimer & Terms",
+                    fontSize = 11.sp,
+                    color = textMuted,
+                    textAlign = TextAlign.Center
+                )
 
                 Spacer(modifier = Modifier.height(2.dp))
             }

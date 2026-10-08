@@ -1080,7 +1080,9 @@ fun AddTaskDialog(
     var title by remember(initialTask) { mutableStateOf(initialCatAndTitle.second) }
     var category by remember(initialTask) { mutableStateOf(initialCatAndTitle.first) }
     var course by remember(initialTask) { mutableStateOf(initialTask?.courseCode ?: "") }
-    var dueDate by remember(initialTask) { mutableStateOf(initialTask?.dueDate ?: "Tomorrow") }
+    var dueDate by remember(initialTask) {
+        mutableStateOf(TaskDateTimeParser.normalizeDueDate(initialTask?.dueDate))
+    }
     var priority by remember(initialTask) { mutableStateOf(initialTask?.priority ?: "Medium") }
     var reminderMinutes by remember(initialTask) { mutableStateOf<Int?>(initialTask?.reminderMinutes ?: 1440) }
     var notes by remember(initialTask) { mutableStateOf(initialTask?.notes ?: "") }
@@ -1223,90 +1225,128 @@ fun AddTaskDialog(
                     }
                 }
 
-                // Due Date Card (Tapping opens the full interactive Calendar)
+                // Target Due Day Selector: Direct Quick Picks (Today, Tomorrow) + Visual Calendar Button
+                Text(
+                    text = "Due Day *",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = textSecondary,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+
                 Surface(
-                    onClick = { showDueCalendarPicker = true },
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (isDark) DarkSurfaceCard else Color(0xFFF1F5F9),
-                    border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else Color(0xFFCBD5E1)),
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (isDark) DarkSurfaceCard else Color(0xFFF8FAFC),
+                    border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else Color(0xFFE2E8F0)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 9.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.CalendarMonth,
-                                contentDescription = null,
-                                tint = primaryColor,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(
-                                    text = dueDate.ifBlank { "Tomorrow" },
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isDark) Color.White else Color(0xFF0F172A)
+                        // Current Selected Due Date Header with Calendar Action
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { showDueCalendarPicker = true }
+                                .background(if (isDark) DarkSurfaceBase else Color.White)
+                                .border(1.dp, if (isDark) DarkBorderSubtle else Color(0xFFE2E8F0), RoundedCornerShape(10.dp))
+                                .padding(horizontal = 12.dp, vertical = 9.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.CalendarMonth,
+                                    contentDescription = null,
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(20.dp)
                                 )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = dueDate.ifBlank { "Tomorrow" },
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isDark) Color.White else Color(0xFF0F172A)
+                                    )
+                                    Text(
+                                        text = "Target day (time discarded)",
+                                        fontSize = 10.sp,
+                                        color = textSecondary
+                                    )
+                                }
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .background(primaryColor.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.DateRange,
+                                    contentDescription = "Open Calendar",
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "Tap to pick from Calendar",
-                                    fontSize = 10.sp,
-                                    color = textSecondary
+                                    text = "Calendar",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = primaryColor
                                 )
                             }
                         }
-                        Icon(
-                            Icons.Default.DateRange,
-                            contentDescription = "Pick Date",
-                            tint = primaryColor,
-                            modifier = Modifier.size(18.dp)
-                        )
+
+                        // Quick Day Selection: strictly "Today" and "Tomorrow"
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val isToday = dueDate.equals("Today", ignoreCase = true)
+                            val isTomorrow = dueDate.equals("Tomorrow", ignoreCase = true)
+
+                            FilterChip(
+                                selected = isToday,
+                                onClick = { dueDate = "Today" },
+                                label = {
+                                    Text(
+                                        "Today",
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                },
+                                leadingIcon = if (isToday) {
+                                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(13.dp)) }
+                                } else null,
+                                shape = RoundedCornerShape(9.dp),
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            FilterChip(
+                                selected = isTomorrow,
+                                onClick = { dueDate = "Tomorrow" },
+                                label = {
+                                    Text(
+                                        "Tomorrow",
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isTomorrow) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                },
+                                leadingIcon = if (isTomorrow) {
+                                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(13.dp)) }
+                                } else null,
+                                shape = RoundedCornerShape(9.dp),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
-                }
-
-                // Quick Day Selection (Today & Tomorrow) + Calendar Shortcut
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val isToday = dueDate.equals("Today", ignoreCase = true)
-                    val isTomorrow = dueDate.equals("Tomorrow", ignoreCase = true)
-
-                    FilterChip(
-                        selected = isToday,
-                        onClick = { dueDate = "Today" },
-                        label = { Text("Today", fontSize = 11.5.sp) },
-                        leadingIcon = if (isToday) {
-                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(13.dp)) }
-                        } else null,
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    FilterChip(
-                        selected = isTomorrow,
-                        onClick = { dueDate = "Tomorrow" },
-                        label = { Text("Tomorrow", fontSize = 11.5.sp) },
-                        leadingIcon = if (isTomorrow) {
-                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(13.dp)) }
-                        } else null,
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    FilterChip(
-                        selected = !isToday && !isTomorrow && dueDate.isNotBlank(),
-                        onClick = { showDueCalendarPicker = true },
-                        label = { Text("Calendar 📅", fontSize = 11.5.sp) },
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.weight(1.2f)
-                    )
                 }
 
                 // Priority & Reminder in compact rows

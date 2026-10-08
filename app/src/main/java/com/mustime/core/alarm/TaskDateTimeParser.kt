@@ -119,12 +119,45 @@ object TaskDateTimeParser {
      */
     fun calculateTriggerTimeMillis(dueDateStr: String, reminderMinutes: Int?): Long? {
         val dueMillis = calculateDueMillis(dueDateStr) ?: return null
-        val offsetMillis = ((reminderMinutes ?: 30).coerceAtLeast(0)) * 60 * 1000L
-        val triggerMillis = dueMillis - offsetMillis
-
         val now = System.currentTimeMillis()
-        // If trigger time is in the past, but the task is still due in the future:
-        // Schedule in 5 seconds so the user is immediately reminded that deadline is approaching!
+        if (dueMillis <= now) return null // Task is completely in the past
+
+        val trimmed = dueDateStr.trim()
+        val timeMatcher = TIME_REGEX.matcher(trimmed)
+        val hasExplicitTime = timeMatcher.find()
+
+        val triggerMillis = if (!hasExplicitTime) {
+            // For date-only academic tasks (due end of day), ground alarms at student-friendly academic hours (09:00 AM)
+            val cal = Calendar.getInstance().apply {
+                timeInMillis = dueMillis
+                set(Calendar.HOUR_OF_DAY, 9)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            when {
+                reminderMinutes == null -> return null
+                reminderMinutes == 0 -> cal.timeInMillis // 09:00 AM on due day
+                reminderMinutes >= 1440 -> {
+                    val daysBefore = reminderMinutes / 1440
+                    cal.add(Calendar.DAY_OF_YEAR, -daysBefore)
+                    cal.timeInMillis
+                }
+                reminderMinutes >= 60 -> {
+                    // Lead hours before end of academic day (17:00)
+                    cal.set(Calendar.HOUR_OF_DAY, 17)
+                    cal.timeInMillis - (reminderMinutes * 60 * 1000L)
+                }
+                else -> {
+                    // Minutes before 09:00 AM
+                    cal.timeInMillis - (reminderMinutes * 60 * 1000L)
+                }
+            }
+        } else {
+            val offsetMillis = ((reminderMinutes ?: 30).coerceAtLeast(0)) * 60 * 1000L
+            dueMillis - offsetMillis
+        }
+
         return if (triggerMillis <= now) {
             if (dueMillis > now) {
                 now + 5_000L
@@ -151,5 +184,18 @@ object TaskDateTimeParser {
             else -> "${reminderMinutes}m before"
         }
         return "Alarm scheduled: ${sdf.format(Date(trigger))} ($leadText)"
+    }
+
+    /**
+     * Cleans legacy timestamps (e.g. "Friday, 17:00" -> "Friday", "Oct 12 • 23:59" -> "Oct 12")
+     * so academic tasks are purely day-based without accidental legacy time attachments.
+     */
+    fun normalizeDueDate(rawDueDate: String?): String {
+        if (rawDueDate.isNullOrBlank()) return "Tomorrow"
+        val trimmed = rawDueDate.trim()
+        val parts = trimmed.split("•", "-")
+        val datePart = parts.firstOrNull()?.trim() ?: trimmed
+        val cleanDay = datePart.replace(Regex(",\\s*(\\b[01]?[0-9]|2[0-3]):[0-5][0-9]"), "").trim()
+        return cleanDay.ifBlank { "Tomorrow" }
     }
 }

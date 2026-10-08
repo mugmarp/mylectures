@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.School
@@ -361,6 +362,9 @@ fun QuickChangeProgrammeDialog(
         mutableStateOf(yr)
     }
 
+    var facultyDropdownExpanded by remember { mutableStateOf(false) }
+    var programmeDropdownExpanded by remember { mutableStateOf(false) }
+
     val primaryColor = MaterialTheme.colorScheme.primary
 
     Dialog(onDismissRequest = onDismiss) {
@@ -369,7 +373,6 @@ fun QuickChangeProgrammeDialog(
             colors = CardDefaults.cardColors(containerColor = if (isDark) DarkSurfaceCard else Color.White),
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 580.dp)
                 .padding(horizontal = 4.dp)
         ) {
             Column(
@@ -401,9 +404,9 @@ fun QuickChangeProgrammeDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Faculty Chips
+                // 1. Faculty Dropdown Selector
                 Text(
                     text = "1. Faculty",
                     fontSize = 12.sp,
@@ -411,105 +414,169 @@ fun QuickChangeProgrammeDialog(
                     color = primaryColor
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                androidx.compose.foundation.lazy.LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(FACULTIES) { faculty ->
-                        val isSelected = faculty.id == selectedFacultyId
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = {
-                                selectedFacultyId = faculty.id
-                                selectedProgrammeCode = faculty.programmes.first().code
-                            },
-                            label = { Text(faculty.name.replace("Faculty of ", ""), fontSize = 11.sp) },
-                            shape = RoundedCornerShape(10.dp)
-                        )
+
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isDark) DarkSurfaceBase else Color(0xFFF8FAFC),
+                        border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else BorderSubtleLight),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { facultyDropdownExpanded = true }
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = selectedFaculty.name,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isDark) Color.White else TextPrimaryLight,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Select Faculty",
+                                tint = primaryColor
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = facultyDropdownExpanded,
+                        onDismissRequest = { facultyDropdownExpanded = false },
+                        modifier = Modifier
+                            .fillMaxWidth(0.85f)
+                            .background(if (isDark) DarkSurfaceCard else Color.White)
+                    ) {
+                        FACULTIES.forEach { faculty ->
+                            val isSelected = faculty.id == selectedFacultyId
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = faculty.name,
+                                        fontSize = 13.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) primaryColor else (if (isDark) Color.White else TextPrimaryLight)
+                                    )
+                                },
+                                onClick = {
+                                    selectedFacultyId = faculty.id
+                                    selectedProgrammeCode = faculty.programmes.first().code
+                                    facultyDropdownExpanded = false
+                                },
+                                leadingIcon = {
+                                    if (isSelected) {
+                                        Icon(Icons.Default.Check, contentDescription = null, tint = primaryColor, modifier = Modifier.size(18.dp))
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // Programme Selector
+                // 2. Degree / Diploma Programme Dropdown Selector
                 Text(
-                    text = "2. Degree / Diploma Programme",
+                    text = "2. Degree / Diploma Programme (${selectedFaculty.programmes.size} available)",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = primaryColor
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                androidx.compose.foundation.lazy.LazyColumn(
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    items(selectedFaculty.programmes) { prog ->
-                        val isSelected = prog.code == selectedProgrammeCode
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) primaryColor.copy(alpha = 0.12f) else if (isDark) DarkSurfaceBase else Color(0xFFF8FAFC),
-                            border = BorderStroke(1.dp, if (isSelected) primaryColor else if (isDark) DarkBorderSubtle else BorderSubtleLight),
+
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isDark) DarkSurfaceBase else Color(0xFFF8FAFC),
+                        border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else BorderSubtleLight),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { programmeDropdownExpanded = true }
+                    ) {
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { selectedProgrammeCode = prog.code }
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .background(if (isSelected) primaryColor else primaryColor.copy(alpha = 0.15f), CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = prog.code,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isSelected) Color.White else primaryColor
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "${prog.code} · ${prog.name}",
-                                        fontSize = 12.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isDark) Color.White else TextPrimaryLight,
-                                        maxLines = 1
-                                    )
-                                    Text(
-                                        text = "${prog.years} Year Curriculum",
-                                        fontSize = 10.sp,
-                                        color = if (isDark) Color(0xFF94A3B8) else TextMutedLight
-                                    )
-                                }
-                                if (isSelected) {
-                                    Icon(
-                                        Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = primaryColor,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "${selectedProgramme.code} · ${selectedProgramme.name}",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isDark) Color.White else TextPrimaryLight,
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = "${selectedProgramme.years} Year Curriculum",
+                                    fontSize = 11.sp,
+                                    color = if (isDark) Color(0xFF94A3B8) else TextMutedLight
+                                )
                             }
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Select Programme",
+                                tint = primaryColor
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = programmeDropdownExpanded,
+                        onDismissRequest = { programmeDropdownExpanded = false },
+                        modifier = Modifier
+                            .fillMaxWidth(0.85f)
+                            .background(if (isDark) DarkSurfaceCard else Color.White)
+                    ) {
+                        selectedFaculty.programmes.forEach { prog ->
+                            val isSelected = prog.code == selectedProgrammeCode
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(
+                                            text = "${prog.code} · ${prog.name}",
+                                            fontSize = 13.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isSelected) primaryColor else (if (isDark) Color.White else TextPrimaryLight)
+                                        )
+                                        Text(
+                                            text = "${prog.years} Years Curriculum",
+                                            fontSize = 10.sp,
+                                            color = if (isDark) Color(0xFF94A3B8) else TextMutedLight
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    selectedProgrammeCode = prog.code
+                                    programmeDropdownExpanded = false
+                                },
+                                leadingIcon = {
+                                    if (isSelected) {
+                                        Icon(Icons.Default.Check, contentDescription = null, tint = primaryColor, modifier = Modifier.size(18.dp))
+                                    }
+                                }
+                            )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // Year Group Selector
+                // 3. Year Group Selector
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "3. Academic Year (Year Group)",
+                        text = "3. Academic Year Group",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = primaryColor

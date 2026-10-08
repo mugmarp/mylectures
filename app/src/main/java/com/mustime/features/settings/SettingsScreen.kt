@@ -76,6 +76,8 @@ fun SettingsScreen(
     var showDisclaimerDialog by remember { mutableStateOf(false) }
     var showTermsDialog by remember { mutableStateOf(false) }
     var showPrivacyDialog by remember { mutableStateOf(false) }
+    var showDeveloperModal by remember { mutableStateOf(false) }
+    var showFeedbackModal by remember { mutableStateOf(false) }
     var showCustomLeadDialog by remember { mutableStateOf(false) }
     var customLeadInput by remember { mutableStateOf("") }
 
@@ -210,7 +212,7 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { showTermsDialog = false },
             icon = { Icon(Icons.Default.Gavel, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-            title = { Text("Regulations & Terms of Service", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+            title = { Text("Disclaimer & Terms", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
             text = {
                 Column(
                     modifier = Modifier
@@ -243,7 +245,19 @@ fun SettingsScreen(
                     )
 
                     Text(
-                        text = "3. User Data & Notes",
+                        text = "3. Developer Details",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Developed by MUGENDAWALA MARK PAUL as an independent student tool for academic schedule tracking, vacant study hall finding, and offline coursework productivity.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Text(
+                        text = "4. User Data & Notes",
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.primary
@@ -255,7 +269,7 @@ fun SettingsScreen(
                     )
 
                     Text(
-                        text = "4. Data Privacy & Offline Use",
+                        text = "5. Data Privacy & Offline Use",
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.primary
@@ -272,7 +286,7 @@ fun SettingsScreen(
                     onClick = { showTermsDialog = false },
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("Accept Terms")
+                    Text("I accept the Terms of Service & Disclaimer.")
                 }
             }
         )
@@ -427,6 +441,25 @@ fun SettingsScreen(
                     Text("Cancel")
                 }
             }
+        )
+    }
+
+    // Developer Profile Bottom Sheet
+    if (showDeveloperModal) {
+        com.mustime.features.developer.DeveloperProfileSheet(
+            onDismiss = { showDeveloperModal = false }
+        )
+    }
+
+    // Anonymous Feedback Bottom Sheet
+    if (showFeedbackModal) {
+        val feedbackMgr = app?.feedbackManager ?: remember(context) {
+            val store = app?.etagStore ?: com.mustime.features.timetable.data.ETagStore(context)
+            com.mustime.features.feedback.FeedbackManager(context, store)
+        }
+        com.mustime.features.feedback.AnonymousFeedbackSheet(
+            feedbackManager = feedbackMgr,
+            onDismiss = { showFeedbackModal = false }
         )
     }
 
@@ -1143,9 +1176,13 @@ fun SettingsScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    // App & Developer Branding
+                    // App & Developer Branding (Clickable to open full developer profile)
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { showDeveloperModal = true }
+                            .padding(vertical = 4.dp, horizontal = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
@@ -1160,12 +1197,55 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Lectures", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Text("Timetable & Academic Companion", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
-                            Text("Version 1.0 • 100% Offline & Private", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Dev: MUGENDAWALA MARK PAUL", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                                ) {
+                                    Text("Student", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                            Text("tirallab.page • Tap to view profile & links", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                     }
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+                    // Anonymous Feedback & Bug Reports Row
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { showFeedbackModal = true }
+                            .padding(vertical = 8.dp, horizontal = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Feedback, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Anonymous Feedback & Bugs", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(Color(0xFF10B981).copy(alpha = 0.15f))
+                                        .padding(horizontal = 5.dp, vertical = 1.dp)
+                                ) {
+                                    Text("Stateless", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                                }
+                            }
+                            Text("Report timetable errors, venue bugs, or suggestions anonymously", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
                     // 1. Non-Affiliation Disclaimer Row
                     Row(
@@ -1187,7 +1267,7 @@ fun SettingsScreen(
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
-                    // 2. Terms of Service Row
+                    // 2. Disclaimer & Terms of Service Row
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1199,7 +1279,7 @@ fun SettingsScreen(
                         Icon(Icons.Default.Gavel, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Regulations & Terms of Service", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                            Text("Disclaimer & Terms", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                             Text("Permitted use, warranty disclaimers & academic policies", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))

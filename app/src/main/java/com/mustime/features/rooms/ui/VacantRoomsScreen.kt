@@ -711,7 +711,7 @@ fun VacantRoomsScreen(
                             text = "Room catalog and campus assignment sourced from the MUST Room Allocation " +
                                     "timetable (2026/2027 Semester I). ${UniversityDirectory.ALL_ROOMS.size} rooms " +
                                     "across ${UniversityDirectory.BUILDINGS.size} buildings. Verify venue changes on " +
-                                    "official faculty notice boards.",
+                                    "the official MUST website (timetable.must.ac.ug).",
                             fontSize = 12.sp,
                             color = textMuted
                         )

@@ -202,9 +202,10 @@ fun TimetableScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = if (isDark) DarkSurfaceBase else SurfaceBaseLight,
         topBar = {
+            val semesterWeekLabel = remember { TimeUtil.currentSemesterWeekLabel() }
             TimetableTopAppBar(
                 program = programme,
-                subtitle = if (programme.isNotBlank()) "Academic Schedule" else "Select Programme",
+                subtitle = if (programme.isNotBlank()) semesterWeekLabel else "Select Programme",
                 hasUnreadNotifications = false,
                 onNotificationClick = {
                     showNotificationCenterSheet = true
@@ -248,6 +249,32 @@ fun TimetableScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .pointerInput(selectedDay, daysList) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { dragTotal = 0f },
+                        onDragEnd = {
+                            val threshold = 70f
+                            val currentIndex = daysList.indexOfFirst { it.equals(selectedDay, ignoreCase = true) }
+                            if (currentIndex != -1) {
+                                if (dragTotal < -threshold) {
+                                    // Swiped Left -> Move to next day (e.g., Monday -> Tuesday)
+                                    val nextIndex = (currentIndex + 1) % daysList.size
+                                    onDaySelected(daysList[nextIndex])
+                                } else if (dragTotal > threshold) {
+                                    // Swiped Right -> Move to previous day (e.g., Tuesday -> Monday)
+                                    val prevIndex = if (currentIndex - 1 < 0) daysList.size - 1 else currentIndex - 1
+                                    onDaySelected(daysList[prevIndex])
+                                }
+                            }
+                            dragTotal = 0f
+                        },
+                        onDragCancel = { dragTotal = 0f },
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            dragTotal += dragAmount
+                        }
+                    )
+                }
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),

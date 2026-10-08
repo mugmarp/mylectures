@@ -282,10 +282,10 @@ fun DedicatedCalendarDatePickerDialog(
                 // Quick Pick Strip: ONLY Today and Tomorrow
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    FilterChip(
-                        selected = isSelectedToday,
+                    val isToday = isSelectedToday
+                    Surface(
                         onClick = {
                             selectedYear = todayCal.get(Calendar.YEAR)
                             selectedMonth = todayCal.get(Calendar.MONTH)
@@ -293,21 +293,31 @@ fun DedicatedCalendarDatePickerDialog(
                             viewYear = selectedYear
                             viewMonth = selectedMonth
                         },
-                        label = {
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isToday) primaryColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        border = BorderStroke(1.dp, if (isToday) primaryColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 9.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (isToday) {
+                                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
                             Text(
                                 "Today",
-                                fontWeight = if (isSelectedToday) FontWeight.Bold else FontWeight.Medium
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = if (isToday) Color.White else MaterialTheme.colorScheme.onSurface
                             )
-                        },
-                        leadingIcon = if (isSelectedToday) {
-                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) }
-                        } else null,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(1f)
-                    )
+                        }
+                    }
 
-                    FilterChip(
-                        selected = isSelectedTomorrow,
+                    val isTomorrow = isSelectedTomorrow
+                    Surface(
                         onClick = {
                             selectedYear = tomorrowCal.get(Calendar.YEAR)
                             selectedMonth = tomorrowCal.get(Calendar.MONTH)
@@ -315,18 +325,28 @@ fun DedicatedCalendarDatePickerDialog(
                             viewYear = selectedYear
                             viewMonth = selectedMonth
                         },
-                        label = {
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isTomorrow) primaryColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        border = BorderStroke(1.dp, if (isTomorrow) primaryColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 9.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (isTomorrow) {
+                                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
                             Text(
                                 "Tomorrow",
-                                fontWeight = if (isSelectedTomorrow) FontWeight.Bold else FontWeight.Medium
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = if (isTomorrow) Color.White else MaterialTheme.colorScheme.onSurface
                             )
-                        },
-                        leadingIcon = if (isSelectedTomorrow) {
-                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) }
-                        } else null,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(1f)
-                    )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -375,27 +395,38 @@ fun DedicatedCalendarDatePickerDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Day of Week Labels
+                // Day of Week Labels (Each column gets equal weight(1f) for pixel-perfect vertical alignment)
                 val dayHeaders = listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     dayHeaders.forEach { name ->
-                        Text(
-                            text = name,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.width(36.dp),
-                            textAlign = TextAlign.Center
-                        )
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = name,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Calendar Days Grid (Centerpiece)
+                // Calendar Days Grid (Centerpiece, using equal weight(1f) per column)
+                val todayStartCal = remember {
+                    (Calendar.getInstance().clone() as Calendar).apply {
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                }
+
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -404,53 +435,63 @@ fun DedicatedCalendarDatePickerDialog(
                     for (row in 0..5) {
                         if (dayCounter > daysInMonth) break
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceAround
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             for (col in 0..6) {
                                 val cellIndex = row * 7 + col
-                                if (cellIndex < firstDayOffset || dayCounter > daysInMonth) {
-                                    Box(modifier = Modifier.size(36.dp))
-                                } else {
-                                    val currentDay = dayCounter
-                                    val isCellSelected = (viewYear == selectedYear && viewMonth == selectedMonth && currentDay == selectedDayOfMonth)
-                                    val isCellToday = (viewYear == todayCal.get(Calendar.YEAR) && viewMonth == todayCal.get(Calendar.MONTH) && currentDay == todayCal.get(Calendar.DAY_OF_MONTH))
+                                Box(
+                                    modifier = Modifier.weight(1f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (cellIndex >= firstDayOffset && dayCounter <= daysInMonth) {
+                                        val currentDay = dayCounter
+                                        val isCellSelected = (viewYear == selectedYear && viewMonth == selectedMonth && currentDay == selectedDayOfMonth)
+                                        val isCellToday = (viewYear == todayCal.get(Calendar.YEAR) && viewMonth == todayCal.get(Calendar.MONTH) && currentDay == todayCal.get(Calendar.DAY_OF_MONTH))
 
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .background(
-                                                when {
-                                                    isCellSelected -> primaryColor
-                                                    isCellToday -> primaryColor.copy(alpha = 0.14f)
-                                                    else -> Color.Transparent
+                                        val cellCal = Calendar.getInstance().apply {
+                                            set(viewYear, viewMonth, currentDay, 23, 59, 59)
+                                        }
+                                        val isPast = cellCal.before(todayStartCal)
+
+                                        Box(
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(
+                                                    when {
+                                                        isCellSelected -> primaryColor
+                                                        isCellToday -> primaryColor.copy(alpha = 0.14f)
+                                                        else -> Color.Transparent
+                                                    }
+                                                )
+                                                .then(
+                                                    if (isCellToday && !isCellSelected) {
+                                                        Modifier.border(1.5.dp, primaryColor, RoundedCornerShape(10.dp))
+                                                    } else Modifier
+                                                )
+                                                .clickable {
+                                                    selectedYear = viewYear
+                                                    selectedMonth = viewMonth
+                                                    selectedDayOfMonth = currentDay
+                                                },
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "$currentDay",
+                                                fontSize = 13.sp,
+                                                fontWeight = if (isCellSelected || isCellToday) FontWeight.Bold else FontWeight.Medium,
+                                                color = when {
+                                                    isCellSelected -> Color.White
+                                                    isCellToday -> primaryColor
+                                                    isPast -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                                    else -> MaterialTheme.colorScheme.onSurface
                                                 }
                                             )
-                                            .then(
-                                                if (isCellToday && !isCellSelected) {
-                                                    Modifier.border(1.5.dp, primaryColor, RoundedCornerShape(10.dp))
-                                                } else Modifier
-                                            )
-                                            .clickable {
-                                                selectedYear = viewYear
-                                                selectedMonth = viewMonth
-                                                selectedDayOfMonth = currentDay
-                                            },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "$currentDay",
-                                            fontSize = 13.sp,
-                                            fontWeight = if (isCellSelected || isCellToday) FontWeight.Bold else FontWeight.Medium,
-                                            color = when {
-                                                isCellSelected -> Color.White
-                                                isCellToday -> primaryColor
-                                                else -> MaterialTheme.colorScheme.onSurface
-                                            }
-                                        )
+                                        }
+                                        dayCounter++
+                                    } else {
+                                        Spacer(modifier = Modifier.size(36.dp))
                                     }
-                                    dayCounter++
                                 }
                             }
                         }
