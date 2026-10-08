@@ -126,6 +126,7 @@ fun MainScaffold() {
             }
             ClassGroupSelectionScreen(
                 programme = state.programme,
+                faculty = state.faculty,
                 entryCounts = calculatedCounts,
                 onConfirm = { chosenGroup ->
                     scope.launch {

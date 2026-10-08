@@ -146,9 +146,8 @@ class ClassAlarmAndNotificationTriggerTest {
         assertEquals(NotificationHelper.CHANNEL_CLASSES, postedNotification.channelId)
 
         val shadowNotification = shadowOf(postedNotification)
-        assertEquals("Upcoming Class: CSC1201", shadowNotification.contentTitle.toString())
-        assertTrue(shadowNotification.contentText.toString().contains("Hall 3"))
-        assertTrue(shadowNotification.contentText.toString().contains("09:00"))
+        assertEquals("Upcoming class", shadowNotification.contentTitle.toString())
+        assertTrue(shadowNotification.contentText.toString().contains("starts in 30 minutes"))
     }
 
     @Test

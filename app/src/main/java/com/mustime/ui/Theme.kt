@@ -67,7 +67,7 @@ fun AppTheme(
         darkColorScheme(
             primary = primaryDark,
             onPrimary = Color.White,
-            primaryContainer = Color(0xFF1E3A8A).copy(alpha = 0.5f),
+            primaryContainer = Color(0xFF1E3258),
             onPrimaryContainer = Color(0xFFBFDBFE),
             secondary = primaryDark,
             onSecondary = Color.White,
@@ -84,7 +84,7 @@ fun AppTheme(
         lightColorScheme(
             primary = primaryColor,
             onPrimary = Color.White,
-            primaryContainer = primaryColor.copy(alpha = 0.12f),
+            primaryContainer = Color(0xFFE2EDFE),
             onPrimaryContainer = Color(0xFF1D4ED8),
             secondary = primaryColor,
             onSecondary = Color.White,
