@@ -1,5 +1,11 @@
 package com.mustime.features.timetable.domain
 
+data class ParsedGroup(
+    val code: String,
+    val subject: String,
+    val year: String
+)
+
 object TimetableMatcher {
     val CODE_ALIASES = mapOf(
         "MLC" to "MLS",
@@ -16,7 +22,43 @@ object TimetableMatcher {
         "BSE", "BBA", "BSAF", "ECO", "BPSM", "BSAL", "BGWH", "BPCD"
     )
 
-    fun parseGroup(raw: String): String? {
+    val PRECOMPUTED_GROUP_COUNTS: Map<String, Int> = mapOf(
+        "MBR I" to 17, "MBR II" to 12, "MBR III" to 11, "MBR IV" to 19, "MBR V" to 11,
+        "PHA I" to 16, "PHA II" to 14, "PHA III" to 16, "PHA IV" to 14,
+        "BNS I" to 25, "BNS II" to 31, "BNS III" to 34, "BNS IV" to 17,
+        "MLS I" to 16, "MLS II" to 32, "MLS III" to 35, "MLS IV" to 14,
+        "BSP I" to 23, "BSP II" to 28, "BSP III" to 10, "BSP IV" to 11,
+        "PHS I" to 15, "PHS II" to 16, "PHS III" to 15,
+        "DCM I" to 0, "DCM II" to 0, "DEM I" to 0, "DEM II" to 0, "DCAM I" to 0, "DCAM II" to 0,
+        "BS I" to 35, "BS II" to 43, "BS III" to 15,
+        "DLT I" to 11, "DLT II" to 18,
+        "BME I" to 9, "BME II" to 11, "BME III" to 11, "BME IV" to 9,
+        "EEE I" to 10, "EEE II" to 8, "EEE III" to 9, "EEE IV" to 7,
+        "PEEM I" to 11, "PEEM II" to 13, "PEEM III" to 9, "PEEM IV" to 9,
+        "CVE I" to 12, "CVE II" to 8, "CVE III" to 11, "CVE IV" to 8,
+        "MIE I" to 11, "MIE II" to 12, "MIE III" to 10, "MIE IV" to 9,
+        "BCS I" to 13, "BCS II" to 9, "BCS III" to 12,
+        "BIT I" to 9, "BIT II" to 15, "BIT III" to 12,
+        "BSE I" to 9, "BSE II" to 11, "BSE III" to 7, "BSE IV" to 7,
+        "BBA I" to 10, "BBA II" to 17, "BBA III" to 4,
+        "BSAF I" to 10, "BSAF II" to 13, "BSAF III" to 12,
+        "ECO I" to 11, "ECO II" to 10, "ECO III" to 12,
+        "BPSM I" to 9, "BPSM II" to 10, "BPSM III" to 11,
+        "BSAL I" to 12, "BSAL II" to 12, "BSAL III" to 12, "BSAL IV" to 9,
+        "BGWH I" to 0, "BGWH II" to 0, "BGWH III" to 12,
+        "BPCD I" to 7, "BPCD II" to 11, "BPCD III" to 4
+    )
+
+    fun getGroupCount(group: String, entries: List<TimetableEntry>? = null): Int {
+        val pre = PRECOMPUTED_GROUP_COUNTS[group]
+        if (pre != null) return pre
+        if (!entries.isNullOrEmpty()) {
+            return filterTimetable(entries, group).size
+        }
+        return 0
+    }
+
+    fun parseGroupParts(raw: String): ParsedGroup? {
         val clean = raw.trim()
         if (clean.isEmpty()) return null
         val parts = clean.split(Regex("[\\s-]+")).filter { it.isNotEmpty() }
@@ -29,15 +71,37 @@ object TimetableMatcher {
         val year = parts[yearIdx].uppercase()
         val subject = (parts.subList(1, yearIdx) + parts.subList(yearIdx + 1, parts.size))
             .joinToString(" ").uppercase().trim()
-        return listOf(code, subject, year).filter { it.isNotEmpty() }.joinToString(" ")
+        return ParsedGroup(code, subject, year)
+    }
+
+    fun parseGroup(raw: String): String? {
+        val parsed = parseGroupParts(raw) ?: return null
+        return listOf(parsed.code, parsed.subject, parsed.year).filter { it.isNotEmpty() }.joinToString(" ")
     }
 
     fun entryMatchesGroup(entry: TimetableEntry, selectedGroup: String): Boolean {
-        val target = parseGroup(selectedGroup)
+        val target = parseGroupParts(selectedGroup)
         if (target != null) {
-            val entryTarget = parseGroup(entry.program_group)
-            if (entryTarget == target) return true
-            if (entry.shared_with.any { parseGroup(it) == target }) return true
+            val entryGroups = listOf(entry.program_group) + entry.shared_with
+            for (g in entryGroups) {
+                val parsed = parseGroupParts(g)
+                if (parsed != null) {
+                    if (parsed.code == target.code && parsed.year == target.year) {
+                        if (target.subject.isEmpty() || parsed.subject.isEmpty() ||
+                            parsed.subject.contains(target.subject) || target.subject.contains(parsed.subject)) {
+                            return true
+                        }
+                    }
+                } else {
+                    // Fallback for non-standard shared labels like "MBR III" or "AB- MED/PCH"
+                    val clean = g.uppercase().replace(Regex("[\\s-/]+"), " ")
+                    val parts = clean.split(" ").filter { it.isNotEmpty() }
+                    val cleanParts = parts.map { CODE_ALIASES[it] ?: it }
+                    if (target.code in cleanParts && target.year in cleanParts) {
+                        return true
+                    }
+                }
+            }
         }
         val cleanSel = selectedGroup.trim().uppercase()
         if (entry.program_group.trim().uppercase() == cleanSel) return true

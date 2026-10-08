@@ -315,7 +315,7 @@ fun ClassGroupSelectionScreen(
         ) {
             items(groups) { group ->
                 val isSelected = group == selectedGroup
-                val count = entryCounts[group] ?: 0
+                val count = entryCounts[group] ?: com.mustime.features.timetable.domain.TimetableMatcher.getGroupCount(group)
                 
                 Card(
                     modifier = Modifier
@@ -347,7 +347,7 @@ fun ClassGroupSelectionScreen(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "$count timetable entries",
+                                text = if (count > 0) "$count timetable entries" else "0 timetable entries (hospital / rotations)",
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

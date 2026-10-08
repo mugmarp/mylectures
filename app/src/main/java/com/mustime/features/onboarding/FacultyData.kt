@@ -28,7 +28,7 @@ data class Programme(
 val FACULTIES = listOf(
     Faculty("medicine", "Faculty of Medicine", "Faculty Health Sciences", "Stethoscope", listOf(
         Programme("MBR", "Bachelor of Medicine and Bachelor of Surgery", 5),
-        Programme("PHA", "Bachelor of Pharmacy", 5),
+        Programme("PHA", "Bachelor of Pharmacy", 4),
         Programme("BNS", "Bachelor of Nursing Science", 4),
         Programme("MLS", "Bachelor of Medical Laboratory Science", 4),
         Programme("BSP", "Bachelor of Science in Physiotherapy", 4),
