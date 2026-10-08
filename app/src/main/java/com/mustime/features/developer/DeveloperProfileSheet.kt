@@ -67,7 +67,7 @@ fun DeveloperProfileSheet(
     val context = LocalContext.current
 
     val devName = "MUGENDAWALA MARK PAUL"
-    val studentRole = "Student Software Developer & Creator"
+    val studentRole = "Software Developer and Creator"
     val labUrl = "https://tirallab.page"
     val githubUrl = "https://github.com/mugmarp"
     val emailContact = "markpaulmu@gmail.com"
@@ -104,7 +104,7 @@ fun DeveloperProfileSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Hero Avatar & Name Card
+            // Hero Name & Role Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -115,55 +115,28 @@ fun DeveloperProfileSheet(
                     modifier = Modifier.padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(68.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(38.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
                     Text(
                         text = devName,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onSurface
+                        fontSize = 20.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            Icons.Default.School,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = studentRole,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
 
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Crafted independently with passion for Mbarara University of Science & Technology students. Clean, fast, and 100% offline-first.",
+                        text = studentRole,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Student at MUST • Crafted independently with passion for students. Fast, responsive, and 100% offline-first.",
                         fontSize = 12.sp,
                         lineHeight = 16.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

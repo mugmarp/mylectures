@@ -18,6 +18,7 @@ object NotificationHelper {
 
     const val CHANNEL_ACADEMIC_TASKS = "academic_task_reminders"
     const val CHANNEL_CLASSES = "class_reminders"
+    const val CHANNEL_CLASS_ALARMS = "class_alarms"
 
     private const val TAG = "NotificationHelper"
 
@@ -44,10 +45,10 @@ object NotificationHelper {
                 lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
             }
 
-            // Channel 2: Class & Lecture Alarms
+            // Channel 2: Class & Lecture Reminders
             val classChannel = NotificationChannel(
                 CHANNEL_CLASSES,
-                "Class & Lecture Reminders",
+                "Upcoming Class Reminders",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Reminders before scheduled lectures, practical labs, and tutorials."
@@ -59,7 +60,22 @@ object NotificationHelper {
                 lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
             }
 
-            notificationManager.createNotificationChannels(listOf(taskChannel, classChannel))
+            // Channel 3: Class Alarms
+            val alarmChannel = NotificationChannel(
+                CHANNEL_CLASS_ALARMS,
+                "Class Alerts & Alarms",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Immediate alerts and sound alarms for upcoming lectures."
+                enableLights(true)
+                lightColor = Color.parseColor("#EF4444")
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 500, 200, 500, 200, 500)
+                setShowBadge(true)
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+            }
+
+            notificationManager.createNotificationChannels(listOf(taskChannel, classChannel, alarmChannel))
             Log.d(TAG, "Notification channels registered successfully")
         }
     }
@@ -138,7 +154,11 @@ object NotificationHelper {
     }
 
     /**
-     * Builds and displays a notification for an upcoming lecture/class.
+     * Builds and displays a notification for an upcoming lecture/class reminder.
+     * Format requested:
+     * Title: Upcoming class
+     * Content: Object Oriented Programming - SWE2101
+     *          starts in 30 minutes in SFL01 (Computer Lab).
      */
     fun showClassReminderNotification(
         context: Context,
@@ -146,11 +166,12 @@ object NotificationHelper {
         courseTitle: String,
         room: String,
         startTime: String,
+        minutesBefore: Int = 30,
         lecturer: String = ""
     ) {
         createNotificationChannels(context)
 
-        val notificationId = ("$courseCode$room$startTime").hashCode()
+        val notificationId = ("reminder_$courseCode$room$startTime").hashCode()
 
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -163,10 +184,18 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val title = "Class Reminder: $courseCode"
-        val subtitle = "📍 Room: $room • Starts at $startTime"
+        val title = "Upcoming class"
+        val headerSubject = if (courseTitle.isNotBlank() && courseTitle != courseCode) {
+            "$courseTitle - $courseCode"
+        } else {
+            courseCode
+        }
+
+        val leadTimeText = if (minutesBefore > 0) "starts in $minutesBefore minutes" else "starts now"
+        val locationText = if (room.isNotBlank()) " in $room" else ""
+        val subtitle = "$leadTimeText$locationText."
         val lecturerDetails = if (lecturer.isNotBlank()) "\nLecturer: $lecturer" else ""
-        val detailedText = "$courseTitle\n📍 Venue: $room\n⏰ Starts at: $startTime$lecturerDetails\nOpen timetable to view study materials."
+        val detailedText = "$headerSubject\n$subtitle$lecturerDetails"
 
         val builder = NotificationCompat.Builder(context, CHANNEL_CLASSES)
             .setSmallIcon(R.drawable.ic_stat_notification)
@@ -185,6 +214,67 @@ object NotificationHelper {
             NotificationManagerCompat.from(context).notify(notificationId, builder.build())
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException while posting class notification: ${e.message}")
+        }
+    }
+
+    /**
+     * Builds and displays an alarm alert for a scheduled class alarm.
+     * Format requested:
+     * Title: Class Alert
+     * Content: Object Oriented Programming - SWE2101
+     *          Starts at 10:00 AM
+     *          In SFL01 (Computer Lab)
+     */
+    fun showClassAlarmNotification(
+        context: Context,
+        courseCode: String,
+        courseTitle: String,
+        room: String,
+        startTime: String
+    ) {
+        createNotificationChannels(context)
+
+        val notificationId = ("alarm_$courseCode$room$startTime").hashCode()
+
+        val openAppIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("EXTRA_NAV_TAB", 0) // Timetable tab
+        }
+        val contentPendingIntent = PendingIntent.getActivity(
+            context,
+            notificationId,
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val title = "Class Alert"
+        val headerSubject = if (courseTitle.isNotBlank() && courseTitle != courseCode) {
+            "$courseTitle - $courseCode"
+        } else {
+            courseCode
+        }
+
+        val startsAtText = "Starts at $startTime"
+        val venueText = if (room.isNotBlank()) "In $room" else ""
+        val detailedText = "$headerSubject\n$startsAtText\n$venueText".trimEnd()
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_CLASS_ALARMS)
+            .setSmallIcon(R.drawable.ic_stat_notification)
+            .setContentTitle(title)
+            .setContentText("$headerSubject • $startsAtText")
+            .setStyle(
+                NotificationCompat.BigTextStyle().bigText(detailedText)
+            )
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setAutoCancel(true)
+            .setContentIntent(contentPendingIntent)
+            .setColor(Color.parseColor("#EF4444"))
+
+        try {
+            NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException while posting class alarm notification: ${e.message}")
         }
     }
 
