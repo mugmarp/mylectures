@@ -117,10 +117,10 @@ fun MainScaffold() {
             BackHandler {
                 navState = AppNavState.ProgrammeSelection(state.faculty)
             }
-            val calculatedCounts = remember(state.programme) {
-                state.programme.defaultYears.associate { yr ->
-                    val g = "${state.programme.code} $yr"
-                    g to com.mustime.features.timetable.domain.TimetableMatcher.getGroupCount(g)
+            val allEntries by repository.getAllEntries().collectAsState(initial = emptyList())
+            val calculatedCounts = remember(state.programme, allEntries) {
+                state.programme.allGroups.associateWith { g ->
+                    com.mustime.features.timetable.domain.TimetableMatcher.getGroupCount(g, allEntries)
                 }
             }
             ClassGroupSelectionScreen(

@@ -31,7 +31,11 @@ object TimetableMatcher {
         "PHS I" to 15, "PHS II" to 16, "PHS III" to 15,
         "DCM I" to 0, "DCM II" to 0, "DEM I" to 0, "DEM II" to 0, "DCAM I" to 0, "DCAM II" to 0,
         "BS I" to 35, "BS II" to 43, "BS III" to 15,
+        "BS BIOLOGICAL I" to 22, "BS CHEM MATHS I" to 19, "BS PHYSICAL I" to 21,
+        "BS BIOLOGICAL II" to 24, "BS CHEM MATHS II" to 23, "BS PHYSICAL II" to 24,
+        "BS BIOLOGICAL III" to 2, "BS MATHEMATICS III" to 2, "BS PHYSICS III" to 15,
         "DLT I" to 11, "DLT II" to 18,
+        "DLT BIOLOGY II" to 6, "DLT CHEMISTRY II" to 7, "DLT PHYSICS II" to 5,
         "BME I" to 9, "BME II" to 11, "BME III" to 11, "BME IV" to 9,
         "EEE I" to 10, "EEE II" to 8, "EEE III" to 9, "EEE IV" to 7,
         "PEEM I" to 11, "PEEM II" to 13, "PEEM III" to 9, "PEEM IV" to 9,
@@ -41,6 +45,7 @@ object TimetableMatcher {
         "BIT I" to 9, "BIT II" to 15, "BIT III" to 12,
         "BSE I" to 9, "BSE II" to 11, "BSE III" to 7, "BSE IV" to 7,
         "BBA I" to 10, "BBA II" to 17, "BBA III" to 4,
+        "BBA TAXATION II" to 17,
         "BSAF I" to 10, "BSAF II" to 13, "BSAF III" to 12,
         "ECO I" to 11, "ECO II" to 10, "ECO III" to 12,
         "BPSM I" to 9, "BPSM II" to 10, "BPSM III" to 11,
@@ -50,11 +55,11 @@ object TimetableMatcher {
     )
 
     fun getGroupCount(group: String, entries: List<TimetableEntry>? = null): Int {
-        val pre = PRECOMPUTED_GROUP_COUNTS[group]
-        if (pre != null) return pre
         if (!entries.isNullOrEmpty()) {
             return filterTimetable(entries, group).size
         }
+        val pre = PRECOMPUTED_GROUP_COUNTS[group]
+        if (pre != null) return pre
         return 0
     }
 

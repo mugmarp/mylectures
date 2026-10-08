@@ -13,7 +13,8 @@ data class Faculty(
 data class Programme(
     val code: String,
     val name: String,
-    val years: Int
+    val years: Int,
+    val tracks: Map<String, List<String>> = emptyMap()
 ) {
     val defaultYears: List<String>
         get() = when (years) {
@@ -23,7 +24,28 @@ data class Programme(
             2 -> listOf("I", "II")
             else -> listOf("I", "II", "III")
         }
+
+    val allGroups: List<String>
+        get() {
+            val list = mutableListOf<String>()
+            for (yr in defaultYears) {
+                val yearTracks = tracks[yr]
+                if (yearTracks.isNullOrEmpty()) {
+                    list.add("$code $yr")
+                } else {
+                    // Include the parent year group (which aggregates all tracks or common classes)
+                    list.add("$code $yr")
+                    // Include each specific track group
+                    yearTracks.forEach { track ->
+                        list.add("$code $track $yr")
+                    }
+                }
+            }
+            return list
+        }
 }
+
+val CLINICAL_PROGRAMMES = setOf("MBR", "PHA", "BNS", "MLS", "BSP", "PHS", "DCM", "DEM", "DCAM")
 
 val FACULTIES = listOf(
     Faculty("medicine", "Faculty of Medicine", "Faculty Health Sciences", "Stethoscope", listOf(
@@ -38,8 +60,24 @@ val FACULTIES = listOf(
         Programme("DCAM", "Adv. Diploma in Child and Adolescent Mental Health", 2)
     )),
     Faculty("science", "Faculty of Science", null, "FlaskConical", listOf(
-        Programme("BS", "Bachelor of Science with Education", 3),
-        Programme("DLT", "Diploma in Science Laboratory Technology", 2)
+        Programme(
+            "BS",
+            "Bachelor of Science with Education",
+            3,
+            tracks = mapOf(
+                "I" to listOf("BIOLOGICAL", "CHEM MATHS", "PHYSICAL"),
+                "II" to listOf("BIOLOGICAL", "CHEM MATHS", "PHYSICAL"),
+                "III" to listOf("BIOLOGICAL", "MATHEMATICS", "PHYSICS")
+            )
+        ),
+        Programme(
+            "DLT",
+            "Diploma in Science Laboratory Technology",
+            2,
+            tracks = mapOf(
+                "II" to listOf("BIOLOGY", "CHEMISTRY", "PHYSICS")
+            )
+        )
     )),
     Faculty("fast", "Faculty of Applied Sciences and Technology", "FAST", "Cog", listOf(
         Programme("BME", "Bachelor of Biomedical Engineering", 4),
@@ -54,7 +92,14 @@ val FACULTIES = listOf(
         Programme("BSE", "Bachelor of Software Engineering", 4)
     )),
     Faculty("business", "Faculty of Business and Management Sciences", null, "Briefcase", listOf(
-        Programme("BBA", "Bachelor of Business Administration", 3),
+        Programme(
+            "BBA",
+            "Bachelor of Business Administration",
+            3,
+            tracks = mapOf(
+                "II" to listOf("TAXATION")
+            )
+        ),
         Programme("BSAF", "Bachelor of Science in Accounting and Finance", 3),
         Programme("ECO", "Bachelor of Science in Economics", 3),
         Programme("BPSM", "BSc in Procurement & Supply Chain Management", 3)

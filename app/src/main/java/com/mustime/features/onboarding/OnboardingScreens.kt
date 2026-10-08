@@ -230,11 +230,10 @@ fun ClassGroupSelectionScreen(
     onConfirm: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    val years = programme.defaultYears
     val groups = remember(programme) {
-        years.map { year -> "${programme.code} $year" }
+        programme.allGroups
     }
-    var selectedGroup by remember { mutableStateOf(groups.firstOrNull() ?: "${programme.code} I") }
+    var selectedGroup by remember(programme) { mutableStateOf(groups.firstOrNull() ?: "${programme.code} I") }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -346,11 +345,17 @@ fun ClassGroupSelectionScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = if (count > 0) "$count timetable entries" else "0 timetable entries (hospital / rotations)",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                                val subtitle = when {
+                                    count > 0 -> "$count timetable entries"
+                                    CLINICAL_PROGRAMMES.contains(programme.code) -> "0 timetable entries (hospital / clinical rotations)"
+                                    programme.code == "BGWH" -> "0 timetable entries (Town-campus / not in central schedule)"
+                                    else -> "0 timetable entries (Off-campus or no scheduled lectures)"
+                                }
+                                Text(
+                                    text = subtitle,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                         }
                         Box(
                             modifier = Modifier

@@ -198,14 +198,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "16:00",
-    "course_code": "MCHLR",
-    "course_title": "MCH-LR",
+    "course_code": "MED3121",
+    "course_title": "Internal Medicine - Theory I TUTORIAL",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "MCH-LR",
     "room": null,
-    "shared_with": [
-      "MED3121 Internal Medicine - Theory I TUTORIAL"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "AB- MED_PCH|OBG3122_SUG3122|Monday|10:00",
@@ -294,14 +292,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "PETER",
-    "course_title": "Peter A. Kalubi",
+    "course_code": "PCH3121",
+    "course_title": "Paediatrics and Child Health Theory I",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Peter A. Kalubi",
     "room": "S311",
-    "shared_with": [
-      "PCH3121 Paediatrics and Child Health Theory I"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "AB- MED_PCH|PETER|Tuesday|08:00",
@@ -310,14 +306,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "PETER",
-    "course_title": "Peter A. Kalubi",
+    "course_code": "PCH3121",
+    "course_title": "Paediatrics and Child Health Theory I",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Peter A. Kalubi",
     "room": "Pharmacy L2",
-    "shared_with": [
-      "PCH3121 Paediatrics and Child Health Theory I"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "AB- MED_PCH|PHA3122|Tuesday|16:00",
@@ -366,14 +360,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "SAMUEL",
-    "course_title": "Samuel Jjunju",
+    "course_code": "MED3121",
+    "course_title": "Internal Medicine - Theory I",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Samuel Jjunju",
     "room": "ROOM 5",
-    "shared_with": [
-      "MED3121 Internal Medicine - Theory I"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "AB- MED_PCH|SAMUEL|Monday|08:00",
@@ -382,14 +374,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "SAMUEL",
-    "course_title": "Samuel Jjunju",
+    "course_code": "MED3121",
+    "course_title": "Internal Medicine - Theory I",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Samuel Jjunju",
     "room": "Pharmacy L1",
-    "shared_with": [
-      "MED3121 Internal Medicine - Theory I"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "AB- MED_PCH|SIMULATION|Wednesday|08:00",
@@ -478,14 +468,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "FELIX",
-    "course_title": "Felix Oyania",
+    "course_code": "SUG5111",
+    "course_title": "Surgery - Theory II",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Felix Oyania",
     "room": "Postgraduate Room 1",
-    "shared_with": [
-      "SUG5111 Surgery - Theory II"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "AB-OBG_SUG|GRAND|Tuesday|14:00",
@@ -513,14 +501,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "MUSA",
-    "course_title": "Musa Kayondo",
+    "course_code": "OBG5111",
+    "course_title": "Obstetrics and Gynaecology-Theory II/ SUG5111 Surgery- Theory II THEORY",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Musa Kayondo",
     "room": "IMS103",
-    "shared_with": [
-      "OBG5111 Obstetrics and Gynaecology-Theory II/ SUG5111 Surgery- Theory II THEORY"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "AB-OBG_SUG|MUSA|Monday|17:00",
@@ -529,14 +515,12 @@
     "time_slot": "17:00-18:00",
     "start_time": "17:00",
     "end_time": "18:00",
-    "course_code": "MUSA",
-    "course_title": "Musa Kayondo",
+    "course_code": "OBG5111",
+    "course_title": "Obstetrics and Gynaecology -Theory II",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Musa Kayondo",
     "room": "Pharmacy L1",
-    "shared_with": [
-      "OBG5111 Obstetrics and Gynaecology -Theory II"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "AB-OBG_SUG|MUSA|Thursday|08:00",
@@ -545,14 +529,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "MUSA",
-    "course_title": "Musa Kayondo",
+    "course_code": "OBG5111",
+    "course_title": "Obstetrics and Gynaecology -Theory II",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Musa Kayondo",
     "room": "IMSG04",
-    "shared_with": [
-      "OBG5111 Obstetrics and Gynaecology -Theory II"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "AB-OBG_SUG|MUSA|Tuesday|08:00",
@@ -561,14 +543,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "MUSA",
-    "course_title": "Musa Kayondo",
+    "course_code": "OBG5111",
+    "course_title": "Obstetrics and Gynaecology -Theory II THEORY",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Musa Kayondo",
     "room": "ROOM 5",
-    "shared_with": [
-      "OBG5111 Obstetrics and Gynaecology -Theory II THEORY"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "AB-OBG_SUG|OBG5112_SUG5112|Friday|10:00",
@@ -789,14 +769,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "12:00",
-    "course_code": "DANIEL",
-    "course_title": "Daniel W. Atwine",
+    "course_code": "BBA3104",
+    "course_title": "Auditing",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Daniel W. Atwine",
     "room": "IMS102",
-    "shared_with": [
-      "BBA3104 Auditing"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "ACCOUNTING|DANIEL|Tuesday|11:00",
@@ -805,14 +783,12 @@
     "time_slot": "11:00-12:00",
     "start_time": "11:00",
     "end_time": "13:00",
-    "course_code": "DANIEL",
-    "course_title": "Daniel W. Atwine",
+    "course_code": "BBA3104",
+    "course_title": "Auditing",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Daniel W. Atwine",
     "room": "IMS102",
-    "shared_with": [
-      "BBA3104 Auditing"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "ACCOUNTING|NSAMBU|Friday|08:00",
@@ -921,14 +897,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "16:00",
-    "course_code": "JOHN",
-    "course_title": "John Bosco Nsengiyumva",
+    "course_code": "BBA3106",
+    "course_title": "Banking and Financial Services",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "John Bosco Nsengiyumva",
     "room": "S211",
-    "shared_with": [
-      "BBA3106 Banking and Financial Services"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "BANKING AND FINANCE|JOHN|Tuesday|14:00",
@@ -937,14 +911,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "16:00",
-    "course_code": "JOHN",
-    "course_title": "John Bosco Nsengiyumva",
+    "course_code": "BBA3106",
+    "course_title": "Banking and Financial Services",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "John Bosco Nsengiyumva",
     "room": "IMSG04",
-    "shared_with": [
-      "BBA3106 Banking and Financial Services"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "BANKING AND FINANCE|PATIENCE|Friday|08:00",
@@ -953,14 +925,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "PATIENCE",
-    "course_title": "Patience Asingwire",
+    "course_code": "BBA3107",
+    "course_title": "International Financial Management",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Patience Asingwire",
     "room": "IITR PGR",
-    "shared_with": [
-      "BBA3107 International Financial Management"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "BANKING AND FINANCE|PATIENCE|Wednesday|14:00",
@@ -969,14 +939,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "16:00",
-    "course_code": "PATIENCE",
-    "course_title": "Patience Asingwire",
+    "course_code": "BBA3107",
+    "course_title": "International Financial Management",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Patience Asingwire",
     "room": "IMSG03",
-    "shared_with": [
-      "BBA3107 International Financial Management"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "BBA II|BBA2101|Monday|14:00",
@@ -2037,14 +2005,12 @@
     "time_slot": "11:00-12:00",
     "start_time": "11:00",
     "end_time": "13:00",
-    "course_code": "CASIM",
-    "course_title": "Casim Umba Tolo",
+    "course_code": "BIO3103",
+    "course_title": "Animal Physiology",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Casim Umba Tolo",
     "room": "S103",
-    "shared_with": [
-      "BIO3103 Animal Physiology"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "BIOLOGY|CASIM|Thursday|16:00",
@@ -2053,14 +2019,12 @@
     "time_slot": "16:00-17:00",
     "start_time": "16:00",
     "end_time": "19:00",
-    "course_code": "CASIM",
-    "course_title": "Casim Umba Tolo",
+    "course_code": "BIO3103",
+    "course_title": "Animal Physiology PRACTICAL",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Casim Umba Tolo",
     "room": "S103",
-    "shared_with": [
-      "BIO3103 Animal Physiology PRACTICAL"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "BIOLOGY|EDU3101|Monday|08:00",
@@ -2120,14 +2084,12 @@
     "time_slot": "17:00-18:00",
     "start_time": "17:00",
     "end_time": "18:00",
-    "course_code": "JANE",
-    "course_title": "Jane Yatuha",
+    "course_code": "BIO3101",
+    "course_title": "Hydrobiology",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Jane Yatuha",
     "room": "S310",
-    "shared_with": [
-      "BIO3101 Hydrobiology"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "BIOLOGY|JANE|Tuesday|08:00",
@@ -2136,14 +2098,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "JANE",
-    "course_title": "Jane Yatuha",
+    "course_code": "BIO3101",
+    "course_title": "Hydrobiology",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Jane Yatuha",
     "room": "S403",
-    "shared_with": [
-      "BIO3101 Hydrobiology"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "BIOLOGY|JANE|Wednesday|14:00",
@@ -2152,14 +2112,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "18:00",
-    "course_code": "JANE",
-    "course_title": "Jane Yatuha",
+    "course_code": "BIO3105",
+    "course_title": "Practical five: Water quality and Animal\u2019s Physiology & histological investigations",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Jane Yatuha",
     "room": "S103",
-    "shared_with": [
-      "BIO3105 Practical five: Water quality and Animal’s Physiology & histological investigations"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "BIOLOGY|JUSTINE|Thursday|14:00",
@@ -2168,14 +2126,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "16:00",
-    "course_code": "JUSTINE",
-    "course_title": "Justine Nakintu",
+    "course_code": "BIO3104",
+    "course_title": "Plant Breeding & Crop Improvement",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Justine Nakintu",
     "room": "S310",
-    "shared_with": [
-      "BIO3104 Plant Breeding & Crop Improvement"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "BIOLOGY|JUSTINE|Tuesday|10:00",
@@ -2184,14 +2140,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "13:00",
-    "course_code": "JUSTINE",
-    "course_title": "Justine Nakintu",
+    "course_code": "BIO3102",
+    "course_title": "Animal Histology",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Justine Nakintu",
     "room": "S103",
-    "shared_with": [
-      "BIO3102 Animal Histology"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "BIOLOGY|JUSTINE|Tuesday|14:00",
@@ -2200,14 +2154,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "15:00",
-    "course_code": "JUSTINE",
-    "course_title": "Justine Nakintu",
+    "course_code": "BIO3104",
+    "course_title": "Plant Breeding & Crop Improvement",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Justine Nakintu",
     "room": "S403",
-    "shared_with": [
-      "BIO3104 Plant Breeding & Crop Improvement"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "BIOLOGY|JUSTINE|Wednesday|09:00",
@@ -2216,14 +2168,12 @@
     "time_slot": "09:00-10:00",
     "start_time": "09:00",
     "end_time": "11:00",
-    "course_code": "JUSTINE",
-    "course_title": "Justine Nakintu",
+    "course_code": "BIO3102",
+    "course_title": "Animal Histology",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Justine Nakintu",
     "room": "S210",
-    "shared_with": [
-      "BIO3102 Animal Histology"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "BIOLOGY|PSY3102|Friday|14:00",
@@ -5928,7 +5878,7 @@
     "start_time": "14:00",
     "end_time": "17:00",
     "course_code": "BIO2105",
-    "course_title": "Practical three: Microorganisms’ identification & Plant/Animals structures",
+    "course_title": "Practical three: Microorganisms\u2019 identification & Plant/Animals structures",
     "session_type": null,
     "lecturer": "Wangalwa Rapheal",
     "room": "S103",
@@ -6213,7 +6163,7 @@
     "start_time": "10:00",
     "end_time": "12:00",
     "course_code": "BIO1102",
-    "course_title": "Lower Plants’ Systematics",
+    "course_title": "Lower Plants\u2019 Systematics",
     "session_type": null,
     "lecturer": "Immaculate Nakazibwe",
     "room": "S311",
@@ -6227,7 +6177,7 @@
     "start_time": "14:00",
     "end_time": "16:00",
     "course_code": "BIO1102",
-    "course_title": "Lower Plants’ Systematics",
+    "course_title": "Lower Plants\u2019 Systematics",
     "session_type": null,
     "lecturer": "Immaculate Nakazibwe",
     "room": "S210",
@@ -6269,7 +6219,7 @@
     "start_time": "08:00",
     "end_time": "10:00",
     "course_code": "BIO1104",
-    "course_title": "Practical one: Instrumentation, Cytology & invertebrates’ identification",
+    "course_title": "Practical one: Instrumentation, Cytology & invertebrates\u2019 identification",
     "session_type": null,
     "lecturer": "Julius Tumusiime",
     "room": "S103",
@@ -6283,7 +6233,7 @@
     "start_time": "10:00",
     "end_time": "13:00",
     "course_code": "BIO1104",
-    "course_title": "Practical one: Instrumentation, Cytology & invertebrates’ identification",
+    "course_title": "Practical one: Instrumentation, Cytology & invertebrates\u2019 identification",
     "session_type": null,
     "lecturer": "Julius Tumusiime",
     "room": "S103",
@@ -8589,7 +8539,7 @@
     "start_time": "14:00",
     "end_time": "18:00",
     "course_code": "STP3110",
-    "course_title": "Students’ Community Twinning Project",
+    "course_title": "Students\u2019 Community Twinning Project",
     "session_type": null,
     "lecturer": null,
     "room": null,
@@ -10737,14 +10687,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "09:00",
-    "course_code": "NABAKOZA",
-    "course_title": "Nabakoza Peace",
+    "course_code": "GEN41102",
+    "course_title": "Foundations of Mathematics for Biological Sciences",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Nabakoza Peace",
     "room": "S210",
-    "shared_with": [
-      "GEN41102 Foundations of Mathematics for Biological Sciences"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "Biology-Chemistry|NABAKOZA|Thursday|16:00",
@@ -10753,14 +10701,12 @@
     "time_slot": "16:00-17:00",
     "start_time": "16:00",
     "end_time": "18:00",
-    "course_code": "NABAKOZA",
-    "course_title": "Nabakoza Peace",
+    "course_code": "GEN41102",
+    "course_title": "Foundations of Mathematics for Biological Sciences",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Nabakoza Peace",
     "room": "S204",
-    "shared_with": [
-      "GEN41102 Foundations of Mathematics for Biological Sciences"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "Biology-Chemistry|RONALD|Monday|16:00",
@@ -10769,14 +10715,12 @@
     "time_slot": "16:00-17:00",
     "start_time": "16:00",
     "end_time": "18:00",
-    "course_code": "RONALD",
-    "course_title": "Ronald Agaba",
+    "course_code": "BIO41101",
+    "course_title": "Fundamentals of Biology",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Ronald Agaba",
     "room": "S103",
-    "shared_with": [
-      "BIO41101 Fundamentals of Biology"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "Biology-Chemistry|RONALD|Tuesday|16:00",
@@ -10785,14 +10729,12 @@
     "time_slot": "16:00-17:00",
     "start_time": "16:00",
     "end_time": "18:00",
-    "course_code": "RONALD",
-    "course_title": "Ronald Agaba",
+    "course_code": "BIO41101",
+    "course_title": "Fundamentals of Biology",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Ronald Agaba",
     "room": "S103",
-    "shared_with": [
-      "BIO41101 Fundamentals of Biology"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "CD- OBG_SUG|CMH3121|Wednesday|16:00",
@@ -10818,14 +10760,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "FELIX",
-    "course_title": "Felix Oyania",
+    "course_code": "SUG3121",
+    "course_title": "Clinical surgery-Theory I",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Felix Oyania",
     "room": "Biochem Lab",
-    "shared_with": [
-      "SUG3121 Clinical surgery-Theory I"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "CD- OBG_SUG|FELIX|Monday|08:00",
@@ -10834,14 +10774,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "FELIX",
-    "course_title": "Felix Oyania",
+    "course_code": "SUG3121",
+    "course_title": "Clinical surgery-Theory I THEORY",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Felix Oyania",
     "room": "Pharmacy L2",
-    "shared_with": [
-      "SUG3121 Clinical surgery-Theory I THEORY"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "CD- OBG_SUG|GRAND|Tuesday|14:00",
@@ -11007,14 +10945,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "ROOM",
-    "course_title": "ROOM 5",
+    "course_code": "OBG3121",
+    "course_title": "Obstetrics and Gynaecology - Theory I THEORY",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "ROOM 5",
     "room": null,
-    "shared_with": [
-      "OBG3121 Obstetrics and Gynaecology - Theory I THEORY"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "CD- OBG_SUG|SUG3122_OBG3122|Monday|14:00",
@@ -11106,14 +11042,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "IITR",
-    "course_title": "IITR PGR",
+    "course_code": "PCH5111",
+    "course_title": "Paediatrics and Child Health - Theory II",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "IITR PGR",
     "room": null,
-    "shared_with": [
-      "PCH5111 Paediatrics and Child Health - Theory II"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "CD-MED_PCH|OBG5112_SUG5112|Friday|10:00",
@@ -11250,14 +11184,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "SAMUEL",
-    "course_title": "Samuel Jjunju",
+    "course_code": "MED5111",
+    "course_title": "Internal Medicine - Theory II THEORY",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Samuel Jjunju",
     "room": "PLT",
-    "shared_with": [
-      "MED5111 Internal Medicine - Theory II THEORY"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "CD-MED_PCH|SAMUEL|Tuesday|08:00",
@@ -11266,14 +11198,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "SAMUEL",
-    "course_title": "Samuel Jjunju",
+    "course_code": "MED5111",
+    "course_title": "Internal Medicine - Theory II THEORY",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Samuel Jjunju",
     "room": "IITR PGR",
-    "shared_with": [
-      "MED5111 Internal Medicine - Theory II THEORY"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "CD-MED_PCH|TVROOM|Friday|08:00",
@@ -11282,14 +11212,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "TVROOM",
-    "course_title": "TV ROOM",
+    "course_code": "PCH5111",
+    "course_title": "Paediatrics and Child Health - Theory II",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "TV ROOM",
     "room": null,
-    "shared_with": [
-      "PCH5111 Paediatrics and Child Health - Theory II"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "CHEMISTRY|CHRISTOPHER|Tuesday|14:00",
@@ -11298,14 +11226,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "17:00",
-    "course_code": "CHRISTOPHER",
-    "course_title": "Christopher Adaku",
+    "course_code": "CHE3104",
+    "course_title": "Stereochemistry and Physical Organic Chemistry",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Christopher Adaku",
     "room": "S310",
-    "shared_with": [
-      "CHE3104 Stereochemistry and Physical Organic Chemistry"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "CHEMISTRY|EDU3101|Monday|08:00",
@@ -11382,14 +11308,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "11:00",
-    "course_code": "EMMANUEL",
-    "course_title": "Emmanuel Ntambi",
+    "course_code": "CHE3102",
+    "course_title": "Colloidal Chemistry",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Emmanuel Ntambi",
     "room": "S103",
-    "shared_with": [
-      "CHE3102 Colloidal Chemistry"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "CHEMISTRY|EMMANUEL|Wednesday|08:00",
@@ -11398,14 +11322,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "EMMANUEL",
-    "course_title": "Emmanuel Ntambi",
+    "course_code": "CHE3102",
+    "course_title": "Colloidal Chemistry",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Emmanuel Ntambi",
     "room": "S103",
-    "shared_with": [
-      "CHE3102 Colloidal Chemistry"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "CHEMISTRY|GRACE|Tuesday|08:00",
@@ -11414,13 +11336,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "11:00",
-    "course_code": "GRACE",
-    "course_title": "Grace Birungi",
+    "course_code": "CHE3101",
+    "course_title": "Transitional",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Grace Birungi",
     "room": "S210",
     "shared_with": [
-      "CHE3101 Transitional",
       "Quantum and Nuclear Chemistry"
     ]
   },
@@ -11431,14 +11352,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "16:00",
-    "course_code": "PAUL",
-    "course_title": "Paul Mukasa",
+    "course_code": "CHE3103",
+    "course_title": "Cyclic Chemistry",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Paul Mukasa",
     "room": "S103",
-    "shared_with": [
-      "CHE3103 Cyclic Chemistry"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "CHEMISTRY|PAUL|Wednesday|15:00",
@@ -11447,14 +11366,12 @@
     "time_slot": "15:00-16:00",
     "start_time": "15:00",
     "end_time": "16:00",
-    "course_code": "PAUL",
-    "course_title": "Paul Mukasa",
+    "course_code": "CHE3103",
+    "course_title": "Cyclic Chemistry",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Paul Mukasa",
     "room": "S310",
-    "shared_with": [
-      "CHE3103 Cyclic Chemistry"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "CHEMISTRY|PSY3102|Friday|14:00",
@@ -12172,14 +12089,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "13:00",
-    "course_code": "IMMACULATE",
-    "course_title": "Immaculate Nakazibwe",
+    "course_code": "DLB2101",
+    "course_title": "Plant Physiology",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Immaculate Nakazibwe",
     "room": "S205",
-    "shared_with": [
-      "DLB2101 Plant Physiology"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT BIOLOGY II|JOHN|Friday|14:00",
@@ -12188,14 +12103,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "17:00",
-    "course_code": "JOHN",
-    "course_title": "John Bosco Nkurunungi",
+    "course_code": "DLB2102",
+    "course_title": "Animal Physiology",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "John Bosco Nkurunungi",
     "room": "S205",
-    "shared_with": [
-      "DLB2102 Animal Physiology"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT BIOLOGY II|JOLLY|Tuesday|14:00",
@@ -12204,14 +12117,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "17:00",
-    "course_code": "JOLLY",
-    "course_title": "Jolly Ninsiima",
+    "course_code": "DLB2104",
+    "course_title": "Reproduction and Embryology",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Jolly Ninsiima",
     "room": "SG06",
-    "shared_with": [
-      "DLB2104 Reproduction and Embryology"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT BIOLOGY II|MONICA|Friday|10:00",
@@ -12220,14 +12131,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "13:00",
-    "course_code": "MONICA",
-    "course_title": "Monica Kamwine",
+    "course_code": "DLB2106",
+    "course_title": "Basic Crop and Animal Husbandry",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Monica Kamwine",
     "room": "S205",
-    "shared_with": [
-      "DLB2106 Basic Crop and Animal Husbandry"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT BIOLOGY II|MONICA|Monday|14:00",
@@ -12236,14 +12145,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "16:00",
-    "course_code": "MONICA",
-    "course_title": "Monica Kamwine",
+    "course_code": "DLB2103",
+    "course_title": "Plant and Animal Classification",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Monica Kamwine",
     "room": "S311",
-    "shared_with": [
-      "DLB2103 Plant and Animal Classification"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT BIOLOGY II|RONALD|Thursday|08:00",
@@ -12252,14 +12159,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "RONALD",
-    "course_title": "Ronald Agaba",
+    "course_code": "DLB2105",
+    "course_title": "Aquatic Science",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Ronald Agaba",
     "room": "SG05",
-    "shared_with": [
-      "DLB2105 Aquatic Science"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT CHEMISTRY II|AMOS|Tuesday|08:00",
@@ -12268,14 +12173,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "12:00",
-    "course_code": "AMOS",
-    "course_title": "Amos Senyonjo",
+    "course_code": "DLC2102",
+    "course_title": "Descriptive Chemistry and Complex Formations",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Amos Senyonjo",
     "room": "S202",
-    "shared_with": [
-      "DLC2102 Descriptive Chemistry and Complex Formations"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT CHEMISTRY II|AMOS|Wednesday|14:00",
@@ -12284,14 +12187,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "17:00",
-    "course_code": "AMOS",
-    "course_title": "Amos Senyonjo",
+    "course_code": "DLC2104",
+    "course_title": "Water Chemistry",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Amos Senyonjo",
     "room": "S202",
-    "shared_with": [
-      "DLC2104 Water Chemistry"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT CHEMISTRY II|APOLLO|Friday|08:00",
@@ -12300,14 +12201,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "APOLLO",
-    "course_title": "Apollo Milton Wesuta",
+    "course_code": "DLC2103",
+    "course_title": "Biochemistry",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Apollo Milton Wesuta",
     "room": "SG06",
-    "shared_with": [
-      "DLC2103 Biochemistry"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT CHEMISTRY II|APOLLO|Thursday|14:00",
@@ -12316,14 +12215,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "16:00",
-    "course_code": "APOLLO",
-    "course_title": "Apollo Milton Wesuta",
+    "course_code": "DLC2103",
+    "course_title": "Biochemistry",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Apollo Milton Wesuta",
     "room": "S202",
-    "shared_with": [
-      "DLC2103 Biochemistry"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT CHEMISTRY II|CAROLINE|Wednesday|10:00",
@@ -12332,14 +12229,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "13:00",
-    "course_code": "CAROLINE",
-    "course_title": "Caroline Kiwanuka Nakiguli",
+    "course_code": "DLC2105",
+    "course_title": "Industrial Stoichimetry",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Caroline Kiwanuka Nakiguli",
     "room": "SG05",
-    "shared_with": [
-      "DLC2105 Industrial Stoichimetry"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT CHEMISTRY II|CHEROP|Thursday|11:00",
@@ -12348,14 +12243,12 @@
     "time_slot": "11:00-12:00",
     "start_time": "11:00",
     "end_time": "12:00",
-    "course_code": "CHEROP",
-    "course_title": "Cherop Tonny",
+    "course_code": "DLC2101",
+    "course_title": "Analytical Procedures and Instrumentation",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Cherop Tonny",
     "room": "SG05",
-    "shared_with": [
-      "DLC2101 Analytical Procedures and Instrumentation"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT CHEMISTRY II|CHEROP|Wednesday|08:00",
@@ -12364,14 +12257,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "CHEROP",
-    "course_title": "Cherop Tonny",
+    "course_code": "DLC2101",
+    "course_title": "Analytical Procedures and Instrumentation",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Cherop Tonny",
     "room": "SG06",
-    "shared_with": [
-      "DLC2101 Analytical Procedures and Instrumentation"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT I|DCS1101|Friday|14:00",
@@ -12534,14 +12425,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "13:00",
-    "course_code": "LOKUNY",
-    "course_title": "Lokuny Boniface",
+    "course_code": "DLP2103",
+    "course_title": "Environmental Physics",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Lokuny Boniface",
     "room": "SG06",
-    "shared_with": [
-      "DLP2103 Environmental Physics"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT PHYSICS II|LOKUNY|Thursday|14:00",
@@ -12550,14 +12439,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "17:00",
-    "course_code": "LOKUNY",
-    "course_title": "Lokuny Boniface",
+    "course_code": "DLP2101",
+    "course_title": "Atomic Physics",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Lokuny Boniface",
     "room": "SG06",
-    "shared_with": [
-      "DLP2101 Atomic Physics"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT PHYSICS II|LOKUNY|Tuesday|10:00",
@@ -12566,14 +12453,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "13:00",
-    "course_code": "LOKUNY",
-    "course_title": "Lokuny Boniface",
+    "course_code": "DLP2104",
+    "course_title": "Renewable Energy",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Lokuny Boniface",
     "room": "SG06",
-    "shared_with": [
-      "DLP2104 Renewable Energy"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT PHYSICS II|PASCAL|Monday|08:00",
@@ -12582,14 +12467,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "11:00",
-    "course_code": "PASCAL",
-    "course_title": "Pascal Amandu",
+    "course_code": "DLP2102",
+    "course_title": "Electronics",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Pascal Amandu",
     "room": "S202",
-    "shared_with": [
-      "DLP2102 Electronics"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "DLT PHYSICS II|PASCAL|Wednesday|14:00",
@@ -12598,14 +12481,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "17:00",
-    "course_code": "PASCAL",
-    "course_title": "Pascal Amandu",
+    "course_code": "DLP2105",
+    "course_title": "Practical Physics",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Pascal Amandu",
     "room": "SG06",
-    "shared_with": [
-      "DLP2105 Practical Physics"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "ECO III|BBA3102|Monday|08:00",
@@ -13617,14 +13498,12 @@
     "time_slot": "11:00-12:00",
     "start_time": "11:00",
     "end_time": "13:00",
-    "course_code": "ASAPH",
-    "course_title": "Asaph Katarangi Kaburura",
+    "course_code": "BBA3110",
+    "course_title": "Rewards and Compensation Management",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Asaph Katarangi Kaburura",
     "room": "IMSG01",
-    "shared_with": [
-      "BBA3110 Rewards and Compensation Management"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "HUMAN RESOURCE|ASAPH|Thursday|08:00",
@@ -13633,14 +13512,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "ASAPH",
-    "course_title": "Asaph Katarangi Kaburura",
+    "course_code": "BBA3110",
+    "course_title": "Rewards and Compensation Management",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Asaph Katarangi Kaburura",
     "room": "DS LAB IV",
-    "shared_with": [
-      "BBA3110 Rewards and Compensation Management"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "HUMAN RESOURCE|BABI|Monday|14:00",
@@ -13649,14 +13526,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "16:00",
-    "course_code": "BABI",
-    "course_title": "Babi David kamusaala",
+    "course_code": "BBA3111",
+    "course_title": "Industrial Psychology",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Babi David kamusaala",
     "room": "IITR PGR",
-    "shared_with": [
-      "BBA3111 Industrial Psychology"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "HUMAN RESOURCE|BABI|Tuesday|16:00",
@@ -13665,14 +13540,12 @@
     "time_slot": "16:00-17:00",
     "start_time": "16:00",
     "end_time": "18:00",
-    "course_code": "BABI",
-    "course_title": "Babi David kamusaala",
+    "course_code": "BBA3111",
+    "course_title": "Industrial Psychology",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Babi David kamusaala",
     "room": "DS LAB IV",
-    "shared_with": [
-      "BBA3111 Industrial Psychology"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "HUMAN RESOURCE|BBA3102|Monday|08:00",
@@ -13749,14 +13622,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "16:00",
-    "course_code": "ARTHUR",
-    "course_title": "Arthur Nuwagaba",
+    "course_code": "BBA3108",
+    "course_title": "Marketing Channels",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Arthur Nuwagaba",
     "room": "TV ROOM",
-    "shared_with": [
-      "BBA3108 Marketing Channels"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "MARKETING|ARTHUR|Tuesday|14:00",
@@ -13765,14 +13636,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "16:00",
-    "course_code": "ARTHUR",
-    "course_title": "Arthur Nuwagaba",
+    "course_code": "BBA3108",
+    "course_title": "Marketing Channels",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Arthur Nuwagaba",
     "room": "DS LAB IV",
-    "shared_with": [
-      "BBA3108 Marketing Channels"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "MARKETING|BBA3102|Monday|08:00",
@@ -13849,14 +13718,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "12:00",
-    "course_code": "SARAH",
-    "course_title": "Sarah Nabachwa",
+    "course_code": "BBA3109",
+    "course_title": "Marketing Research",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Sarah Nabachwa",
     "room": "Pharmacy L2",
-    "shared_with": [
-      "BBA3109 Marketing Research"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "MARKETING|SARAH|Wednesday|08:00",
@@ -13865,14 +13732,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "SARAH",
-    "course_title": "Sarah Nabachwa",
+    "course_code": "BBA3109",
+    "course_title": "Marketing Research",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Sarah Nabachwa",
     "room": "SG05",
-    "shared_with": [
-      "BBA3109 Marketing Research"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "MATHEMATICS|EDU3101|Monday|08:00",
@@ -13949,14 +13814,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "17:00",
-    "course_code": "FERESIANO",
-    "course_title": "Feresiano Mwesigye",
+    "course_code": "MTH3101",
+    "course_title": "Abstract Algebra",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Feresiano Mwesigye",
     "room": "S205",
-    "shared_with": [
-      "MTH3101 Abstract Algebra"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "MATHEMATICS|KASIFA|Friday|08:00",
@@ -13965,14 +13828,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "11:00",
-    "course_code": "KASIFA",
-    "course_title": "Kasifa Namyalo",
+    "course_code": "MTH3104",
+    "course_title": "Statistics",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Kasifa Namyalo",
     "room": "S210",
-    "shared_with": [
-      "MTH3104 Statistics"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "MATHEMATICS|MARY|Thursday|14:00",
@@ -13981,14 +13842,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "17:00",
-    "course_code": "MARY",
-    "course_title": "Mary Nanfuka",
+    "course_code": "MTH3105",
+    "course_title": "Differential Equations II",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Mary Nanfuka",
     "room": "S211",
-    "shared_with": [
-      "MTH3105 Differential Equations II"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "MATHEMATICS|OLIVIA|Thursday|10:00",
@@ -13997,14 +13856,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "13:00",
-    "course_code": "OLIVIA",
-    "course_title": "Olivia Nabawanda",
+    "course_code": "MTH3106",
+    "course_title": "Graph Theory",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Olivia Nabawanda",
     "room": "S211",
-    "shared_with": [
-      "MTH3106 Graph Theory"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "MATHEMATICS|OLIVIA|Tuesday|15:00",
@@ -14013,14 +13870,12 @@
     "time_slot": "15:00-16:00",
     "start_time": "15:00",
     "end_time": "16:00",
-    "course_code": "OLIVIA",
-    "course_title": "Olivia Nabawanda",
+    "course_code": "MTH3102",
+    "course_title": "Real Analysis II",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Olivia Nabawanda",
     "room": "S403",
-    "shared_with": [
-      "MTH3102 Real Analysis II"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "MATHEMATICS|OLIVIA|Wednesday|08:00",
@@ -14029,14 +13884,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "11:00",
-    "course_code": "OLIVIA",
-    "course_title": "Olivia Nabawanda",
+    "course_code": "MTH3102",
+    "course_title": "Real Analysis II",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Olivia Nabawanda",
     "room": "S310",
-    "shared_with": [
-      "MTH3102 Real Analysis II"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "MATHEMATICS|PSY3102|Friday|14:00",
@@ -14063,14 +13916,12 @@
     "time_slot": "11:00-12:00",
     "start_time": "11:00",
     "end_time": "13:00",
-    "course_code": "RONALD",
-    "course_title": "Ronald Mwesigwa",
+    "course_code": "MTH3103",
+    "course_title": "Numerical Analysis II",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Ronald Mwesigwa",
     "room": "S210",
-    "shared_with": [
-      "MTH3103 Numerical Analysis II"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "MATHEMATICS|RONALD|Wednesday|14:00",
@@ -14079,14 +13930,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "15:00",
-    "course_code": "RONALD",
-    "course_title": "Ronald Mwesigwa",
+    "course_code": "MTH3103",
+    "course_title": "Numerical Analysis II",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Ronald Mwesigwa",
     "room": "S310",
-    "shared_with": [
-      "MTH3103 Numerical Analysis II"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "MBR II|BCH2121|Monday|11:00",
@@ -16515,7 +16364,7 @@
     "start_time": "14:00",
     "end_time": "17:00",
     "course_code": "MLS4122",
-    "course_title": "Haematology V: The White cell disorders – Diagnosis and Management",
+    "course_title": "Haematology V: The White cell disorders \u2013 Diagnosis and Management",
     "session_type": null,
     "lecturer": "Enoch Muwanguzi",
     "room": "Pharmacy L2",
@@ -19538,14 +19387,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "TOM",
-    "course_title": "Tom Mutabazi",
+    "course_code": "PHY3111",
+    "course_title": "Computational Physics II",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Tom Mutabazi",
     "room": "S205",
-    "shared_with": [
-      "PHY3111 Computational Physics II"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "PHYSICS|TRUST|Monday|10:00",
@@ -19554,14 +19401,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "13:00",
-    "course_code": "TRUST",
-    "course_title": "Trust Otto",
+    "course_code": "PHY3109",
+    "course_title": "Stellar Stracture and Evolution",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Trust Otto",
     "room": "SG05",
-    "shared_with": [
-      "PHY3109 Stellar Stracture and Evolution"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "PROCUREMENT|BBA3102|Monday|08:00",
@@ -19718,14 +19563,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "HABIMANAH",
-    "course_title": "Habimanah",
+    "course_code": "HGEN1104",
+    "course_title": "Foundations of Chemistry",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Habimanah",
     "room": "SG05",
-    "shared_with": [
-      "HGEN1104 Foundations of Chemistry"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "Physics-Maths|HABIMANAH|Monday|10:00",
@@ -19734,14 +19577,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "11:00",
-    "course_code": "HABIMANAH",
-    "course_title": "Habimanah",
+    "course_code": "HGEN1104",
+    "course_title": "Foundations of Chemistry",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Habimanah",
     "room": "S311",
-    "shared_with": [
-      "HGEN1104 Foundations of Chemistry"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "Physics-Maths|MOSES|Friday|16:00",
@@ -19750,14 +19591,12 @@
     "time_slot": "16:00-17:00",
     "start_time": "16:00",
     "end_time": "18:00",
-    "course_code": "MOSES",
-    "course_title": "Moses Awal",
+    "course_code": "PHY41101",
+    "course_title": "Mechanics and Properties of matter",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Moses Awal",
     "room": "SG06",
-    "shared_with": [
-      "PHY41101 Mechanics and Properties of matter"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "Physics-Maths|MOSES|Tuesday|10:00",
@@ -19766,14 +19605,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "13:00",
-    "course_code": "MOSES",
-    "course_title": "Moses Awal",
+    "course_code": "PHY41102",
+    "course_title": "Electricity and electromagnetism",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Moses Awal",
     "room": "SG05",
-    "shared_with": [
-      "PHY41102 Electricity and electromagnetism"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "Physics-Maths|MOSES|Wednesday|11:00",
@@ -19782,14 +19619,12 @@
     "time_slot": "11:00-12:00",
     "start_time": "11:00",
     "end_time": "13:00",
-    "course_code": "MOSES",
-    "course_title": "Moses Awal",
+    "course_code": "PHY41101",
+    "course_title": "Mechanics and Properties of matter",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Moses Awal",
     "room": "SG06",
-    "shared_with": [
-      "PHY41101 Mechanics and Properties of matter"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "Physics-Maths|MTH41101|Monday|16:00",
@@ -19930,14 +19765,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "13:00",
-    "course_code": "CLEOPHAS",
-    "course_title": "Cleophas Karooma",
+    "course_code": "BPCD3104",
+    "course_title": "Rural Livelihoods and Poverty Analysis",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Cleophas Karooma",
     "room": "IMSG01",
-    "shared_with": [
-      "BPCD3104 Rural Livelihoods and Poverty Analysis"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "SUSTAINABLE RURAL DEVELOPMENT|ROBERTS|Friday|10:00",
@@ -19946,14 +19779,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "13:00",
-    "course_code": "ROBERTS",
-    "course_title": "Roberts Muriisa",
+    "course_code": "BPCD3105",
+    "course_title": "Gender in Rural Development",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Roberts Muriisa",
     "room": "IMSG04",
-    "shared_with": [
-      "BPCD3105 Gender in Rural Development"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "SUSTAINABLE RURAL DEVELOPMENT|ROBERTS|Thursday|14:00",
@@ -19962,14 +19793,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "17:00",
-    "course_code": "ROBERTS",
-    "course_title": "Roberts Muriisa",
+    "course_code": "BPCD3118",
+    "course_title": "Appraisal and Evaluation of Rural Development Projects and Programmes",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Roberts Muriisa",
     "room": "DS LAB IV",
-    "shared_with": [
-      "BPCD3118 Appraisal and Evaluation of Rural Development Projects and Programmes"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "SUSTAINABLE RURAL DEVELOPMENT|VALENCE|Friday|14:00",
@@ -19978,14 +19807,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "16:00",
-    "course_code": "VALENCE",
-    "course_title": "Valence Ngabo",
+    "course_code": "BPCD3103",
+    "course_title": "Rural economics",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Valence Ngabo",
     "room": "IITR PGR",
-    "shared_with": [
-      "BPCD3103 Rural economics"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "SUSTAINABLE RURAL DEVELOPMENT|VALENCE|Saturday|11:00",
@@ -19994,14 +19821,12 @@
     "time_slot": "11:00-12:00",
     "start_time": "11:00",
     "end_time": "13:00",
-    "course_code": "VALENCE",
-    "course_title": "Valence Ngabo",
+    "course_code": "BPCD3103",
+    "course_title": "Rural economics",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Valence Ngabo",
     "room": "Pharmacy L1",
-    "shared_with": [
-      "BPCD3103 Rural economics"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "URBAN POLICY|BPCD3101|Monday|10:00",
@@ -20094,14 +19919,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "16:00",
-    "course_code": "CLEOPHAS",
-    "course_title": "Cleophas Karooma",
+    "course_code": "BPCD3111",
+    "course_title": "Social Costs of Urban Growth and Development",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Cleophas Karooma",
     "room": "ROOM 5",
-    "shared_with": [
-      "BPCD3111 Social Costs of Urban Growth and Development"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "URBAN POLICY|CLEOPHAS|Tuesday|14:00",
@@ -20110,14 +19933,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "16:00",
-    "course_code": "CLEOPHAS",
-    "course_title": "Cleophas Karooma",
+    "course_code": "BPCD3111",
+    "course_title": "Social Costs of Urban Growth and Development",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Cleophas Karooma",
     "room": "Pharmacy L3",
-    "shared_with": [
-      "BPCD3111 Social Costs of Urban Growth and Development"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "URBAN POLICY|MEDARD|Thursday|14:00",
@@ -20126,14 +19947,12 @@
     "time_slot": "14:00-15:00",
     "start_time": "14:00",
     "end_time": "17:00",
-    "course_code": "MEDARD",
-    "course_title": "Medard Twinamatsiko",
+    "course_code": "BPCD3108",
+    "course_title": "Public- Private Partnerships for Urban Service Delivery",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Medard Twinamatsiko",
     "room": "Pharmacy L3",
-    "shared_with": [
-      "BPCD3108 Public- Private Partnerships for Urban Service Delivery"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "URBAN POLICY|RITA|Friday|11:00",
@@ -20142,14 +19961,12 @@
     "time_slot": "11:00-12:00",
     "start_time": "11:00",
     "end_time": "13:00",
-    "course_code": "RITA",
-    "course_title": "Rita K.Naggayi",
+    "course_code": "BPCD3107",
+    "course_title": "Approaches to Urban Development",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Rita K.Naggayi",
     "room": "ROOM 5",
-    "shared_with": [
-      "BPCD3107 Approaches to Urban Development"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "URBAN POLICY|RITA|Tuesday|10:00",
@@ -20158,14 +19975,12 @@
     "time_slot": "10:00-11:00",
     "start_time": "10:00",
     "end_time": "12:00",
-    "course_code": "RITA",
-    "course_title": "Rita K.Naggayi",
+    "course_code": "BPCD3107",
+    "course_title": "Approaches to Urban Development",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Rita K.Naggayi",
     "room": "DS LAB IV",
-    "shared_with": [
-      "BPCD3107 Approaches to Urban Development"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "URBAN POLICY|SPECIOZA|Monday|08:00",
@@ -20174,14 +19989,12 @@
     "time_slot": "08:00-9:00",
     "start_time": "08:00",
     "end_time": "10:00",
-    "course_code": "SPECIOZA",
-    "course_title": "Specioza Twinamasiko",
+    "course_code": "BPCD3110",
+    "course_title": "People Centered Urban Governance",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Specioza Twinamasiko",
     "room": "ROOM 5",
-    "shared_with": [
-      "BPCD3110 People Centered Urban Governance"
-    ]
+    "shared_with": []
   },
   {
     "natural_key": "URBAN POLICY|SPECIOZA|Tuesday|12:00",
@@ -20190,13 +20003,11 @@
     "time_slot": "12:00-13:00",
     "start_time": "12:00",
     "end_time": "13:00",
-    "course_code": "SPECIOZA",
-    "course_title": "Specioza Twinamasiko",
+    "course_code": "BPCD3110",
+    "course_title": "People Centered Urban Governance",
     "session_type": null,
-    "lecturer": null,
+    "lecturer": "Specioza Twinamasiko",
     "room": "Pharmacy L3",
-    "shared_with": [
-      "BPCD3110 People Centered Urban Governance"
-    ]
+    "shared_with": []
   }
 ]
