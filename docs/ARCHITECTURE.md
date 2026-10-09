@@ -83,8 +83,19 @@
   * Abstracts Room DAOs and preference stores.
   * Exposes public methods for saving notes, adding custom events, toggling task completion, and retrieving timetable sessions.
 * **`DataLoader`**:
-  * Pre-populates the local database on initial launch from bundled academic assets (`timetable_entries.json`).
+  * Pre-populates the local database on initial launch from bundled academic assets (`timetable_export.json` / `timetable_entries.json`).
   * Employs MD5 and ETag tracking (`ETagStore`) to avoid redundant parsing.
+  * **Scraper Swap Self-Healing**: Automatically cleans entries where upstream scraper inverted `course_code` and `shared_with` (e.g. DLT and clinical entries where lecturer name occupied `course_code` and the real course code was in `shared_with`).
+
+### D. Programme Group Matching & Specialised Tracks (`com.mustime.features.timetable.domain`)
+* **`TimetableMatcher`**:
+  * Implements `entryMatchesGroup(entry, group)` matching both owner `program_group` and attendee `shared_with`.
+  * **Track Subdivisions**: Programmes with academic specialisations (such as Science Laboratory Technology `DLT` with Biology, Chemistry, Physics; Science Education `BS` with Biological, Chem Maths, Physical, Physics, Mathematics; Business Administration `BBA` with Taxation) are modelled with explicit tracks in `FacultyData.kt`.
+  * Selecting a general group (e.g. `DLT II`) seamlessly aggregates all tracks (18 entries), while choosing a specific track (e.g. `DLT BIOLOGY II`) accurately isolates only relevant lectures.
+  * **Dynamic Count Computation**: Real timetable counts are derived dynamically from database entries (`filterTimetable`) rather than stale hardcoded maps, with self-invalidating updates whenever timetable data changes.
+  * **Accurate 0-Entry Contextual Messaging**:
+    * True clinical hospital rotations (`DCM`, `DEM`, `DCAM` Years I & II) explicitly indicate clinical hospital rotations as the reason for absence.
+    * Town-campus or non-hospital programmes with no timetable export (e.g. `BGWH` - BSc in Gender and Applied Women Health Years I & II) correctly display "No scheduled lectures in current export (Town Campus)" rather than misleading hospital clinical rotation messages.
 
 ---
 

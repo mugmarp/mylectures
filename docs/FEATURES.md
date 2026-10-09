@@ -14,6 +14,16 @@ This document details the functional specifications, user interface behaviors, a
 * **Top App Bar**:
   * Displays the enrolled Academic Programme (e.g. `BCS Year 2 Semester 1`) with an Academic Schedule subtitle.
   * Fast-access action buttons: **Campus Vacant Rooms** icon, **Academic Profile Switcher**, and **Settings**.
+* **Intelligent Timetable Filtering & Track Support**:
+  * Cross-program and cross-faculty shared lectures are seamlessly surfaced via `entryMatchesGroup`.
+  * **Specialised Academic Tracks**: Programmes with curriculum specialisations support dedicated tracks:
+    * `BS` (Science Education): Biological, Chemistry/Maths, Physical, Physics, and Mathematics tracks across Years I, II, and III.
+    * `DLT` (Science Laboratory Technology): Biology, Chemistry, and Physics tracks for Year II.
+    * `BBA` (Business Administration): Core and Taxation tracks for Year II.
+  * **Dynamic Zero-Drift Class Counts**: Entry counts in onboarding and profile switching are derived directly from the timetable database (`filterTimetable`) rather than stale hardcoded maps.
+  * **Contextual Zero-Entry Guidance**:
+    * Clinical medical programmes (`DCM`, `DEM`, `DCAM`) clearly inform students of hospital clinical rotations.
+    * Town-campus programmes with no sessions in the current export (`BGWH`) accurately display "No scheduled lectures in current export (Town Campus)" rather than clinical hospital messaging.
 * **Happening Now / Next Up Hero Card**:
   * Dynamically computes the active class session in real-time.
   * **Live Mode**: Displays an animated glowing `LIVE NOW` badge, real-time progress bar (percentage completed), elapsed time ("35m elapsed"), and remaining time ("45m left · Ends 15:30").

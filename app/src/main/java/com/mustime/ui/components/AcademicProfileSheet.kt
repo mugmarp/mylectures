@@ -356,10 +356,13 @@ fun QuickChangeProgrammeDialog(
         selectedFaculty.programmes.find { it.code == selectedProgrammeCode } ?: selectedFaculty.programmes.first()
     }
 
-    var selectedYearGroup by remember(selectedProgramme) {
-        val yr = if (selectedProgramme.defaultYears.contains(currentYear)) currentYear
-        else selectedProgramme.defaultYears.firstOrNull() ?: "I"
-        mutableStateOf(yr)
+    val availableGroups = remember(selectedProgramme) {
+        selectedProgramme.allGroups
+    }
+
+    var selectedClassGroup by remember(selectedProgramme) {
+        val matching = availableGroups.find { it.equals(currentProgramme.trim(), ignoreCase = true) }
+        mutableStateOf(matching ?: availableGroups.firstOrNull() ?: "${selectedProgramme.code} I")
     }
 
     var facultyDropdownExpanded by remember { mutableStateOf(false) }
@@ -569,56 +572,101 @@ fun QuickChangeProgrammeDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // 3. Year Group Selector
+                // 3. Year / Track Group Selector
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "3. Academic Year Group",
+                        text = "3. Academic Class Group",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = primaryColor
                     )
                     Text(
-                        text = "Year $selectedYearGroup",
+                        text = selectedClassGroup,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = if (isDark) Color(0xFF94A3B8) else TextMutedLight
                     )
                 }
                 Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    selectedProgramme.defaultYears.forEach { yr ->
-                        val isSelected = yr == selectedYearGroup
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { selectedYearGroup = yr },
-                            label = {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = yr,
-                                        fontSize = 13.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+
+                // If many groups (tracks), use wrapped / column chips
+                if (availableGroups.size <= 5) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        availableGroups.forEach { grp ->
+                            val isSelected = grp == selectedClassGroup
+                            val displayLabel = grp.removePrefix("${selectedProgramme.code} ").ifBlank { grp }
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { selectedClassGroup = grp },
+                                label = {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = displayLabel,
+                                            fontSize = 12.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                        )
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+                    }
+                } else {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        availableGroups.chunked(3).forEach { rowGroups ->
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                rowGroups.forEach { grp ->
+                                    val isSelected = grp == selectedClassGroup
+                                    val displayLabel = grp.removePrefix("${selectedProgramme.code} ").ifBlank { grp }
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { selectedClassGroup = grp },
+                                        label = {
+                                            Box(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = displayLabel,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    maxLines = 1
+                                                )
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(8.dp)
                                     )
                                 }
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(10.dp)
-                        )
+                                // Pad empty spaces if odd count
+                                repeat(3 - rowGroups.size) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                val chosenGroup = "${selectedProgramme.code} $selectedYearGroup"
+                val chosenGroup = selectedClassGroup
                 val isDifferentProgram = chosenGroup.trim() != currentProgramme.trim()
 
                 Button(
