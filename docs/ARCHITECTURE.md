@@ -93,9 +93,10 @@
   * **Track Subdivisions**: Programmes with academic specialisations (such as Science Laboratory Technology `DLT` with Biology, Chemistry, Physics; Science Education `BS` with Biological, Chem Maths, Physical, Physics, Mathematics; Business Administration `BBA` with Taxation) are modelled with explicit tracks in `FacultyData.kt`.
   * Selecting a general group (e.g. `DLT II`) seamlessly aggregates all tracks (18 entries), while choosing a specific track (e.g. `DLT BIOLOGY II`) accurately isolates only relevant lectures.
   * **Dynamic Count Computation**: Real timetable counts are derived dynamically from database entries (`filterTimetable`) rather than stale hardcoded maps, with self-invalidating updates whenever timetable data changes.
-  * **Accurate 0-Entry Contextual Messaging**:
+  * **Accurate Cohort & 0-Entry Contextual Messaging**:
     * True clinical hospital rotations (`DCM`, `DEM`, `DCAM` Years I & II) explicitly indicate clinical hospital rotations as the reason for absence.
-    * Town-campus or non-hospital programmes with no timetable export (e.g. `BGWH` - BSc in Gender and Applied Women Health Years I & II) correctly display "No scheduled lectures in current export (Town Campus)" rather than misleading hospital clinical rotation messages.
+    * Non-existent cohorts are eliminated at the root data level (`FacultyData.kt` supports `customYears`, ensuring `BGWH` strictly offers `BGWH III` as its sole valid class group, preventing false offerings of absent Year I/II groups while accurately delivering its 12 lectures).
+    * General empty off-campus sessions display appropriate contextual schedule notices rather than misleading clinical hospital tags.
 
 ---
 

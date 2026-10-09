@@ -66,7 +66,7 @@ class ProgrammeLocationDefaultsTest {
 
     @Test
     fun `Interdisciplinary programs default to Town Campus and IMS Building`() {
-        val fisPrograms = listOf("BSAL", "BGWH", "BPCD", "BSAL I", "BGWH II")
+        val fisPrograms = listOf("BSAL", "BGWH", "BPCD", "BSAL I", "BGWH III")
         for (prog in fisPrograms) {
             val def = programmeDefaults(prog)
             assertEquals("Programme $prog must default to Town Campus", Campus.TOWN.displayName, def.campus)

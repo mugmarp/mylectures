@@ -21,9 +21,9 @@ This document details the functional specifications, user interface behaviors, a
     * `DLT` (Science Laboratory Technology): Biology, Chemistry, and Physics tracks for Year II.
     * `BBA` (Business Administration): Core and Taxation tracks for Year II.
   * **Dynamic Zero-Drift Class Counts**: Entry counts in onboarding and profile switching are derived directly from the timetable database (`filterTimetable`) rather than stale hardcoded maps.
-  * **Contextual Zero-Entry Guidance**:
-    * Clinical medical programmes (`DCM`, `DEM`, `DCAM`) clearly inform students of hospital clinical rotations.
-    * Town-campus programmes with no sessions in the current export (`BGWH`) accurately display "No scheduled lectures in current export (Town Campus)" rather than clinical hospital messaging.
+  * **Contextual Guidance & Tailored Cohorts**:
+    * Clinical medical programmes (`DCM`, `DEM`, `DCAM`) clearly inform students of hospital clinical rotations for unscheduled terms.
+    * For programmes where specific academic years are absent from the central timetable (such as `BGWH` which only has Year III scheduled in this export), the onboarding and profile switcher restrict selection to genuine class groups (`BGWH III`), preventing confusing 0-entry choices.
 * **Happening Now / Next Up Hero Card**:
   * Dynamically computes the active class session in real-time.
   * **Live Mode**: Displays an animated glowing `LIVE NOW` badge, real-time progress bar (percentage completed), elapsed time ("35m elapsed"), and remaining time ("45m left · Ends 15:30").

@@ -14,10 +14,11 @@ data class Programme(
     val code: String,
     val name: String,
     val years: Int,
-    val tracks: Map<String, List<String>> = emptyMap()
+    val tracks: Map<String, List<String>> = emptyMap(),
+    val customYears: List<String>? = null
 ) {
     val defaultYears: List<String>
-        get() = when (years) {
+        get() = customYears ?: when (years) {
             5 -> listOf("I", "II", "III", "IV", "V")
             4 -> listOf("I", "II", "III", "IV")
             3 -> listOf("I", "II", "III")
@@ -106,7 +107,7 @@ val FACULTIES = listOf(
     )),
     Faculty("interdisciplinary", "Faculty of Interdisciplinary Studies", null, "Users", listOf(
         Programme("BSAL", "BSc in Agriculture and Livelihoods", 4),
-        Programme("BGWH", "BSc in Gender and Applied Women Health", 3),
+        Programme("BGWH", "BSc in Gender and Applied Women Health", 3, customYears = listOf("III")),
         Programme("BPCD", "BSc in Planning and Community Development", 3)
     ))
 )
