@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Central timetable collection is read-only for authenticated students, writable only by admins
+    match /timetable/{entryId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Scraped/managed through backend admin processes
+    }
+    
+    // Student user document and personal lecture notes
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      match /notes/{noteId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+}

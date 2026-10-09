@@ -119,6 +119,89 @@ class DatabaseMigrationTest {
     }
 
     @Test
+    fun testMigration4To5AddsCategoryAndColorTag() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.deleteDatabase("test_migration_4_5.db")
+
+        val config = SupportSQLiteOpenHelper.Configuration.builder(context)
+            .name("test_migration_4_5.db")
+            .callback(object : SupportSQLiteOpenHelper.Callback(4) {
+                override fun onCreate(db: SupportSQLiteDatabase) {
+                    db.execSQL("""
+                        CREATE TABLE IF NOT EXISTS custom_events (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            title TEXT NOT NULL,
+                            dayOfWeek TEXT NOT NULL,
+                            startTime TEXT NOT NULL,
+                            endTime TEXT NOT NULL,
+                            venue TEXT,
+                            description TEXT
+                        )
+                    """.trimIndent())
+                    db.execSQL("INSERT INTO custom_events (title, dayOfWeek, startTime, endTime) VALUES ('Study Group', 'Monday', '10:00', '12:00')")
+                }
+                override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+            })
+            .build()
+
+        val helper = FrameworkSQLiteOpenHelperFactory().create(config)
+        val db = helper.writableDatabase
+
+        AppDatabase.MIGRATION_4_5.migrate(db)
+
+        db.query("SELECT category, colorTag FROM custom_events WHERE title = 'Study Group'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Study", cursor.getString(0))
+            assertEquals("#2563EB", cursor.getString(1))
+        }
+
+        db.close()
+        helper.close()
+        context.deleteDatabase("test_migration_4_5.db")
+    }
+
+    @Test
+    fun testMigration5To6AddsNotesColumns() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.deleteDatabase("test_migration_5_6.db")
+
+        val config = SupportSQLiteOpenHelper.Configuration.builder(context)
+            .name("test_migration_5_6.db")
+            .callback(object : SupportSQLiteOpenHelper.Callback(5) {
+                override fun onCreate(db: SupportSQLiteDatabase) {
+                    db.execSQL("""
+                        CREATE TABLE IF NOT EXISTS lecture_notes (
+                            naturalKey TEXT NOT NULL PRIMARY KEY,
+                            content TEXT NOT NULL,
+                            updatedAt INTEGER NOT NULL,
+                            colourTag TEXT,
+                            alarmMinutes INTEGER
+                        )
+                    """.trimIndent())
+                    db.execSQL("INSERT INTO lecture_notes (naturalKey, content, updatedAt) VALUES ('note1', 'Test content', 1000)")
+                }
+                override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+            })
+            .build()
+
+        val helper = FrameworkSQLiteOpenHelperFactory().create(config)
+        val db = helper.writableDatabase
+
+        AppDatabase.MIGRATION_5_6.migrate(db)
+
+        db.query("SELECT naturalKey, title, isPinned FROM lecture_notes WHERE naturalKey = 'note1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("note1", cursor.getString(0))
+            assertNull(cursor.getString(1))
+            assertEquals(0, cursor.getInt(2))
+        }
+
+        db.close()
+        helper.close()
+        context.deleteDatabase("test_migration_5_6.db")
+    }
+
+    @Test
     fun testTimetableEntryFloorLevelResolution() {
         // Entry with explicit floor stored in database
         val entryWithFloor = TimetableEntry(
