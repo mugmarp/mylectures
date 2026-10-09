@@ -43,7 +43,6 @@ class TimetableApplication : Application() {
             AppDatabase.MIGRATION_5_6,
             AppDatabase.MIGRATION_6_7
         )
-        .fallbackToDestructiveMigration()
         .build()
         
         etagStore = ETagStore(this)

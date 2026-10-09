@@ -189,8 +189,8 @@ fun DeveloperProfileSheet(
                 onClick = {
                     val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
                         data = Uri.parse("mailto:$emailContact")
-                        putExtra(Intent.EXTRA_SUBJECT, "[Campus Companion] Project Contribution & Collaboration")
-                        putExtra(Intent.EXTRA_TEXT, "Hello Mark Paul,\n\nI am reaching out regarding Campus Companion:\n")
+                        putExtra(Intent.EXTRA_SUBJECT, "[Lectures: The Campus Companion] Project Contribution & Collaboration")
+                        putExtra(Intent.EXTRA_TEXT, "Hello Mark Paul,\n\nI am reaching out regarding Lectures (The Campus Companion):\n")
                     }
                     try {
                         context.startActivity(Intent.createChooser(emailIntent, "Send Email via"))

@@ -263,9 +263,21 @@ fun WelcomeScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // App Identity Pill
+                // Main App Title (Large & Prominent)
+                Text(
+                    text = "Lectures",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = textPrimary,
+                    textAlign = TextAlign.Center,
+                    letterSpacing = (-0.5).sp
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Subtitle: The Campus Companion
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -278,7 +290,7 @@ fun WelcomeScreen(
                             if (isDark) Color(0xFF334155) else Color(0xFFE2E8F0),
                             RoundedCornerShape(20.dp)
                         )
-                        .padding(horizontal = 12.dp, vertical = 3.dp)
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
                 ) {
                     Box(
                         modifier = Modifier
@@ -295,33 +307,22 @@ fun WelcomeScreen(
                     }
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        "Campus Companion",
+                        "The Campus Companion",
                         color = primaryBlue,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
+                        fontSize = 13.sp
                     )
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = "Lectures",
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = textPrimary,
-                    textAlign = TextAlign.Center,
-                    letterSpacing = (-0.5).sp
-                )
-
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = "Offline timetables, vacant study rooms & coursework manager.",
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     color = textSecondary,
                     textAlign = TextAlign.Center,
-                    lineHeight = 16.sp,
-                    modifier = Modifier.padding(horizontal = 12.dp)
+                    lineHeight = 17.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
 

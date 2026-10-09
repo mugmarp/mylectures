@@ -82,6 +82,9 @@
   * Central coordination point for all application data.
   * Abstracts Room DAOs and preference stores.
   * Exposes public methods for saving notes, adding custom events, toggling task completion, and retrieving timetable sessions.
+* **Strict Non-Destructive Migrations (`AppDatabase`)**:
+  * Guarantees 100% preservation of student coursework, notes, and deadlines.
+  * Disallows `fallbackToDestructiveMigration()` so schema evolution strictly requires explicit migration steps (`MIGRATION_2_3` through `MIGRATION_6_7`), preventing accidental table drops in production.
 * **`DataLoader`**:
   * Pre-populates the local database on initial launch from bundled academic assets (`timetable_export.json` / `timetable_entries.json`).
   * Employs MD5 and ETag tracking (`ETagStore`) to avoid redundant parsing.
