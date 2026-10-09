@@ -34,7 +34,7 @@ class ProgrammeLocationDefaultsTest {
 
     @Test
     fun `Science programs default to Town Campus and Science Block`() {
-        val sciencePrograms = listOf("BS", "DLT", "BS I", "BS II", "DLT I")
+        val sciencePrograms = listOf("BS", "DLT", "BS I", "BS II", "DLT I", "BS BIOLOGICAL I", "DLT CHEMISTRY II", "BS PHYSICS III")
         for (prog in sciencePrograms) {
             val def = programmeDefaults(prog)
             assertEquals("Programme $prog must default to Town Campus", Campus.TOWN.displayName, def.campus)

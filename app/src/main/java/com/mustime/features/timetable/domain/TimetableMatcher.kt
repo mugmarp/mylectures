@@ -45,7 +45,6 @@ object TimetableMatcher {
         "BIT I" to 9, "BIT II" to 15, "BIT III" to 12,
         "BSE I" to 9, "BSE II" to 11, "BSE III" to 7, "BSE IV" to 7,
         "BBA I" to 10, "BBA II" to 17, "BBA III" to 4,
-        "BBA TAXATION II" to 17,
         "BSAF I" to 10, "BSAF II" to 13, "BSAF III" to 12,
         "ECO I" to 11, "ECO II" to 10, "ECO III" to 12,
         "BPSM I" to 9, "BPSM II" to 10, "BPSM III" to 11,

@@ -977,12 +977,14 @@ fun programmeDefaults(programme: String?): ProgrammeLocationDefault {
             buildingName = "All Buildings"
         )
     }
+    // Robustly resolve programme code via TimetableMatcher (supporting track labels like "BS BIOLOGICAL I", "DLT CHEMISTRY II")
+    val parsed = com.mustime.features.timetable.domain.TimetableMatcher.parseGroupParts(programme)
     val head = programme.trim().split(Regex("[\\s\\-_]+")).firstOrNull()?.uppercase() ?: ""
     val alias = mapOf(
         "MLC" to "MLS", "BNC" to "BNS", "BSPC" to "BSP", "PEM" to "PEEM",
         "CIV" to "CVE", "BAF" to "BSAF"
     )
-    val code = alias[head] ?: head
+    val code = parsed?.code ?: alias[head] ?: head
 
     return when (code) {
         // FCI: Computing & Informatics -> Kihumuro Campus, FCI Building
