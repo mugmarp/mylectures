@@ -19,7 +19,7 @@ This document details the functional specifications, user interface behaviors, a
   * **Specialised Academic Tracks**: Programmes with curriculum specialisations support dedicated tracks:
     * `BS` (Science Education): Biological, Chemistry/Maths, Physical, Physics, and Mathematics tracks across Years I, II, and III.
     * `DLT` (Science Laboratory Technology): Biology, Chemistry, and Physics tracks for Year II.
-    * `BBA` (Business Administration): Core and Taxation tracks for Year II.
+    * False/spurious sub-tracks (such as `BBA TAXATION II`) are excluded, providing standard Year I, II, and III groups.
   * **Dynamic Zero-Drift Class Counts**: Entry counts in onboarding and profile switching are derived directly from the timetable database (`filterTimetable`) rather than stale hardcoded maps.
   * **Contextual Guidance & Tailored Cohorts**:
     * Clinical medical programmes (`DCM`, `DEM`, `DCAM`) clearly inform students of hospital clinical rotations for unscheduled terms.

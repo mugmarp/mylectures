@@ -90,9 +90,9 @@
 ### D. Programme Group Matching & Specialised Tracks (`com.mustime.features.timetable.domain`)
 * **`TimetableMatcher`**:
   * Implements `entryMatchesGroup(entry, group)` matching both owner `program_group` and attendee `shared_with`.
-  * **Track Subdivisions**: Programmes with academic specialisations (such as Science Laboratory Technology `DLT` with Biology, Chemistry, Physics; Science Education `BS` with Biological, Chem Maths, Physical, Physics, Mathematics; Business Administration `BBA` with Taxation) are modelled with explicit tracks in `FacultyData.kt`.
+  * **Track Subdivisions**: Programmes with genuine academic subject specialisations (such as Science Laboratory Technology `DLT` with Biology, Chemistry, Physics; Science Education `BS` with Biological, Chem Maths, Physical, Physics, Mathematics) are modelled with explicit tracks in `FacultyData.kt`. False tracks (such as `BBA TAXATION II`, which is an exact duplicate of `BBA II` with only 2 non-track shared annotations) are omitted.
   * Selecting a general group (e.g. `DLT II`) seamlessly aggregates all tracks (18 entries), while choosing a specific track (e.g. `DLT BIOLOGY II`) accurately isolates only relevant lectures.
-  * **Dynamic Count Computation**: Real timetable counts are derived dynamically from database entries (`filterTimetable`) rather than stale hardcoded maps, with self-invalidating updates whenever timetable data changes.
+  * **Dynamic Count Computation**: Real timetable counts are derived dynamically from database entries (`filterTimetable`) rather than stale hardcoded maps, with self-invalidating updates whenever timetable data changes. [PRECOMPUTED_GROUP_COUNTS] serves strictly as a temporary startup fallback with documented contract warnings.
   * **Accurate Cohort & 0-Entry Contextual Messaging**:
     * True clinical hospital rotations (`DCM`, `DEM`, `DCAM` Years I & II) explicitly indicate clinical hospital rotations as the reason for absence.
     * Non-existent cohorts are eliminated at the root data level (`FacultyData.kt` supports `customYears`, ensuring `BGWH` strictly offers `BGWH III` as its sole valid class group, preventing false offerings of absent Year I/II groups while accurately delivering its 12 lectures).

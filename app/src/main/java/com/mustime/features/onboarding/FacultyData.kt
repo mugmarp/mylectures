@@ -93,14 +93,7 @@ val FACULTIES = listOf(
         Programme("BSE", "Bachelor of Software Engineering", 4)
     )),
     Faculty("business", "Faculty of Business and Management Sciences", null, "Briefcase", listOf(
-        Programme(
-            "BBA",
-            "Bachelor of Business Administration",
-            3,
-            tracks = mapOf(
-                "II" to listOf("TAXATION")
-            )
-        ),
+        Programme("BBA", "Bachelor of Business Administration", 3),
         Programme("BSAF", "Bachelor of Science in Accounting and Finance", 3),
         Programme("ECO", "Bachelor of Science in Economics", 3),
         Programme("BPSM", "BSc in Procurement & Supply Chain Management", 3)

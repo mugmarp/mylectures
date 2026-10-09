@@ -54,6 +54,14 @@ object TimetableMatcher {
         "BPCD I" to 7, "BPCD II" to 11, "BPCD III" to 4
     )
 
+    /**
+     * Returns the number of distinct deduplicated timetable entries for [group].
+     *
+     * IMPORTANT: [entries] should always be supplied from the live [TimetableRepository]
+     * to avoid silent data drift across academic semester updates.
+     * When [entries] is null or empty (e.g. before initial asset hydration completes),
+     * [PRECOMPUTED_GROUP_COUNTS] serves as a temporary startup fallback.
+     */
     fun getGroupCount(group: String, entries: List<TimetableEntry>? = null): Int {
         if (!entries.isNullOrEmpty()) {
             return filterTimetable(entries, group).size
