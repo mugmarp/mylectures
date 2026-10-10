@@ -19,6 +19,8 @@ class ETagStore(context: Context) {
     private val ONBOARDING_COMPLETED_KEY = "onboarding_completed"
     private val ACADEMIC_YEAR_KEY = "academic_year"
     private val SEMESTER_KEY = "academic_semester"
+    private val TIMETABLE_VERSION_KEY = "timetable_version_label"
+    private val TIMETABLE_VERSION_STATUS_KEY = "timetable_version_status"
 
     private val initialMode = prefs.getString(THEME_MODE_KEY, "LIGHT") ?: "LIGHT"
 
@@ -28,6 +30,24 @@ class ETagStore(context: Context) {
     private val TASK_REMINDER_LEAD_KEY = "task_reminder_lead_hours"
     private val ALARM_VIBRATION_KEY = "alarm_vibration"
     private val ALARM_SOUND_KEY = "alarm_sound"
+
+    private val _timetableVersionPref = MutableStateFlow(prefs.getString(TIMETABLE_VERSION_KEY, "Draft 3 (Week 2 Updates)") ?: "Draft 3 (Week 2 Updates)")
+    val timetableVersionPref: Flow<String> = _timetableVersionPref.asStateFlow()
+
+    private val _timetableStatusPref = MutableStateFlow(prefs.getString(TIMETABLE_VERSION_STATUS_KEY, "Active Draft") ?: "Active Draft")
+    val timetableStatusPref: Flow<String> = _timetableStatusPref.asStateFlow()
+
+    fun getTimetableVersion(): String = prefs.getString(TIMETABLE_VERSION_KEY, "Draft 3 (Week 2 Updates)") ?: "Draft 3 (Week 2 Updates)"
+    fun getTimetableStatus(): String = prefs.getString(TIMETABLE_VERSION_STATUS_KEY, "Active Draft") ?: "Active Draft"
+
+    suspend fun setTimetableVersion(version: String, status: String = "Active Draft") {
+        prefs.edit()
+            .putString(TIMETABLE_VERSION_KEY, version)
+            .putString(TIMETABLE_VERSION_STATUS_KEY, status)
+            .apply()
+        _timetableVersionPref.value = version
+        _timetableStatusPref.value = status
+    }
 
     private val _academicYearPref = MutableStateFlow(prefs.getString(ACADEMIC_YEAR_KEY, "2026/2027") ?: "2026/2027")
     val academicYearPref: Flow<String> = _academicYearPref.asStateFlow()

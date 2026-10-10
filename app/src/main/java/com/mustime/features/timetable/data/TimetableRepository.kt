@@ -216,5 +216,12 @@ class TimetableRepository(
     suspend fun deleteNote(naturalKey: String) {
         dao.deleteNote(naturalKey)
     }
+
+    val timetableVersion: Flow<String> = etagStore.timetableVersionPref
+    val timetableStatus: Flow<String> = etagStore.timetableStatusPref
+
+    suspend fun updateTimetableVersion(version: String, status: String = "Active Draft") {
+        etagStore.setTimetableVersion(version, status)
+    }
 }
 

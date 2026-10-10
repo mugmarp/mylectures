@@ -60,12 +60,15 @@ fun AcademicProfileSheet(
         .collectAsState(initial = repository?.getAcademicYear() ?: "2026/2027")
     val savedSem by (repository?.semesterPref ?: flowOf("Semester 1"))
         .collectAsState(initial = repository?.getSemester() ?: "Semester 1")
+    val currentTimetableVersion by (repository?.timetableVersion ?: flowOf("Draft 3 (Week 2 Updates)"))
+        .collectAsState(initial = "Draft 3 (Week 2 Updates)")
 
     val scope = rememberCoroutineScope()
     var showChangeProgrammeDialog by remember { mutableStateOf(false) }
 
     val effectiveAcademicYear = academicYear.ifBlank { savedYear }
     val effectiveSemester = semester.ifBlank { savedSem }
+    val weekIndicator = remember { com.mustime.core.util.TimeUtil.currentSemesterWeekLabel() }
     val isDark = LocalAppTheme.current.isDark
     val surfaceColor = if (isDark) DarkSurfaceCard else Color.White
     val textColor = if (isDark) Color.White else TextPrimaryLight
@@ -119,7 +122,7 @@ fun AcademicProfileSheet(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Academic Profile",
+                        text = "Academic Info",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = textColor
@@ -190,9 +193,9 @@ fun AcademicProfileSheet(
 
                     ProfileItemRow(icon = Icons.Outlined.LocationOn, label = "Campus", value = "Kihumuro / Main Campus", isDark = isDark)
                     Spacer(modifier = Modifier.height(12.dp))
-                    ProfileItemRow(icon = Icons.Outlined.CalendarMonth, label = "Semester", value = effectiveSemester, isDark = isDark)
+                    ProfileItemRow(icon = Icons.Outlined.CalendarMonth, label = "Semester & Term", value = "$effectiveSemester • $weekIndicator", isDark = isDark)
                     Spacer(modifier = Modifier.height(12.dp))
-                    ProfileItemRow(icon = Icons.Outlined.AccessTime, label = "Timetable Mode", value = "Class Timetable Synced", isDark = isDark)
+                    ProfileItemRow(icon = Icons.Outlined.AccessTime, label = "Timetable Version", value = "$currentTimetableVersion (Synced)", isDark = isDark)
                 }
             }
 

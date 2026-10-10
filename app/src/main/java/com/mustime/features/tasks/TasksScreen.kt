@@ -1080,8 +1080,22 @@ fun AddTaskDialog(
     var title by remember(initialTask) { mutableStateOf(initialCatAndTitle.second) }
     var category by remember(initialTask) { mutableStateOf(initialCatAndTitle.first) }
     var course by remember(initialTask) { mutableStateOf(initialTask?.courseCode ?: "") }
-    var dueDate by remember(initialTask) {
-        mutableStateOf(TaskDateTimeParser.normalizeDueDate(initialTask?.dueDate))
+    var dueTime by remember(initialTask) {
+        val extractedTime = TaskDateTimeParser.extractTime(initialTask?.dueDate)
+        mutableStateOf(extractedTime ?: "17:00")
+    }
+    var dueDateOnly by remember(initialTask) {
+        val raw = initialTask?.dueDate
+        val extractedTime = TaskDateTimeParser.extractTime(raw)
+        val cleanDate = if (extractedTime != null && raw != null) {
+            raw.replace(extractedTime, "").trim()
+        } else {
+            raw ?: ""
+        }
+        mutableStateOf(if (cleanDate.isBlank() || cleanDate == "Soon") "Next Week" else cleanDate)
+    }
+    val fullDueDateTime = remember(dueDateOnly, dueTime) {
+        if (dueTime.isNotBlank()) "$dueDateOnly $dueTime".trim() else dueDateOnly
     }
     var priority by remember(initialTask) { mutableStateOf(initialTask?.priority ?: "Medium") }
     var reminderMinutes by remember(initialTask) { mutableStateOf<Int?>(initialTask?.reminderMinutes ?: 1440) }
@@ -1089,6 +1103,7 @@ fun AddTaskDialog(
 
     var showCoursePicker by remember { mutableStateOf(false) }
     var showDueCalendarPicker by remember { mutableStateOf(false) }
+    var showDueTimePicker by remember { mutableStateOf(false) }
     var titleTouched by remember { mutableStateOf(false) }
     var courseTouched by remember { mutableStateOf(false) }
 
@@ -1096,8 +1111,8 @@ fun AddTaskDialog(
     val textPrimary = if (isDark) Color.White else TextPrimaryLight
     val textSecondary = if (isDark) Color(0xFF94A3B8) else TextMutedLight
 
-    val schedulePreview = remember(dueDate, reminderMinutes) {
-        TaskDateTimeParser.formatSchedulePreview(dueDate, reminderMinutes)
+    val schedulePreview = remember(fullDueDateTime, reminderMinutes) {
+        TaskDateTimeParser.formatSchedulePreview(fullDueDateTime, reminderMinutes)
     }
 
     AlertDialog(
@@ -1225,126 +1240,91 @@ fun AddTaskDialog(
                     }
                 }
 
-                // Target Due Day Selector: Direct Quick Picks (Today, Tomorrow) + Visual Calendar Button
+                // Target Due Date & Time Pickers (Replaces old quick chips)
                 Text(
-                    text = "Due Day *",
+                    text = "Deadline Schedule *",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = textSecondary,
                     modifier = Modifier.padding(top = 2.dp)
                 )
 
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = if (isDark) DarkSurfaceCard else Color(0xFFF8FAFC),
-                    border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else Color(0xFFE2E8F0)),
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Column(
+                    // 1. Date Selector (Calendar)
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isDark) DarkSurfaceCard else Color(0xFFF8FAFC),
+                        border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else Color(0xFFE2E8F0)),
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                            .weight(1.3f)
+                            .clickable { showDueCalendarPicker = true }
                     ) {
-                        // Current Selected Due Date Header with Calendar Action
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable { showDueCalendarPicker = true }
-                                .background(if (isDark) DarkSurfaceBase else Color.White)
-                                .border(1.dp, if (isDark) DarkBorderSubtle else Color(0xFFE2E8F0), RoundedCornerShape(10.dp))
-                                .padding(horizontal = 12.dp, vertical = 9.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Default.CalendarMonth,
-                                    contentDescription = null,
-                                    tint = primaryColor,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column {
-                                    Text(
-                                        text = dueDate.ifBlank { "Tomorrow" },
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isDark) Color.White else Color(0xFF0F172A)
-                                    )
-                                    Text(
-                                        text = "Target day (time discarded)",
-                                        fontSize = 10.sp,
-                                        color = textSecondary
-                                    )
-                                }
-                            }
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .background(primaryColor.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.DateRange,
-                                    contentDescription = "Open Calendar",
-                                    tint = primaryColor,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                Icons.Default.CalendarMonth,
+                                contentDescription = "Pick Due Date",
+                                tint = primaryColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
                                 Text(
-                                    text = "Calendar",
-                                    fontSize = 11.sp,
+                                    text = dueDateOnly.ifBlank { "Select Date" },
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = primaryColor
+                                    color = if (isDark) Color.White else Color(0xFF0F172A),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "Due date",
+                                    fontSize = 10.sp,
+                                    color = textSecondary
                                 )
                             }
                         }
+                    }
 
-                        // Quick Day Selection: strictly "Today" and "Tomorrow"
+                    // 2. Time Selector (Clock Dial)
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isDark) DarkSurfaceCard else Color(0xFFF8FAFC),
+                        border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else Color(0xFFE2E8F0)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { showDueTimePicker = true }
+                    ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            val isToday = dueDate.equals("Today", ignoreCase = true)
-                            val isTomorrow = dueDate.equals("Tomorrow", ignoreCase = true)
-
-                            FilterChip(
-                                selected = isToday,
-                                onClick = { dueDate = "Today" },
-                                label = {
-                                    Text(
-                                        "Today",
-                                        fontSize = 12.sp,
-                                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium
-                                    )
-                                },
-                                leadingIcon = if (isToday) {
-                                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(13.dp)) }
-                                } else null,
-                                shape = RoundedCornerShape(9.dp),
-                                modifier = Modifier.weight(1f)
+                            Icon(
+                                Icons.Default.Schedule,
+                                contentDescription = "Pick Due Time",
+                                tint = primaryColor,
+                                modifier = Modifier.size(18.dp)
                             )
-
-                            FilterChip(
-                                selected = isTomorrow,
-                                onClick = { dueDate = "Tomorrow" },
-                                label = {
-                                    Text(
-                                        "Tomorrow",
-                                        fontSize = 12.sp,
-                                        fontWeight = if (isTomorrow) FontWeight.Bold else FontWeight.Medium
-                                    )
-                                },
-                                leadingIcon = if (isTomorrow) {
-                                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(13.dp)) }
-                                } else null,
-                                shape = RoundedCornerShape(9.dp),
-                                modifier = Modifier.weight(1f)
-                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = dueTime.ifBlank { "17:00" },
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isDark) Color.White else Color(0xFF0F172A),
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = "Due time",
+                                    fontSize = 10.sp,
+                                    color = textSecondary
+                                )
+                            }
                         }
                     }
                 }

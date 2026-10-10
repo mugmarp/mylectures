@@ -27,7 +27,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.os.Build
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import android.Manifest
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -82,8 +88,26 @@ fun TimetableScreen(
     onOpenVacantRooms: () -> Unit = {}
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
     val isDark = LocalAppTheme.current.isDark
     val primaryColor = MaterialTheme.colorScheme.primary
+
+    // Prompt notification permission on app open if on Android 13+ (API 33+)
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { /* Permission handled */ }
+    )
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
 
     // Dynamic current real-time day and calendar
     val todayName = remember { TimeUtil.todayName() }
