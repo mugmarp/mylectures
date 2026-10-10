@@ -1072,15 +1072,15 @@ fun SettingsScreen(
                         }
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Academic Timetable Version", fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Text("Semester 1 · 2026/2027", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Timetable Version & Mode", fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text("${uiState.timetableVersion} · Semester 1", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Box(
                             modifier = Modifier
                                 .background(Color(0xFFDCFCE7), RoundedCornerShape(8.dp))
                                 .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
-                            Text("ACTIVE", color = Color(0xFF15803D), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text(uiState.timetableStatus.uppercase(), color = Color(0xFF15803D), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

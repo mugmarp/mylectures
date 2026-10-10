@@ -31,6 +31,15 @@ object TaskDateTimeParser {
     )
 
     /**
+     * Extracts an explicit time pattern (HH:mm) from a due date string if present.
+     */
+    fun extractTime(dueDateStr: String?): String? {
+        if (dueDateStr.isNullOrBlank()) return null
+        val matcher = TIME_REGEX.matcher(dueDateStr)
+        return if (matcher.find()) matcher.group(0) else null
+    }
+
+    /**
      * Calculates the epoch millisecond when the task is due.
      */
     fun calculateDueMillis(dueDateStr: String): Long? {

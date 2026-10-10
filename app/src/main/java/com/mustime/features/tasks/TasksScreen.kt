@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -298,7 +299,7 @@ fun TasksScreen(
                     ) {
                         Icon(
                             Icons.Default.Person,
-                            contentDescription = "Academic Profile",
+                            contentDescription = "Academic Info",
                             tint = primaryColor,
                             modifier = Modifier.size(20.dp)
                         )
@@ -1444,7 +1445,7 @@ fun AddTaskDialog(
                         onConfirm(
                             title.trim(),
                             course.trim(),
-                            dueDate.ifBlank { "Soon" },
+                            fullDueDateTime.ifBlank { "Soon" },
                             priority,
                             reminderMinutes,
                             notes.trim(),
@@ -1479,13 +1480,25 @@ fun AddTaskDialog(
 
     if (showDueCalendarPicker) {
         DedicatedCalendarDatePickerDialog(
-            initialDate = dueDate,
+            initialDate = dueDateOnly,
             title = "Select Task Due Date",
             onDateSelected = { picked ->
-                dueDate = picked
+                dueDateOnly = picked
                 showDueCalendarPicker = false
             },
             onDismiss = { showDueCalendarPicker = false }
+        )
+    }
+
+    if (showDueTimePicker) {
+        DedicatedTimePickerDialog(
+            initialTime = dueTime.ifBlank { "17:00" },
+            title = "Select Due Time",
+            onTimeSelected = { picked ->
+                dueTime = picked
+                showDueTimePicker = false
+            },
+            onDismiss = { showDueTimePicker = false }
         )
     }
 }

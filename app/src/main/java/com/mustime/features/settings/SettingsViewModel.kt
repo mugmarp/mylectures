@@ -32,6 +32,8 @@ data class SettingsUiState(
     val alarmSound: String = "Chime",
     val selectedAccent: Int = 0,
     val lastSyncTime: String = "Up to date",
+    val timetableVersion: String = "Draft 3 (Week 2 Updates)",
+    val timetableStatus: String = "Active Draft",
     val isSyncing: Boolean = false,
     val isResetting: Boolean = false,
     val successMessage: String? = null,
@@ -129,6 +131,18 @@ class SettingsViewModel(
                 if (!syncTime.isNullOrBlank()) {
                     _uiState.value = _uiState.value.copy(lastSyncTime = syncTime)
                 }
+            }
+        }
+
+        // Collect timetable version & status
+        viewModelScope.launch {
+            repository.timetableVersion.collect { v ->
+                _uiState.value = _uiState.value.copy(timetableVersion = v)
+            }
+        }
+        viewModelScope.launch {
+            repository.timetableStatus.collect { s ->
+                _uiState.value = _uiState.value.copy(timetableStatus = s)
             }
         }
     }

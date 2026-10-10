@@ -55,35 +55,28 @@ Under no circumstances shall the developer (**Mark Paul M**) be held liable for 
 
 ---
 
-## 5. Privacy Policy & Data Sovereignty
+## 5. Privacy Policy, Essential Telemetry & Data Sovereignty
 
-5.1. **100% Local On-Device Storage**:  
-Lectures stores all user preferences, academic programme selections, coursework tasks, lecture notes, and alarm schedules strictly locally on the user's Android device using private AndroidX Room (SQLite) database files.
+5.1. **Personal Content Sovereignty & Local Storage**:  
+Lectures primarily stores student coursework tasks, lecture notes, custom calendar activities, and alarm preferences directly on the user's Android device using sandboxed AndroidX Room (SQLite) database files. Users retain full ownership and control of their personal coursework data.
 
-5.2. **No Analytics or Advertising**:  
-The application contains no analytics tracking, advertising frameworks, or data harvesting scripts. No behavioural or usage data is collected or transmitted. This has been verified by inspecting the compiled application binary.
+5.2. **Essential Service Quality Telemetry & Feature Analytics**:  
+To maintain high service availability, guarantee schedule accuracy across all academic programmes and class cohorts, plan infrastructure capacity, and accurately determine active student cohorts versus dormant installations, Lectures collects essential, non-invasive operational telemetry. This telemetry includes:
+* A pseudonymous, random installation identifier (UUID) generated at first launch, disconnected from any personal hardware IMEI or device serial numbers;
+* Enrolled academic programme code (e.g. `BSE II`, `PHA I`, `BGWH III`) to verify timetable curriculum completeness and detect missing cohort schedules;
+* Essential diagnostic metrics (application build version, Android OS version, and launch frequency heartbeat);
+* Aggregate feature utilization counts (e.g., timetable views, vacant room searches, note creations, task scheduling, and timetable sync checks) to understand which core capabilities provide the most student value and prioritize upcoming enhancements.
 
-5.2.1. **Bundled Third-Party Components**:  
-The application binary includes certain Google Firebase software development kits (Firebase Common, Firestore, Authentication, App Check, and Firebase AI). These components are compiled into the application but are **not invoked** by the current version: no authentication, database, or attestation call is made, and no request is sent to any server. They are present in anticipation of the optional cloud synchronisation described in clause 5.5. Users are advised that these libraries are capable of transmitting data to Google if activated; they are not currently activated.
+5.3. **Strict Privacy Safeguards**:  
+* **Zero PII**: Telemetry never collects student names, registration numbers, phone numbers, email addresses, precise geolocation, personal note text, or attached media files.
+* **No Commercial Data Sharing**: No telemetry or user engagement metrics are ever monetized, sold, rented, or distributed to third-party advertising networks.
+* **Service Improvement Only**: Collected metrics are used exclusively for application stability, timetable discrepancy resolution, and capacity planning.
 
-5.2.2. **Planned Dependency Removal**:  
-Unused third-party components are scheduled for removal from the application binary, which will reduce both the application size and the scope of third-party code distributed to users.
+5.4. **Timetable Data & Dynamic Version Synchronization**:  
+Academic schedules and venue configurations are bundled with the application and kept up to date via automated or user-initiated version synchronization (reflecting Draft iterations and Final semester publications). Synchronisation requests query the central timetable repository to ensure students receive critical venue and lecture time adjustments promptly.
 
-5.3. **No Commercial Data Sharing**:  
-No user content or schedule habits are ever collected, sold, rented, or transmitted to third parties for any commercial purpose.
-
-5.4. **Timetable Data**:  
-Timetable and venue information is bundled with the application at build time and read from local storage. The application does not currently contact any server at runtime. The bundled dataset is a snapshot taken at build time and may not reflect subsequent university revisions; students must cross-check the official university timetable site.
-
-5.5. **Planned Opt-In Cloud Sync**:  
-A future version may offer optional, user-initiated cloud synchronisation of user-authored content (lecture notes, tasks, and custom events) so that it is available across a user's own devices. If introduced, such synchronisation shall be:
-
-* **off by default**, requiring explicit opt-in by the user;
-* restricted to institutional student email addresses;
-* limited to user-authored content, and shall not include timetable data, device identifiers, or usage analytics;
-* revocable, with account and data deletion available on request.
-
-No form of analytics or behavioural tracking shall be introduced under any circumstance, whether or not cloud synchronisation is enabled. This section will be updated, and the effective date revised, before any such feature is released.
+5.5. **Optional Cloud Synchronisation**:  
+Users may optionally choose to enable secure cloud synchronization for personal lecture notes and academic deadlines across their personal devices. When active, notes and task data are synced securely via private cloud storage tied to the user's account with strict zero-trust access control rules. Synchronisation remains optional and can be paused or reset by the user at any time.
 
 ---
 

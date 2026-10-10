@@ -207,7 +207,7 @@ fun CalendarScreen(
                         ) {
                             Icon(
                                 Icons.Default.Person,
-                                contentDescription = "Academic Profile",
+                                contentDescription = "Academic Info",
                                 tint = Color.White,
                                 modifier = Modifier.size(20.dp)
                             )

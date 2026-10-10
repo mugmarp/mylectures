@@ -1,6 +1,11 @@
 package com.mustime.features.notes
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.PickVisualMediaRequest
+import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -102,6 +107,56 @@ fun NoteEditorScreen(
 
     // Editor tab: Write vs Live Preview
     var currentTab by remember { mutableStateOf(NoteEditorTab.WRITE) }
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val name = try {
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (idx != -1) cursor.getString(idx) else null
+                    } else null
+                }
+            } catch (_: Exception) { null }
+            attachmentName = name ?: "Whiteboard_${System.currentTimeMillis() % 10000}.jpg"
+        }
+    }
+
+    val documentPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val name = try {
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (idx != -1) cursor.getString(idx) else null
+                    } else null
+                }
+            } catch (_: Exception) { null }
+            attachmentName = name ?: "Slides_${selectedCourse.ifBlank { "Lecture" }}.pdf"
+        }
+    }
+
+    val audioPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val name = try {
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (idx != -1) cursor.getString(idx) else null
+                    } else null
+                }
+            } catch (_: Exception) { null }
+            attachmentName = name ?: "Audio_Memo_${System.currentTimeMillis() % 10000}.m4a"
+        }
+    }
 
     // Modals
     var showClassPicker by remember { mutableStateOf(false) }
@@ -1286,14 +1341,14 @@ fun NoteEditorScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Record Audio (with recording toggle)
+                // Record Audio / Audio Memo
                 Card(
                     modifier = Modifier
                         .weight(1f)
                         .clickable {
                             if (isRecordingAudio) {
                                 isRecordingAudio = false
-                                attachmentName = "Audio_VoiceMemo_${System.currentTimeMillis() % 1000}.m4a"
+                                attachmentName = "VoiceMemo_${selectedCourse.ifBlank { "Lecture" }}_${recordingDurationSeconds}s.m4a"
                             } else {
                                 isRecordingAudio = true
                             }
@@ -1338,11 +1393,11 @@ fun NoteEditorScreen(
                     }
                 }
 
-                // Lecture Slide PDF
+                // Lecture Slide PDF (via real System Document Picker)
                 Card(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { attachmentName = "Lecture_Slides_${selectedCourse}.pdf" },
+                        .clickable { documentPickerLauncher.launch("application/pdf") },
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
@@ -1370,11 +1425,15 @@ fun NoteEditorScreen(
                     }
                 }
 
-                // Whiteboard Photo
+                // Whiteboard Photo (via zero-permission Android Photo Picker)
                 Card(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { attachmentName = "Whiteboard_${System.currentTimeMillis() % 1000}.jpg" },
+                        .clickable {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        },
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))

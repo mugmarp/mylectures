@@ -246,7 +246,7 @@ fun TimetableTopAppBar(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Outlined.Person,
-                        contentDescription = "Academic Profile",
+                        contentDescription = "Academic Info",
                         tint = iconTint,
                         modifier = Modifier.size(20.dp)
                     )

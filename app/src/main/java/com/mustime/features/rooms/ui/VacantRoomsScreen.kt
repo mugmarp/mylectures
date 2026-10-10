@@ -109,6 +109,10 @@ fun VacantRoomsScreen(
     var searchQuery by remember { mutableStateOf("") }
     var freeOnly by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        app?.analyticsManager?.trackFeature("vacant_rooms_search")
+    }
+
     // Pickers visibility
     var campusDropdownExpanded by remember { mutableStateOf(false) }
     var buildingDropdownExpanded by remember { mutableStateOf(false) }
@@ -726,6 +730,7 @@ fun VacantRoomsScreen(
     if (showFilterSheet) {
         ModalBottomSheet(
             onDismissRequest = { showFilterSheet = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = surfaceColor
         ) {
             Column(

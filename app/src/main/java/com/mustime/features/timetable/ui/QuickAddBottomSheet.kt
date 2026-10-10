@@ -27,8 +27,12 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 import com.mustime.core.alarm.TaskDateTimeParser
 import com.mustime.core.util.TimeUtil
 import com.mustime.features.timetable.domain.ActivityCategory
@@ -92,8 +96,13 @@ fun QuickAddBottomSheet(
     var taskCourseCode by remember {
         mutableStateOf(availableCourses.firstOrNull() ?: "PHA3102")
     }
-    var taskDueDate by remember {
-        mutableStateOf("Tomorrow")
+    var taskDueDateOnly by remember {
+        val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
+        mutableStateOf(SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault()).format(cal.time))
+    }
+    var taskDueTime by remember { mutableStateOf("17:00") }
+    val fullTaskDueDateTime = remember(taskDueDateOnly, taskDueTime) {
+        if (taskDueTime.isNotBlank()) "$taskDueDateOnly $taskDueTime".trim() else taskDueDateOnly
     }
     var taskPriority by remember { mutableStateOf("Medium") }
     var taskReminderMinutes by remember { mutableStateOf<Int?>(1440) }
@@ -106,6 +115,7 @@ fun QuickAddBottomSheet(
     var showEndTimePicker by remember { mutableStateOf(false) }
     var showCoursePicker by remember { mutableStateOf(false) }
     var showDueCalendarPicker by remember { mutableStateOf(false) }
+    var showDueTimePicker by remember { mutableStateOf(false) }
     var tempDueDay by remember { mutableStateOf(initialDayOfWeek) }
 
     val daysOfWeek = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
@@ -750,124 +760,92 @@ fun QuickAddBottomSheet(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                        modifier = Modifier.fillMaxWidth().testTag("task_due_date_button")
+                    // Target Due Date & Time Pickers
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Column(
+                        // 1. Date Selector (Calendar)
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(10.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                .weight(1.3f)
+                                .clickable { showDueCalendarPicker = true }
+                                .testTag("task_due_date_button")
                         ) {
-                            // Current Selected Due Date Header with Calendar Action
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .clickable { showDueCalendarPicker = true }
-                                    .background(MaterialTheme.colorScheme.surface)
-                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
-                                    .padding(horizontal = 12.dp, vertical = 9.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Default.CalendarMonth,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Column {
-                                        Text(
-                                            text = taskDueDate.ifBlank { "Tomorrow" },
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = "Target day (time discarded)",
-                                            fontSize = 10.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.DateRange,
-                                        contentDescription = "Open Calendar",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    Icons.Default.CalendarMonth,
+                                    contentDescription = "Pick Due Date",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
                                     Text(
-                                        text = "Calendar",
-                                        fontSize = 11.sp,
+                                        text = taskDueDateOnly.ifBlank { "Select Date" },
+                                        fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = "Due date",
+                                        fontSize = 10.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
+                        }
 
-                            // Quick Day Selection: strictly "Today" and "Tomorrow"
+                        // 2. Time Selector (Clock Dial)
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { showDueTimePicker = true }
+                                .testTag("task_due_time_button")
+                        ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                val isToday = taskDueDate.equals("Today", ignoreCase = true)
-                                val isTomorrow = taskDueDate.equals("Tomorrow", ignoreCase = true)
-
-                                FilterChip(
-                                    selected = isToday,
-                                    onClick = { taskDueDate = "Today" },
-                                    label = {
-                                        Text(
-                                            "Today",
-                                            fontSize = 12.sp,
-                                            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium
-                                        )
-                                    },
-                                    leadingIcon = if (isToday) {
-                                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) }
-                                    } else null,
-                                    shape = RoundedCornerShape(9.dp),
-                                    modifier = Modifier.weight(1f)
+                                Icon(
+                                    Icons.Default.Schedule,
+                                    contentDescription = "Pick Due Time",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
                                 )
-
-                                FilterChip(
-                                    selected = isTomorrow,
-                                    onClick = { taskDueDate = "Tomorrow" },
-                                    label = {
-                                        Text(
-                                            "Tomorrow",
-                                            fontSize = 12.sp,
-                                            fontWeight = if (isTomorrow) FontWeight.Bold else FontWeight.Medium
-                                        )
-                                    },
-                                    leadingIcon = if (isTomorrow) {
-                                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) }
-                                    } else null,
-                                    shape = RoundedCornerShape(9.dp),
-                                    modifier = Modifier.weight(1f)
-                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = taskDueTime.ifBlank { "17:00" },
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1
+                                    )
+                                    Text(
+                                        text = "Due time",
+                                        fontSize = 10.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
 
                     // Schedule Preview
-                    val schedulePreview = remember(taskDueDate, taskReminderMinutes) {
-                        TaskDateTimeParser.formatSchedulePreview(taskDueDate, taskReminderMinutes)
+                    val schedulePreview = remember(fullTaskDueDateTime, taskReminderMinutes) {
+                        TaskDateTimeParser.formatSchedulePreview(fullTaskDueDateTime, taskReminderMinutes)
                     }
                     if (schedulePreview.isNotBlank()) {
                         Row(
@@ -1048,7 +1026,7 @@ fun QuickAddBottomSheet(
                                 onSaveTask(
                                     fullTitle,
                                     effectiveCourse.trim(),
-                                    taskDueDate.trim(),
+                                    fullTaskDueDateTime.trim(),
                                     taskPriority,
                                     taskReminderMinutes,
                                     taskNotes.trim()
@@ -1112,13 +1090,25 @@ fun QuickAddBottomSheet(
 
     if (showDueCalendarPicker) {
         DedicatedCalendarDatePickerDialog(
-            initialDate = taskDueDate,
+            initialDate = taskDueDateOnly,
             title = "Select Task Due Date",
             onDateSelected = { picked ->
-                taskDueDate = picked
+                taskDueDateOnly = picked
                 showDueCalendarPicker = false
             },
             onDismiss = { showDueCalendarPicker = false }
+        )
+    }
+
+    if (showDueTimePicker) {
+        DedicatedTimePickerDialog(
+            initialTime = taskDueTime.ifBlank { "17:00" },
+            title = "Select Task Due Time",
+            onTimeSelected = { picked ->
+                taskDueTime = picked
+                showDueTimePicker = false
+            },
+            onDismiss = { showDueTimePicker = false }
         )
     }
 }

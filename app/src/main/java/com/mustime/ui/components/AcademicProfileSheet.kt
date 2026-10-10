@@ -62,6 +62,8 @@ fun AcademicProfileSheet(
         .collectAsState(initial = repository?.getSemester() ?: "Semester 1")
     val currentTimetableVersion by (repository?.timetableVersion ?: flowOf("Draft 3 (Week 2 Updates)"))
         .collectAsState(initial = "Draft 3 (Week 2 Updates)")
+    val currentTimetableStatus by (repository?.timetableStatus ?: flowOf("Active Draft"))
+        .collectAsState(initial = "Active Draft")
 
     val scope = rememberCoroutineScope()
     var showChangeProgrammeDialog by remember { mutableStateOf(false) }
@@ -195,7 +197,7 @@ fun AcademicProfileSheet(
                     Spacer(modifier = Modifier.height(12.dp))
                     ProfileItemRow(icon = Icons.Outlined.CalendarMonth, label = "Semester & Term", value = "$effectiveSemester • $weekIndicator", isDark = isDark)
                     Spacer(modifier = Modifier.height(12.dp))
-                    ProfileItemRow(icon = Icons.Outlined.AccessTime, label = "Timetable Version", value = "$currentTimetableVersion (Synced)", isDark = isDark)
+                    ProfileItemRow(icon = Icons.Outlined.AccessTime, label = "Timetable Version", value = "$currentTimetableVersion · Synced ($currentTimetableStatus)", isDark = isDark)
                 }
             }
 

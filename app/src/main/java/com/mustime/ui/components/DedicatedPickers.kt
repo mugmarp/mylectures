@@ -197,20 +197,14 @@ fun DedicatedCalendarDatePickerDialog(
         selectedDayOfMonth == tomorrowCal.get(Calendar.DAY_OF_MONTH)
     }
 
-    // Format display string
-    val currentDisplayString = remember(selectedYear, selectedMonth, selectedDayOfMonth, isSelectedToday, isSelectedTomorrow) {
-        when {
-            isSelectedToday -> "Today"
-            isSelectedTomorrow -> "Tomorrow"
-            else -> {
-                val c = Calendar.getInstance().apply {
-                    set(Calendar.YEAR, selectedYear)
-                    set(Calendar.MONTH, selectedMonth)
-                    set(Calendar.DAY_OF_MONTH, selectedDayOfMonth)
-                }
-                SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault()).format(c.time)
-            }
+    // Format display string as explicit calendar date
+    val currentDisplayString = remember(selectedYear, selectedMonth, selectedDayOfMonth) {
+        val c = Calendar.getInstance().apply {
+            set(Calendar.YEAR, selectedYear)
+            set(Calendar.MONTH, selectedMonth)
+            set(Calendar.DAY_OF_MONTH, selectedDayOfMonth)
         }
+        SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault()).format(c.time)
     }
 
     // Calendar month grid calculations
@@ -274,78 +268,6 @@ fun DedicatedCalendarDatePickerDialog(
                     }
                     IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
                         Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(18.dp))
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Quick Pick Strip: ONLY Today and Tomorrow
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    val isToday = isSelectedToday
-                    Surface(
-                        onClick = {
-                            selectedYear = todayCal.get(Calendar.YEAR)
-                            selectedMonth = todayCal.get(Calendar.MONTH)
-                            selectedDayOfMonth = todayCal.get(Calendar.DAY_OF_MONTH)
-                            viewYear = selectedYear
-                            viewMonth = selectedMonth
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isToday) primaryColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        border = BorderStroke(1.dp, if (isToday) primaryColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(vertical = 9.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (isToday) {
-                                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(15.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                            }
-                            Text(
-                                "Today",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = if (isToday) Color.White else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-
-                    val isTomorrow = isSelectedTomorrow
-                    Surface(
-                        onClick = {
-                            selectedYear = tomorrowCal.get(Calendar.YEAR)
-                            selectedMonth = tomorrowCal.get(Calendar.MONTH)
-                            selectedDayOfMonth = tomorrowCal.get(Calendar.DAY_OF_MONTH)
-                            viewYear = selectedYear
-                            viewMonth = selectedMonth
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isTomorrow) primaryColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        border = BorderStroke(1.dp, if (isTomorrow) primaryColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(vertical = 9.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (isTomorrow) {
-                                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(15.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                            }
-                            Text(
-                                "Tomorrow",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = if (isTomorrow) Color.White else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
                     }
                 }
 
@@ -550,7 +472,7 @@ fun DedicatedCalendarDatePickerDialog(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
                     ) {
-                        Text("Confirm Date ✓", fontWeight = FontWeight.Bold)
+                        Text("Confirm Date", fontWeight = FontWeight.Bold)
                     }
                 }
             }

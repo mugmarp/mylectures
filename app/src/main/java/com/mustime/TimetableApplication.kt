@@ -22,6 +22,7 @@ class TimetableApplication : Application() {
     lateinit var syncRepository: SyncRepository
     lateinit var dataLoader: DataLoader
     lateinit var feedbackManager: com.mustime.features.feedback.FeedbackManager
+    lateinit var analyticsManager: com.mustime.core.analytics.AnalyticsManager
     
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -62,10 +63,13 @@ class TimetableApplication : Application() {
 
         syncRepository = SyncRepository(database)
         feedbackManager = com.mustime.features.feedback.FeedbackManager(this, etagStore)
+        analyticsManager = com.mustime.core.analytics.AnalyticsManager(this)
         
-        // Initial load
+        // Initial load and telemetry heartbeat
         applicationScope.launch {
             dataLoader.loadInitialDataIfNeeded()
+            val prog = etagStore.getSavedProgramme() ?: ""
+            analyticsManager.recordAppLaunch(prog, this)
         }
     }
 }

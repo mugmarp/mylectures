@@ -28,6 +28,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import com.mustime.TimetableApplication
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.os.Build
@@ -98,6 +100,8 @@ fun TimetableScreen(
         onResult = { /* Permission handled */ }
     )
     LaunchedEffect(Unit) {
+        val app = context.applicationContext as? TimetableApplication
+        app?.analyticsManager?.trackFeature("timetable_view")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val granted = ContextCompat.checkSelfPermission(
                 context,
