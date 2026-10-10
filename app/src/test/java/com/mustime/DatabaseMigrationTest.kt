@@ -249,4 +249,51 @@ class DatabaseMigrationTest {
         assertNull(BuildingLevel.fromFloorNumber(null))
         assertNull(BuildingLevel.fromFloorNumber(99))
     }
+
+    @Test
+    fun testMigration7To8CreatesTimetableMetadataTable() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.deleteDatabase("test_migration_7_8.db")
+
+        val config = SupportSQLiteOpenHelper.Configuration.builder(context)
+            .name("test_migration_7_8.db")
+            .callback(object : SupportSQLiteOpenHelper.Callback(7) {
+                override fun onCreate(db: SupportSQLiteDatabase) {
+                    db.execSQL("""
+                        CREATE TABLE IF NOT EXISTS timetable (
+                            natural_key TEXT NOT NULL PRIMARY KEY,
+                            program_group TEXT NOT NULL,
+                            day TEXT NOT NULL,
+                            time_slot TEXT NOT NULL,
+                            start_time TEXT NOT NULL,
+                            end_time TEXT,
+                            course_code TEXT NOT NULL,
+                            course_title TEXT NOT NULL,
+                            session_type TEXT,
+                            lecturer TEXT,
+                            room TEXT,
+                            shared_with TEXT NOT NULL,
+                            floor INTEGER DEFAULT NULL
+                        )
+                    """.trimIndent())
+                }
+
+                override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+            })
+            .build()
+
+        val helper = FrameworkSQLiteOpenHelperFactory().create(config)
+        val db = helper.writableDatabase
+
+        AppDatabase.MIGRATION_7_8.migrate(db)
+
+        val cursor = db.query("SELECT versionLabel, status, isFinal, academicYear FROM timetable_metadata WHERE id = 1")
+        assertTrue(cursor.moveToFirst())
+        assertEquals("Draft 2", cursor.getString(0))
+        assertEquals("Active Draft", cursor.getString(1))
+        assertEquals(0, cursor.getInt(2))
+        assertEquals("2026/2027", cursor.getString(3))
+        cursor.close()
+        db.close()
+    }
 }

@@ -34,6 +34,21 @@ class DataLoader(private val context: Context, private val db: AppDatabase) {
                 }
             }
 
+            // Ensure dynamic timetable metadata exists in DB
+            if (dao.getTimetableMetadataSync() == null) {
+                val meta = loadMetadataFromAssets() ?: com.mustime.features.timetable.domain.TimetableMetadata(
+                    id = 1,
+                    versionLabel = "Draft 2",
+                    status = "Active Draft",
+                    isFinal = false,
+                    academicYear = "2026/2027",
+                    semester = "Semester 1",
+                    releaseNotes = "MUST Semester 1 Timetable Draft 2",
+                    lastUpdated = System.currentTimeMillis()
+                )
+                dao.upsertTimetableMetadata(meta)
+            }
+
             // Seed initial note if none exist
             if (dao.getNotesWithAlarms().isEmpty()) {
                 val sampleNote = LectureNote(
@@ -174,5 +189,27 @@ class DataLoader(private val context: Context, private val db: AppDatabase) {
             e.printStackTrace()
         }
         return list
+    }
+
+    fun loadMetadataFromAssets(): com.mustime.features.timetable.domain.TimetableMetadata? {
+        return try {
+            context.assets.open("timetable_metadata.json").use { inputStream ->
+                val jsonString = inputStream.bufferedReader().use { it.readText() }
+                val obj = org.json.JSONObject(jsonString)
+                com.mustime.features.timetable.domain.TimetableMetadata(
+                    id = 1,
+                    versionLabel = obj.optString("version_label", "Draft 2"),
+                    status = obj.optString("status", "Active Draft"),
+                    isFinal = obj.optBoolean("is_final", false),
+                    academicYear = obj.optString("academic_year", "2026/2027"),
+                    semester = obj.optString("semester", "Semester 1"),
+                    releaseNotes = obj.optString("release_notes", null),
+                    lastUpdated = obj.optLong("last_updated", System.currentTimeMillis()),
+                    source = obj.optString("source", "MUST Academic Registrar")
+                )
+            }
+        } catch (e: Exception) {
+            null
+        }
     }
 }

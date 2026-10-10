@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import com.mustime.features.timetable.domain.TaskCategory
 import java.util.Calendar
 import java.util.Locale
+import kotlinx.coroutines.flow.flowOf
 import com.mustime.features.timetable.domain.Assignment
 import com.mustime.features.timetable.ui.*
 import com.mustime.ui.LocalAppTheme
@@ -131,9 +132,20 @@ fun TasksScreen(
     val primaryColor = MaterialTheme.colorScheme.primary
 
     val savedProgramme by repository.programmePref.collectAsState(initial = repository.getInitialProgramme())
-    val allEntries by repository.getAllEntries().collectAsState(initial = emptyList())
-    val availableCoursePairs = remember(allEntries) {
-        allEntries.map { it.courseCode to it.courseTitle }.distinctBy { it.first }
+    val effectiveProgramme = savedProgramme ?: repository.getInitialProgramme() ?: ""
+    val studentSchedule by remember(effectiveProgramme) {
+        if (effectiveProgramme.isNotBlank()) {
+            repository.getLocalSchedule(effectiveProgramme)
+        } else {
+            flowOf(emptyList())
+        }
+    }.collectAsState(initial = emptyList())
+
+    val availableCoursePairs = remember(studentSchedule) {
+        studentSchedule
+            .filter { it.courseCode.isNotBlank() }
+            .map { it.courseCode to it.courseTitle }
+            .distinctBy { it.first }
     }
     val alarmScheduler = remember(context) { TaskAlarmScheduler(context) }
 
@@ -1201,7 +1213,10 @@ fun AddTaskDialog(
                         courseTouched = true
                     },
                     label = { Text("Course code *") },
-                    placeholder = { Text("e.g. PHA3102") },
+                    placeholder = {
+                        val sampleCode = availableCourses.firstOrNull()?.first ?: "e.g. EEE2101"
+                        Text(if (sampleCode.startsWith("e.g.")) sampleCode else "e.g. $sampleCode")
+                    },
                     isError = courseTouched && course.isBlank(),
                     supportingText = if (courseTouched && course.isBlank()) {
                         { Text("Course code is required", color = MaterialTheme.colorScheme.error, fontSize = 11.sp) }

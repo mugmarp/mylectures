@@ -8,15 +8,17 @@ import com.mustime.features.timetable.domain.Assignment
 import com.mustime.features.timetable.domain.CustomEvent
 import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.domain.TimetableEntry
+import com.mustime.features.timetable.domain.TimetableMetadata
 
 @Database(
     entities = [
         TimetableEntry::class,
         LectureNote::class,
         CustomEvent::class,
-        Assignment::class
+        Assignment::class,
+        TimetableMetadata::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @androidx.room.TypeConverters(Converters::class)
@@ -107,6 +109,31 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE timetable ADD COLUMN floor INTEGER DEFAULT NULL")
+            }
+        }
+
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS timetable_metadata (
+                        id INTEGER PRIMARY KEY NOT NULL,
+                        versionLabel TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        isFinal INTEGER NOT NULL DEFAULT 0,
+                        academicYear TEXT NOT NULL,
+                        semester TEXT NOT NULL,
+                        releaseNotes TEXT,
+                        lastUpdated INTEGER NOT NULL,
+                        source TEXT NOT NULL
+                    )
+                """.trimIndent())
+                db.execSQL("""
+                    INSERT OR REPLACE INTO timetable_metadata (
+                        id, versionLabel, status, isFinal, academicYear, semester, releaseNotes, lastUpdated, source
+                    ) VALUES (
+                        1, 'Draft 2', 'Active Draft', 0, '2026/2027', 'Semester 1', 'Semester 1 Timetable Draft 2 with departmental lab allocations', ${System.currentTimeMillis()}, 'MUST Academic Registrar'
+                    )
+                """.trimIndent())
             }
         }
     }

@@ -94,7 +94,7 @@ fun QuickAddBottomSheet(
     var taskTitle by remember { mutableStateOf("") }
     var selectedTaskCategory by remember { mutableStateOf(TaskCategory.ASSIGNMENT) }
     var taskCourseCode by remember {
-        mutableStateOf(availableCourses.firstOrNull() ?: "PHA3102")
+        mutableStateOf(availableCourses.firstOrNull() ?: "")
     }
     var taskDueDateOnly by remember {
         val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }

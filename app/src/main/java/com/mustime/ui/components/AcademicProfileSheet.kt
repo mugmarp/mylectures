@@ -56,21 +56,47 @@ fun AcademicProfileSheet(
     val app = context.applicationContext as? TimetableApplication
     val repository = app?.repository
 
+    val savedProg by (repository?.programmePref ?: flowOf(null))
+        .collectAsState(initial = repository?.getSavedProgramme() ?: repository?.getInitialProgramme())
+    val effectiveProgramme = programme.ifBlank { savedProg ?: repository?.getInitialProgramme() ?: "EEE II" }
+
     val savedYear by (repository?.academicYearPref ?: flowOf("2026/2027"))
         .collectAsState(initial = repository?.getAcademicYear() ?: "2026/2027")
     val savedSem by (repository?.semesterPref ?: flowOf("Semester 1"))
         .collectAsState(initial = repository?.getSemester() ?: "Semester 1")
-    val currentTimetableVersion by (repository?.timetableVersion ?: flowOf("Draft 3 (Week 2 Updates)"))
-        .collectAsState(initial = "Draft 3 (Week 2 Updates)")
+    val currentTimetableVersion by (repository?.timetableVersion ?: flowOf("Draft 2"))
+        .collectAsState(initial = "Draft 2")
     val currentTimetableStatus by (repository?.timetableStatus ?: flowOf("Active Draft"))
         .collectAsState(initial = "Active Draft")
+    val dbMetadata by (repository?.timetableMetadata ?: flowOf(null))
+        .collectAsState(initial = null)
 
     val scope = rememberCoroutineScope()
     var showChangeProgrammeDialog by remember { mutableStateOf(false) }
 
-    val effectiveAcademicYear = academicYear.ifBlank { savedYear }
-    val effectiveSemester = semester.ifBlank { savedSem }
+    val effectiveAcademicYear = academicYear.ifBlank { dbMetadata?.academicYear ?: savedYear }
+    val effectiveSemester = semester.ifBlank { dbMetadata?.semester ?: savedSem }
     val weekIndicator = remember { com.mustime.core.util.TimeUtil.currentSemesterWeekLabel() }
+
+    val versionLabel = dbMetadata?.versionLabel ?: currentTimetableVersion
+    val versionStatus = dbMetadata?.status ?: currentTimetableStatus
+    val isFinal = dbMetadata?.isFinal == true
+    val versionDisplay = if (isFinal) {
+        "$versionLabel · Final Release"
+    } else {
+        "$versionLabel · Synced ($versionStatus)"
+    }
+
+    val campusName = remember(effectiveProgramme) {
+        val progCode = effectiveProgramme.substringBefore(" ").trim().uppercase()
+        when (progCode) {
+            "MBR", "PHA", "BNS", "MLS", "BSP", "PHS", "DCM", "DEM", "DCAM" -> "Town Campus (MUST Hospital)"
+            "EEE", "BME", "PEEM", "CVE", "MIE", "BCS", "BIT", "BSE" -> "Kihumuro Campus"
+            "BS", "DLT" -> "Kihumuro Campus"
+            "BPCD", "BGWH" -> "Town Campus"
+            else -> "Kihumuro Campus"
+        }
+    }
     val isDark = LocalAppTheme.current.isDark
     val surfaceColor = if (isDark) DarkSurfaceCard else Color.White
     val textColor = if (isDark) Color.White else TextPrimaryLight
@@ -182,7 +208,7 @@ fun AcademicProfileSheet(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "${programme.ifBlank { "BSE II" }} $effectiveAcademicYear",
+                            text = "$effectiveProgramme $effectiveAcademicYear",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = textColor
@@ -193,11 +219,11 @@ fun AcademicProfileSheet(
                     HorizontalDivider(color = cardBorder, thickness = 0.8.dp)
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    ProfileItemRow(icon = Icons.Outlined.LocationOn, label = "Campus", value = "Kihumuro / Main Campus", isDark = isDark)
+                    ProfileItemRow(icon = Icons.Outlined.LocationOn, label = "Campus", value = campusName, isDark = isDark)
                     Spacer(modifier = Modifier.height(12.dp))
                     ProfileItemRow(icon = Icons.Outlined.CalendarMonth, label = "Semester & Term", value = "$effectiveSemester • $weekIndicator", isDark = isDark)
                     Spacer(modifier = Modifier.height(12.dp))
-                    ProfileItemRow(icon = Icons.Outlined.AccessTime, label = "Timetable Version", value = "$currentTimetableVersion · Synced ($currentTimetableStatus)", isDark = isDark)
+                    ProfileItemRow(icon = Icons.Outlined.AccessTime, label = "Timetable Version", value = versionDisplay, isDark = isDark)
                 }
             }
 
@@ -312,7 +338,7 @@ fun AcademicProfileSheet(
 
     if (showChangeProgrammeDialog) {
         QuickChangeProgrammeDialog(
-            currentProgramme = programme,
+            currentProgramme = effectiveProgramme,
             isDark = isDark,
             onDismiss = { showChangeProgrammeDialog = false },
             onProgrammeSelected = { newGroup ->

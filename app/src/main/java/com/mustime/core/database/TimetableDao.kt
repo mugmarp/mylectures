@@ -81,5 +81,14 @@ interface TimetableDao {
 
     @Query("DELETE FROM lecture_notes")
     suspend fun deleteAllNotes()
+
+    @Query("SELECT * FROM timetable_metadata WHERE id = 1 LIMIT 1")
+    fun getTimetableMetadata(): Flow<com.mustime.features.timetable.domain.TimetableMetadata?>
+
+    @Query("SELECT * FROM timetable_metadata WHERE id = 1 LIMIT 1")
+    suspend fun getTimetableMetadataSync(): com.mustime.features.timetable.domain.TimetableMetadata?
+
+    @Upsert
+    suspend fun upsertTimetableMetadata(metadata: com.mustime.features.timetable.domain.TimetableMetadata)
 }
 

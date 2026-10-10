@@ -217,10 +217,48 @@ class TimetableRepository(
         dao.deleteNote(naturalKey)
     }
 
-    val timetableVersion: Flow<String> = etagStore.timetableVersionPref
-    val timetableStatus: Flow<String> = etagStore.timetableStatusPref
+    val timetableMetadata: Flow<com.mustime.features.timetable.domain.TimetableMetadata?> = dao.getTimetableMetadata()
 
-    suspend fun updateTimetableVersion(version: String, status: String = "Active Draft") {
+    val timetableVersion: Flow<String> = dao.getTimetableMetadata().map { meta ->
+        meta?.versionLabel ?: etagStore.getTimetableVersion()
+    }
+
+    val timetableStatus: Flow<String> = dao.getTimetableMetadata().map { meta ->
+        meta?.status ?: etagStore.getTimetableStatus()
+    }
+
+    suspend fun getTimetableMetadata(): com.mustime.features.timetable.domain.TimetableMetadata? {
+        return dao.getTimetableMetadataSync()
+    }
+
+    suspend fun updateTimetableMetadata(metadata: com.mustime.features.timetable.domain.TimetableMetadata) {
+        dao.upsertTimetableMetadata(metadata)
+        etagStore.setTimetableVersion(metadata.versionLabel, metadata.status)
+    }
+
+    fun getSavedProgramme(): String? = getInitialProgramme()
+
+    suspend fun updateTimetableVersion(
+        version: String,
+        status: String = "Active Draft",
+        isFinal: Boolean = false,
+        releaseNotes: String? = null
+    ) {
+        val currentMeta = dao.getTimetableMetadataSync()
+        val updated = (currentMeta ?: com.mustime.features.timetable.domain.TimetableMetadata(
+            id = 1,
+            versionLabel = version,
+            status = status,
+            isFinal = isFinal,
+            lastUpdated = System.currentTimeMillis()
+        )).copy(
+            versionLabel = version,
+            status = status,
+            isFinal = isFinal,
+            releaseNotes = releaseNotes ?: currentMeta?.releaseNotes,
+            lastUpdated = System.currentTimeMillis()
+        )
+        dao.upsertTimetableMetadata(updated)
         etagStore.setTimetableVersion(version, status)
     }
 }

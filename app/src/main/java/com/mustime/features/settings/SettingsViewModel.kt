@@ -324,6 +324,10 @@ class SettingsViewModel(
                             repository.dao.deleteAllEntries()
                             repository.dao.upsertEntries(entries)
                         }
+                        val meta = dataLoader.loadMetadataFromAssets()
+                        if (meta != null) {
+                            repository.updateTimetableMetadata(meta.copy(lastUpdated = System.currentTimeMillis()))
+                        }
                     }
                 }
                 val format = SimpleDateFormat("h:mm a, MMM d", Locale.getDefault())
