@@ -18,3 +18,5 @@ local.properties
 debug.keystore
 /google-services.json
 app/google-services.json
+__pycache__/
+*.pyc
