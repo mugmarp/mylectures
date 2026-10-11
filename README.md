@@ -85,17 +85,12 @@ Circular clock dial for times, unified day+time picker for tasks, and `+1 hr` / 
 
 ## Screenshots
 
-![Welcome](docs/screenshots/Lectures_welcome_screen.png)
-*Welcome & feature overview*
-
-![Timetable](docs/screenshots/BSE_II_timetable_screen.png)
-*BSE II live timetable with "Happening Now" tracker*
-
-![Tasks](docs/screenshots/tasks_screen.png)
-*Week progress, daily breakdown & priority filters*
-
-![Vacant Rooms](docs/screenshots/room_finder_at_kihumuro.png)
-*Vacant Room Finder — Kihumuro campus, FCI Building*
+| Onboarding | Timetable & Profile |
+|---|---|
+| [![Welcome](https://raw.githubusercontent.com/mugmarp/mylectures/main/docs/screenshots/Lectures_welcome_screen.png)](docs/screenshots/Lectures_welcome_screen.png) | [![Timetable](https://raw.githubusercontent.com/mugmarp/mylectures/main/docs/screenshots/BSE_II_timetable%20screen.png)](docs/screenshots/BSE_II_timetable%20screen.png) |
+| *Welcome & feature overview* | *BSE II live timetable with "Happening Now" tracker* |
+| [![Tasks](https://raw.githubusercontent.com/mugmarp/mylectures/main/docs/screenshots/tasks_screen.png)](docs/screenshots/tasks_screen.png) | [![Vacant Rooms](https://raw.githubusercontent.com/mugmarp/mylectures/main/docs/screenshots/room_finder_at_kihumuro.png)](docs/screenshots/room_finder_at_kihumuro.png) |
+| *Week progress, daily breakdown & priority filters* | *Vacant Room Finder — Kihumuro campus, FCI Building* |
 
 **[View all 10 screenshots →](docs/SCREENSHOTS.md)**
 
@@ -103,9 +98,17 @@ Circular clock dial for times, unified day+time picker for tasks, and `+1 hr` / 
 
 ## Privacy
 
-**No accounts. No analytics. No tracking. Fully usable without a connection.**
+**Local-first. No accounts. Pseudonymous diagnostics only.**
 
-Everything — timetable, notes, tasks, alarms, preferences — is stored in a private SQLite database on your device. Nothing is collected, transmitted, or sold.
+Everything that matters — timetable, notes, tasks, alarms, preferences — is stored in a private SQLite database on your device and works with no connection.
+
+The only data that leaves the device is **pseudonymous technical diagnostics**: an anonymous installation UUID, device model, Android version, launch count, and enrolled programme. This helps maintain timetable reliability across MUST cohorts. No names, emails, phone numbers, or note contents are ever collected, transmitted, or sold.
+
+### What is NOT collected
+- No Firebase Analytics, Google Analytics, AdMob, Crashlytics, Facebook, Sentry, Amplitude, Mixpanel, AppsFlyer, Adjust, Bugsnag, or New Relic — all absent from the APK
+- No behavioural tracking of feature usage or screen views
+- No advertising or data harvesting
+- No personal identity of any kind
 
 ### Network behaviour, precisely
 
