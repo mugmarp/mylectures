@@ -134,6 +134,19 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+      # The prepackaged asset must match Room's exported schema exactly
+      # (column types, nullability, PKs, identity hash, user_version).
+      # Checking here catches drift between the committed asset and the current
+      # entities before it can reach a device.
+      - name: Verify prepackaged DB asset against exported schema
+        if: always()
+        run: |
+          if [ ! -f app/src/main/assets/mustime_prepopulated.db ]; then
+            echo "::error::mustime_prepopulated.db is missing; createFromAsset will fail"
+            exit 1
+          fi
+          python3 tools/generate_prepopulated_db.py --schemas app/schemas --check
+
       # Room's exported schema JSON carries the identity hash and the exact
       # createSql for every table. This is the source of truth for building a
       # prepackaged database asset (createFromAsset) without hand-written SQL.

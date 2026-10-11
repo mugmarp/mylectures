@@ -45,6 +45,11 @@ class TimetableApplication : Application() {
             AppDatabase::class.java,
             "mustime_db"
         )
+        // First install: copy the prepackaged asset (1304 rows already present)
+        // instead of parsing JSON and inserting 1304 rows on the device.
+        // Only used when mustime_db does not yet exist; existing installs go
+        // through the migrations below as before.
+        .createFromAsset(AppDatabase.PREPOPULATED_DB_NAME)
         .addMigrations(
             AppDatabase.MIGRATION_2_3,
             AppDatabase.MIGRATION_3_4,
