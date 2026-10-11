@@ -94,14 +94,119 @@ jobs:
           fi
           ls -la app/google-services.json
 
+      # Materialize the stable upload keystore so signingConfigs.release uses a
+      # long-lived key instead of falling back to the throwaway debug keystore
+      # (which keytool regenerates every run, giving a different SHA-1 each time
+      # and making Google Cloud API-key restrictions impossible to pin down).
+      #
+      # One `env:` block only — a duplicated `env:` key in the same step is
+      # silently dropped by the YAML parser and would leave the other variable
+      # unset.
+      - name: Materialize upload keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${KEYSTORE_BASE64:-}" ]; then
+            echo "::error::KEYSTORE_BASE64 secret is empty or unset."
+            echo "Add it with:  base64 -w0 my-upload-key.jks | gh secret set KEYSTORE_BASE64"
+            exit 1
+          fi
+
+          echo "$KEYSTORE_BASE64" | base64 -d > "$GITHUB_WORKSPACE/my-upload-key.jks"
+
+          # A truncated/decoded-empty file would fail much later with a
+          # confusing signing error, so check it is a real keystore now.
+          if [ ! -s "$GITHUB_WORKSPACE/my-upload-key.jks" ]; then
+            echo "::error::Decoded keystore is empty — is KEYSTORE_BASE64 valid base64?"
+            exit 1
+          fi
+          ls -la "$GITHUB_WORKSPACE/my-upload-key.jks"
+
+          # Fail here rather than at assembleRelease if the alias or password is wrong.
+          keytool -list -keystore "$GITHUB_WORKSPACE/my-upload-key.jks" \
+            -alias upload -storepass "$STORE_PASSWORD" > /dev/null
+
+          # Print the fingerprint. This must be identical on every run — that is
+          # the value to register in Google Cloud Console for the API key's
+          # Android application restriction.
+          echo "=== Upload key fingerprint (stable across runs) ==="
+          keytool -list -v -keystore "$GITHUB_WORKSPACE/my-upload-key.jks" \
+            -alias upload -storepass "$STORE_PASSWORD" \
+            | grep -E "Alias name:|SHA1:|SHA256:" || true
+
       - name: Compile Kotlin (debug)
         run: ./gradlew compileDebugKotlin --stacktrace --no-daemon
 
       - name: Assemble debug APK
         run: ./gradlew assembleDebug --stacktrace --no-daemon
 
+      # KEYSTORE_PATH must point at the file written above; it equals Gradle's
+      # rootDir ($GITHUB_WORKSPACE). With it set, signingConfigs.release skips
+      # the debug-keystore fallback entirely.
       - name: Assemble release APK
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleRelease --stacktrace --no-daemon
+
+      # Prove the release APK is signed by the stable upload key and not the
+      # throwaway debug key. Compares against the SHA-1 recorded in the SHA1
+      # secret, which is also the value registered with Google Cloud.
+      #
+      # Must use apksigner, NOT `keytool -printcert -jarfile`: AGP signs with
+      # v2/v3 only and the APK has no META-INF/*.RSA v1 signature, so keytool
+      # prints nothing and still exits 0 — a silent pass with an empty hash.
+      - name: Verify release APK signing certificate
+        env:
+          EXPECTED_SHA1: ${{ secrets.SHA1 }}
+        run: |
+          set -euo pipefail
+
+          APK=app/build/outputs/apk/release/app-release.apk
+          if [ ! -f "$APK" ]; then
+            echo "::error::Release APK not found at $APK"
+            exit 1
+          fi
+
+          APKSIGNER=$(find "${ANDROID_SDK_ROOT}/build-tools" -name apksigner -type f 2>/dev/null | sort -V | tail -1)
+          if [ -z "${APKSIGNER:-}" ]; then
+            echo "::error::apksigner not found under ${ANDROID_SDK_ROOT}/build-tools"
+            exit 1
+          fi
+          echo "Using $APKSIGNER"
+
+          # "Signer #1 certificate SHA-1 digest: <hex>"
+          ACTUAL=$("$APKSIGNER" verify --print-certs "$APK" 2>/dev/null \
+            | awk -F': ' '/certificate SHA-1 digest/ {print $2}' \
+            | head -1 | tr -d ':' | tr -d ' ' | tr 'a-f' 'A-F')
+
+          if [ -z "${ACTUAL:-}" ]; then
+            echo "::error::Could not read the signing certificate from the APK."
+            "$APKSIGNER" verify --print-certs "$APK" || true
+            exit 1
+          fi
+          echo "Release APK signing certificate SHA-1: $ACTUAL"
+
+          if [ -z "${EXPECTED_SHA1:-}" ]; then
+            echo "::warning::SHA1 secret is unset; printed the fingerprint but did not compare."
+            exit 0
+          fi
+
+          EXPECTED=$(echo "$EXPECTED_SHA1" | tr -d ':' | tr -d ' ' | tr 'a-f' 'A-F')
+          if [ "$ACTUAL" = "$EXPECTED" ]; then
+            echo "Release APK is signed with the expected upload key."
+          else
+            echo "::error::Release APK signing certificate does not match the SHA1 secret."
+            echo "  expected: $EXPECTED"
+            echo "  actual  : $ACTUAL"
+            echo "A mismatch means signingConfigs.release fell back to debug.keystore,"
+            echo "or the SHA1 secret does not correspond to the KEYSTORE_BASE64 key."
+            exit 1
+          fi
 
       # Unit tests must gate the build. Do NOT add continue-on-error here:
       # it makes the job report green while the step exits 1, which hides real
