@@ -72,10 +72,11 @@ class TimetableApplication : Application() {
         feedbackManager = com.mustime.features.feedback.FeedbackManager(this, etagStore)
         analyticsManager = com.mustime.core.analytics.AnalyticsManager(this)
         
-        // Initial load and telemetry heartbeat
+        // Initial load, sync, and telemetry heartbeat
         applicationScope.launch {
             dataLoader.loadInitialDataIfNeeded()
             syncRepository.startTimetableSync(this)
+            feedbackManager.flushPendingSubmissions()
             val prog = etagStore.getSavedProgramme() ?: ""
             analyticsManager.recordAppLaunch(prog, this)
         }
