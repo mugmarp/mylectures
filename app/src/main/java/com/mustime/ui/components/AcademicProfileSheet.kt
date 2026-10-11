@@ -76,7 +76,7 @@ fun AcademicProfileSheet(
 
     val effectiveAcademicYear = academicYear.ifBlank { dbMetadata?.academicYear ?: savedYear }
     val effectiveSemester = semester.ifBlank { dbMetadata?.semester ?: savedSem }
-    val weekIndicator = remember { com.mustime.core.util.TimeUtil.currentSemesterWeekLabel() }
+    val academicWeek = remember { com.mustime.core.util.TimeUtil.currentAcademicWeek() }
 
     val versionLabel = dbMetadata?.versionLabel ?: currentTimetableVersion
     val versionStatus = dbMetadata?.status ?: currentTimetableStatus

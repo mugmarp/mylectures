@@ -53,6 +53,42 @@ object TimeUtil {
         return "$clampedWeek • Sem $semesterNumber"
     }
 
+    /**
+     * Returns strictly the week identifier (e.g. "Week 7" or "Recess / Exams")
+     * without repeating the semester number.
+     */
+    fun currentAcademicWeek(): String {
+        val now = Calendar.getInstance()
+        val year = now.get(Calendar.YEAR)
+        val month = now.get(Calendar.MONTH)
+
+        val semStart = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            if (month >= Calendar.AUGUST) {
+                set(Calendar.YEAR, year)
+                set(Calendar.MONTH, Calendar.AUGUST)
+                set(Calendar.DAY_OF_MONTH, 24)
+            } else {
+                set(Calendar.YEAR, year)
+                set(Calendar.MONTH, Calendar.JANUARY)
+                set(Calendar.DAY_OF_MONTH, 19)
+            }
+        }
+
+        val diffMillis = now.timeInMillis - semStart.timeInMillis
+        val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
+        val weekNum = (diffDays / 7) + 1
+
+        return when {
+            weekNum in 1..17 -> "Week $weekNum"
+            weekNum > 17 -> "Recess / Exams"
+            else -> "Week 1"
+        }
+    }
+
     fun todayName(): String {
         val calendar = Calendar.getInstance()
         return when (calendar.get(Calendar.DAY_OF_WEEK)) {
