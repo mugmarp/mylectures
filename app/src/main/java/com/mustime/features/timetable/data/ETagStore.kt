@@ -168,6 +168,8 @@ class ETagStore(context: Context) {
         _alarmVibrationPref.value = vibrate
     }
 
+    fun getAlarmSound(): String = prefs.getString(ALARM_SOUND_KEY, "Chime") ?: "Chime"
+
     suspend fun setAlarmSound(sound: String) {
         prefs.edit().putString(ALARM_SOUND_KEY, sound).apply()
         _alarmSoundPref.value = sound

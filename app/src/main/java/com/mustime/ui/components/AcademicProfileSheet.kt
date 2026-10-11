@@ -221,7 +221,7 @@ fun AcademicProfileSheet(
 
                     ProfileItemRow(icon = Icons.Outlined.LocationOn, label = "Campus", value = campusName, isDark = isDark)
                     Spacer(modifier = Modifier.height(12.dp))
-                    ProfileItemRow(icon = Icons.Outlined.CalendarMonth, label = "Semester", value = "$effectiveSemester • $weekIndicator", isDark = isDark)
+                    ProfileItemRow(icon = Icons.Outlined.CalendarMonth, label = "Semester", value = "$effectiveSemester • $academicWeek", isDark = isDark)
                     Spacer(modifier = Modifier.height(12.dp))
                     ProfileItemRow(icon = Icons.Outlined.AccessTime, label = "Timetable Version", value = versionDisplay, isDark = isDark)
                 }
