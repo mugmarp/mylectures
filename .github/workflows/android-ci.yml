@@ -2,7 +2,7 @@ name: Android CI — Lectures
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, test ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -133,6 +133,18 @@ jobs:
           path: app/build/reports/tests/testDebugUnitTest/
           if-no-files-found: ignore
           retention-days: 7
+
+      # Room's exported schema JSON carries the identity hash and the exact
+      # createSql for every table. This is the source of truth for building a
+      # prepackaged database asset (createFromAsset) without hand-written SQL.
+      - name: Upload Room exported schemas
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: room-schemas
+          path: app/schemas/
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Build summary
         if: always()

@@ -72,6 +72,12 @@ android {
   }
 }
 
+// Export Room schemas so migrations and prepackaged-database assets can be
+// validated against Room's own generated schema (identity hash + createSql).
+ksp {
+  arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 // Configure the Secrets Gradle Plugin to use .env and .env.example files
 // to match the convention used in Web projects.
 secrets {

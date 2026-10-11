@@ -113,8 +113,17 @@ data class RoomItem(
     }
 
     private fun normalize(s: String): String =
-        s.lowercase().replace("-", " ").replace(Regex("\\s+"), " ").trim()
+        s.lowercase().replace('-', ' ').replace(WHITESPACE_REGEX, " ").trim()
 }
+
+/**
+ * Hoisted out of [RoomItem.normalize]. That function sits inside an
+ * O(rooms x sessions) loop in [UniversityDirectory.calculateRoomVacancy], and
+ * `Regex(...)` allocates a fresh compiled pattern on every call — up to ~12
+ * per room per session. One shared instance removes thousands of throwaway
+ * allocations per vacancy calculation.
+ */
+private val WHITESPACE_REGEX = Regex("\\s+")
 
 data class RoomVacancyStatus(
     val room: RoomItem,
