@@ -270,13 +270,13 @@ fun SettingsScreen(
                     )
 
                     Text(
-                        text = "5. Data Privacy & Offline Use",
+                        text = "5. Data Privacy & Local-First Storage",
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "All notes, checklists, and academic timetable preferences are processed and stored locally on your device without external telemetry.",
+                        text = "All student coursework, personal lecture notes, revision tasks, and schedule preferences are stored locally on your device in secure SQLite database tables.",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -307,25 +307,25 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "1. Zero Telemetry & Local Storage",
+                        text = "1. Local-First Student Data Storage",
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Lectures prioritizes your privacy. Your timetable selections, notes, tasks, alarms, and personal activities are stored 100% locally on your device in secure SQLite Room database tables.",
+                        text = "Lectures is designed local-first. Your timetable schedules, lecture notes, tasks, alarms, and personal checklists are stored securely on your device in SQLite database tables.",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Text(
-                        text = "2. No Data Collection or Tracking",
+                        text = "2. Pseudonymous Service Diagnostics",
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "We do not collect, monetize, sell, or transmit your personal data, schedule habits, or notes to any external ad networks or third parties.",
+                        text = "To ensure timetable schedule reliability, monitor cohort coverage, and diagnose device compatibility across MUST campuses, the app transmits pseudonymous technical telemetry (an anonymous installation UUID, device model, Android OS version, launch count, and enrolled academic programme) to our secure database. We do not collect, monetize, or sell names, email addresses, phone numbers, or lecture notes.",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

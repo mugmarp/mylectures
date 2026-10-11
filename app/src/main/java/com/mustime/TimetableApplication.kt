@@ -59,21 +59,23 @@ class TimetableApplication : Application() {
         onboardingDataStore = OnboardingDataStore(this)
         dataLoader = DataLoader(this, database)
         
+        syncRepository = SyncRepository(database)
         repository = TimetableRepository(
             dao = database.timetableDao(),
             eventDao = database.customEventDao(),
             assignmentDao = database.assignmentDao(),
             etagStore = etagStore,
-            onboardingDataStore = onboardingDataStore
+            onboardingDataStore = onboardingDataStore,
+            syncRepository = syncRepository
         )
 
-        syncRepository = SyncRepository(database)
         feedbackManager = com.mustime.features.feedback.FeedbackManager(this, etagStore)
         analyticsManager = com.mustime.core.analytics.AnalyticsManager(this)
         
         // Initial load and telemetry heartbeat
         applicationScope.launch {
             dataLoader.loadInitialDataIfNeeded()
+            syncRepository.startTimetableSync(this)
             val prog = etagStore.getSavedProgramme() ?: ""
             analyticsManager.recordAppLaunch(prog, this)
         }

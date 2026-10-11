@@ -20,7 +20,8 @@ class TimetableRepository(
     private val eventDao: CustomEventDao,
     private val assignmentDao: AssignmentDao,
     private val etagStore: ETagStore,
-    val onboardingDataStore: OnboardingDataStore? = null
+    val onboardingDataStore: OnboardingDataStore? = null,
+    val syncRepository: com.mustime.core.sync.SyncRepository? = null
 ) {
     fun getLocalSchedule(programme: String): Flow<List<TimetableEntry>> {
         val clean = programme.trim()

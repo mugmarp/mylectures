@@ -23,10 +23,12 @@ class SyncRepository(
 ) {
     private val listeners = mutableListOf<ListenerRegistration>()
 
-    fun startAllSync(userId: String, scope: CoroutineScope) {
+    /**
+     * Starts observation of the central university timetable and version metadata.
+     * Operates for all students without requiring personal account sign-in.
+     */
+    fun startTimetableSync(scope: CoroutineScope) {
         val store = firestore ?: return
-        stopAllSync()
-        val userDoc = store.collection("users").document(userId)
 
         // 1. Sync global Timetable collection (Read-Only)
         listeners.add(
@@ -37,6 +39,7 @@ class SyncRepository(
                     val toRemove = mutableListOf<String>()
 
                     changes.forEach { change ->
+                        if (change.document.id == "metadata") return@forEach
                         val entry = change.document.toTimetableEntry() ?: return@forEach
                         when (change.type) {
                             DocumentChange.Type.ADDED,
@@ -84,6 +87,45 @@ class SyncRepository(
                     }
                 }
         )
+    }
+
+    /**
+     * Actively fetches the latest timetable release metadata from Firestore on demand.
+     */
+    suspend fun fetchRemoteTimetableMetadata(): com.mustime.features.timetable.domain.TimetableMetadata? {
+        val store = firestore ?: return null
+        return try {
+            val doc = store.collection("timetable").document("metadata").get().await()
+            if (doc != null && doc.exists()) {
+                val versionLabel = doc.getString("version_label") ?: doc.getString("version") ?: "Final Timetable"
+                val isFinal = doc.getBoolean("is_final") ?: (doc.getString("status")?.equals("FINAL", ignoreCase = true) == true)
+                val acadYear = doc.getString("academic_year") ?: "2026/2027"
+                val semester = doc.getString("semester") ?: "Semester 1"
+                val releaseNotes = doc.getString("release_notes")
+                val totalSessions = doc.getLong("total_sessions")?.toInt() ?: 1304
+
+                val meta = com.mustime.features.timetable.domain.TimetableVersionResolver.resolve(
+                    rawVersion = versionLabel,
+                    isExplicitFinal = isFinal,
+                    academicYear = acadYear,
+                    semester = semester,
+                    releaseNotes = releaseNotes,
+                    totalEntries = totalSessions
+                )
+                db.timetableDao().upsertTimetableMetadata(meta)
+                meta
+            } else null
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    fun startAllSync(userId: String, scope: CoroutineScope) {
+        val store = firestore ?: return
+        stopAllSync()
+        startTimetableSync(scope)
+
+        val userDoc = store.collection("users").document(userId)
 
         // 2. Sync user-specific Lecture Notes (Bi-directional)
         listeners.add(

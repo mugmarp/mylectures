@@ -326,8 +326,13 @@ class SettingsViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSyncing = true, errorMessage = null, successMessage = null)
             try {
+                var remoteSynced = false
                 withContext(ioDispatcher) {
-                    if (dataLoader != null) {
+                    val remoteMeta = repository.syncRepository?.fetchRemoteTimetableMetadata()
+                    if (remoteMeta != null) {
+                        repository.updateTimetableMetadata(remoteMeta)
+                        remoteSynced = true
+                    } else if (dataLoader != null) {
                         val entries = dataLoader.loadFromAssets()
                         if (entries.isNotEmpty()) {
                             repository.dao.deleteAllEntries()
@@ -343,10 +348,11 @@ class SettingsViewModel(
                 val timeString = "Synced at ${format.format(Date())}"
                 repository.setLastSyncTime(timeString)
                 val totalEntries = withContext(ioDispatcher) { repository.dao.getEntryCount() }
+                val syncStatus = if (remoteSynced) "Cloud release verified · $totalEntries lectures" else "$totalEntries lectures loaded"
                 _uiState.value = _uiState.value.copy(
                     isSyncing = false,
                     lastSyncTime = timeString,
-                    successMessage = "Timetable successfully synchronized! ($totalEntries lectures loaded)"
+                    successMessage = "Timetable synchronized ($syncStatus)"
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
