@@ -287,6 +287,49 @@ class DatabaseMigrationTest {
 
         AppDatabase.MIGRATION_7_8.migrate(db)
 
+        val cursor = db.query("SELECT versionLabel, status, isFinal, academicYear FROM timetable_metadata WHERE id = 1")
+        assertTrue(cursor.moveToFirst())
+        assertEquals("Final Timetable", cursor.getString(0))
+        assertEquals("Official Final", cursor.getString(1))
+        assertEquals(1, cursor.getInt(2))
+        assertEquals("2026/2027", cursor.getString(3))
+        cursor.close()
+        db.close()
+    }
+
+    @Test
+    fun testMigration8To9AddsDraftNumberAndTotalSessions() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.deleteDatabase("test_migration_8_9.db")
+
+        val config = SupportSQLiteOpenHelper.Configuration.builder(context)
+            .name("test_migration_8_9.db")
+            .callback(object : SupportSQLiteOpenHelper.Callback(8) {
+                override fun onCreate(db: SupportSQLiteDatabase) {
+                    db.execSQL("""
+                        CREATE TABLE IF NOT EXISTS timetable_metadata (
+                            id INTEGER PRIMARY KEY NOT NULL,
+                            versionLabel TEXT NOT NULL,
+                            status TEXT NOT NULL,
+                            isFinal INTEGER NOT NULL DEFAULT 1,
+                            academicYear TEXT NOT NULL,
+                            semester TEXT NOT NULL,
+                            releaseNotes TEXT,
+                            lastUpdated INTEGER NOT NULL,
+                            source TEXT NOT NULL
+                        )
+                    """.trimIndent())
+                }
+
+                override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+            })
+            .build()
+
+        val helper = FrameworkSQLiteOpenHelperFactory().create(config)
+        val db = helper.writableDatabase
+
+        AppDatabase.MIGRATION_8_9.migrate(db)
+
         val cursor = db.query("SELECT versionLabel, status, isFinal, academicYear, draftNumber, totalSessions FROM timetable_metadata WHERE id = 1")
         assertTrue(cursor.moveToFirst())
         assertEquals("Final Timetable", cursor.getString(0))

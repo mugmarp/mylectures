@@ -18,7 +18,7 @@ import com.mustime.features.timetable.domain.TimetableMetadata
         Assignment::class,
         TimetableMetadata::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 @androidx.room.TypeConverters(Converters::class)
@@ -120,6 +120,33 @@ abstract class AppDatabase : RoomDatabase() {
                         versionLabel TEXT NOT NULL,
                         status TEXT NOT NULL,
                         isFinal INTEGER NOT NULL DEFAULT 1,
+                        academicYear TEXT NOT NULL,
+                        semester TEXT NOT NULL,
+                        releaseNotes TEXT,
+                        lastUpdated INTEGER NOT NULL,
+                        source TEXT NOT NULL
+                    )
+                """.trimIndent())
+                db.execSQL("""
+                    INSERT OR REPLACE INTO timetable_metadata (
+                        id, versionLabel, status, isFinal, academicYear, semester, releaseNotes, lastUpdated, source
+                    ) VALUES (
+                        1, 'Final Timetable', 'Official Final', 1, '2026/2027', 'Semester 1', 'Authoritative MUST Teaching Timetable approved by Academic Registrar', ${System.currentTimeMillis()}, 'MUST Academic Registrar'
+                    )
+                """.trimIndent())
+            }
+        }
+
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS timetable_metadata_old")
+                db.execSQL("ALTER TABLE timetable_metadata RENAME TO timetable_metadata_old")
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS timetable_metadata (
+                        id INTEGER PRIMARY KEY NOT NULL,
+                        versionLabel TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        isFinal INTEGER NOT NULL DEFAULT 1,
                         draftNumber INTEGER DEFAULT NULL,
                         academicYear TEXT NOT NULL,
                         semester TEXT NOT NULL,
@@ -136,6 +163,7 @@ abstract class AppDatabase : RoomDatabase() {
                         1, 'Final Timetable', 'Official Final', 1, NULL, '2026/2027', 'Semester 1', 'Authoritative MUST Teaching Timetable approved by Academic Registrar', ${System.currentTimeMillis()}, 'MUST Academic Registrar', 1304
                     )
                 """.trimIndent())
+                db.execSQL("DROP TABLE IF EXISTS timetable_metadata_old")
             }
         }
     }
