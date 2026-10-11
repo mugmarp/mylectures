@@ -58,6 +58,33 @@ class SyncRepository(
                 }
         )
 
+        // 1b. Sync dynamic Timetable Release & Version Metadata (Read-Only)
+        listeners.add(
+            store.collection("timetable").document("metadata")
+                .addSnapshotListener { doc, _ ->
+                    if (doc != null && doc.exists()) {
+                        val versionLabel = doc.getString("version_label") ?: doc.getString("version") ?: "Final Timetable"
+                        val isFinal = doc.getBoolean("is_final") ?: (doc.getString("status")?.equals("FINAL", ignoreCase = true) == true)
+                        val acadYear = doc.getString("academic_year") ?: "2026/2027"
+                        val semester = doc.getString("semester") ?: "Semester 1"
+                        val releaseNotes = doc.getString("release_notes")
+                        val totalSessions = doc.getLong("total_sessions")?.toInt() ?: 1304
+
+                        val meta = com.mustime.features.timetable.domain.TimetableVersionResolver.resolve(
+                            rawVersion = versionLabel,
+                            isExplicitFinal = isFinal,
+                            academicYear = acadYear,
+                            semester = semester,
+                            releaseNotes = releaseNotes,
+                            totalEntries = totalSessions
+                        )
+                        scope.launch(Dispatchers.IO) {
+                            db.timetableDao().upsertTimetableMetadata(meta)
+                        }
+                    }
+                }
+        )
+
         // 2. Sync user-specific Lecture Notes (Bi-directional)
         listeners.add(
             userDoc.collection("notes")

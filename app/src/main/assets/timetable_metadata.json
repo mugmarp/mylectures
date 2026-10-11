@@ -1,10 +1,12 @@
 {
-  "version_label": "Draft 2",
-  "status": "Active Draft",
-  "is_final": false,
+  "version_label": "Final Timetable",
+  "status": "Official Final",
+  "is_final": true,
+  "draft_number": null,
   "academic_year": "2026/2027",
   "semester": "Semester 1",
-  "release_notes": "MUST Semester 1 Timetable Draft 2 (Faculty revisions & lab scheduling)",
-  "source": "MUST Academic Registrar / Timetabling Division",
+  "release_notes": "Authoritative MUST Teaching Timetable approved by Academic Registrar (Semester 1)",
+  "source": "MUST Academic Registrar",
+  "total_sessions": 1304,
   "last_updated": 1728518400000
 }

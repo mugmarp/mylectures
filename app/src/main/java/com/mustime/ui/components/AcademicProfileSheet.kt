@@ -64,10 +64,10 @@ fun AcademicProfileSheet(
         .collectAsState(initial = repository?.getAcademicYear() ?: "2026/2027")
     val savedSem by (repository?.semesterPref ?: flowOf("Semester 1"))
         .collectAsState(initial = repository?.getSemester() ?: "Semester 1")
-    val currentTimetableVersion by (repository?.timetableVersion ?: flowOf("Draft 2"))
-        .collectAsState(initial = "Draft 2")
-    val currentTimetableStatus by (repository?.timetableStatus ?: flowOf("Active Draft"))
-        .collectAsState(initial = "Active Draft")
+    val currentTimetableVersion by (repository?.timetableVersion ?: flowOf("Final Timetable"))
+        .collectAsState(initial = "Final Timetable")
+    val currentTimetableStatus by (repository?.timetableStatus ?: flowOf("Official Final"))
+        .collectAsState(initial = "Official Final")
     val dbMetadata by (repository?.timetableMetadata ?: flowOf(null))
         .collectAsState(initial = null)
 
@@ -80,9 +80,9 @@ fun AcademicProfileSheet(
 
     val versionLabel = dbMetadata?.versionLabel ?: currentTimetableVersion
     val versionStatus = dbMetadata?.status ?: currentTimetableStatus
-    val isFinal = dbMetadata?.isFinal == true
-    val versionDisplay = if (isFinal) {
-        "$versionLabel · Final Release"
+    val isFinal = dbMetadata?.isFinal == true || versionLabel.contains("Final", ignoreCase = true)
+    val versionDisplay = dbMetadata?.displaySummary ?: if (isFinal) {
+        "$versionLabel · Official Release"
     } else {
         "$versionLabel · Synced ($versionStatus)"
     }

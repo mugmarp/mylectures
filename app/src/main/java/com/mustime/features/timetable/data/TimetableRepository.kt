@@ -238,6 +238,9 @@ class TimetableRepository(
 
     fun getSavedProgramme(): String? = getInitialProgramme()
 
+    fun getTimetableVersion(): String = etagStore.getTimetableVersion()
+    fun getTimetableStatus(): String = etagStore.getTimetableStatus()
+
     suspend fun updateTimetableVersion(
         version: String,
         status: String = "Active Draft",

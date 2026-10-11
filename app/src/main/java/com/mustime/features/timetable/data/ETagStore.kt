@@ -31,14 +31,14 @@ class ETagStore(context: Context) {
     private val ALARM_VIBRATION_KEY = "alarm_vibration"
     private val ALARM_SOUND_KEY = "alarm_sound"
 
-    private val _timetableVersionPref = MutableStateFlow(prefs.getString(TIMETABLE_VERSION_KEY, "Draft 3 (Week 2 Updates)") ?: "Draft 3 (Week 2 Updates)")
+    private val _timetableVersionPref = MutableStateFlow(prefs.getString(TIMETABLE_VERSION_KEY, "Final Timetable") ?: "Final Timetable")
     val timetableVersionPref: Flow<String> = _timetableVersionPref.asStateFlow()
 
-    private val _timetableStatusPref = MutableStateFlow(prefs.getString(TIMETABLE_VERSION_STATUS_KEY, "Active Draft") ?: "Active Draft")
+    private val _timetableStatusPref = MutableStateFlow(prefs.getString(TIMETABLE_VERSION_STATUS_KEY, "Official Final") ?: "Official Final")
     val timetableStatusPref: Flow<String> = _timetableStatusPref.asStateFlow()
 
-    fun getTimetableVersion(): String = prefs.getString(TIMETABLE_VERSION_KEY, "Draft 3 (Week 2 Updates)") ?: "Draft 3 (Week 2 Updates)"
-    fun getTimetableStatus(): String = prefs.getString(TIMETABLE_VERSION_STATUS_KEY, "Active Draft") ?: "Active Draft"
+    fun getTimetableVersion(): String = prefs.getString(TIMETABLE_VERSION_KEY, "Final Timetable") ?: "Final Timetable"
+    fun getTimetableStatus(): String = prefs.getString(TIMETABLE_VERSION_STATUS_KEY, "Official Final") ?: "Official Final"
 
     suspend fun setTimetableVersion(version: String, status: String = "Active Draft") {
         prefs.edit()

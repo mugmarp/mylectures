@@ -35,16 +35,12 @@ class DataLoader(private val context: Context, private val db: AppDatabase) {
             }
 
             // Ensure dynamic timetable metadata exists in DB
-            if (dao.getTimetableMetadataSync() == null) {
-                val meta = loadMetadataFromAssets() ?: com.mustime.features.timetable.domain.TimetableMetadata(
-                    id = 1,
-                    versionLabel = "Draft 2",
-                    status = "Active Draft",
-                    isFinal = false,
-                    academicYear = "2026/2027",
-                    semester = "Semester 1",
-                    releaseNotes = "MUST Semester 1 Timetable Draft 2",
-                    lastUpdated = System.currentTimeMillis()
+            val existingMeta = dao.getTimetableMetadataSync()
+            if (existingMeta == null) {
+                val meta = loadMetadataFromAssets() ?: com.mustime.features.timetable.domain.TimetableVersionResolver.resolve(
+                    rawVersion = "Final Timetable",
+                    isExplicitFinal = true,
+                    totalEntries = 1304
                 )
                 dao.upsertTimetableMetadata(meta)
             }
@@ -196,20 +192,28 @@ class DataLoader(private val context: Context, private val db: AppDatabase) {
             context.assets.open("timetable_metadata.json").use { inputStream ->
                 val jsonString = inputStream.bufferedReader().use { it.readText() }
                 val obj = org.json.JSONObject(jsonString)
-                com.mustime.features.timetable.domain.TimetableMetadata(
-                    id = 1,
-                    versionLabel = obj.optString("version_label", "Draft 2"),
-                    status = obj.optString("status", "Active Draft"),
-                    isFinal = obj.optBoolean("is_final", false),
-                    academicYear = obj.optString("academic_year", "2026/2027"),
-                    semester = obj.optString("semester", "Semester 1"),
-                    releaseNotes = obj.optString("release_notes", null),
-                    lastUpdated = obj.optLong("last_updated", System.currentTimeMillis()),
-                    source = obj.optString("source", "MUST Academic Registrar")
+                val rawVersion = obj.optString("version_label", "Final Timetable")
+                val isExplicitFinal = if (obj.has("is_final")) obj.optBoolean("is_final") else null
+                val acadYear = obj.optString("academic_year", "2026/2027")
+                val semester = obj.optString("semester", "Semester 1")
+                val releaseNotes = obj.optString("release_notes", null)
+                val totalSessions = obj.optInt("total_sessions", 1304)
+
+                com.mustime.features.timetable.domain.TimetableVersionResolver.resolve(
+                    rawVersion = rawVersion,
+                    isExplicitFinal = isExplicitFinal,
+                    academicYear = acadYear,
+                    semester = semester,
+                    releaseNotes = releaseNotes,
+                    totalEntries = totalSessions
                 )
             }
         } catch (e: Exception) {
-            null
+            com.mustime.features.timetable.domain.TimetableVersionResolver.resolve(
+                rawVersion = "Final Timetable",
+                isExplicitFinal = true,
+                totalEntries = 1304
+            )
         }
     }
 }

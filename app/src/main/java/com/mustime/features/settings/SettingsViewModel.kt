@@ -32,8 +32,10 @@ data class SettingsUiState(
     val alarmSound: String = "Chime",
     val selectedAccent: Int = 0,
     val lastSyncTime: String = "Up to date",
-    val timetableVersion: String = "Draft 3 (Week 2 Updates)",
-    val timetableStatus: String = "Active Draft",
+    val timetableVersion: String = "Final Timetable",
+    val timetableStatus: String = "Official Final",
+    val isFinal: Boolean = true,
+    val metadata: com.mustime.features.timetable.domain.TimetableMetadata? = null,
     val isSyncing: Boolean = false,
     val isResetting: Boolean = false,
     val successMessage: String? = null,
@@ -136,13 +138,20 @@ class SettingsViewModel(
 
         // Collect timetable version & status
         viewModelScope.launch {
-            repository.timetableVersion.collect { v ->
-                _uiState.value = _uiState.value.copy(timetableVersion = v)
-            }
-        }
-        viewModelScope.launch {
-            repository.timetableStatus.collect { s ->
-                _uiState.value = _uiState.value.copy(timetableStatus = s)
+            repository.timetableMetadata.collect { meta ->
+                if (meta != null) {
+                    _uiState.value = _uiState.value.copy(
+                        timetableVersion = meta.versionLabel,
+                        timetableStatus = meta.status,
+                        isFinal = meta.isFinal,
+                        metadata = meta
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        timetableVersion = repository.getTimetableVersion(),
+                        timetableStatus = repository.getTimetableStatus()
+                    )
+                }
             }
         }
     }

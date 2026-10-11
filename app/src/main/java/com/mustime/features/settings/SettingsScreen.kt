@@ -80,6 +80,7 @@ fun SettingsScreen(
     var showFeedbackModal by remember { mutableStateOf(false) }
     var showCustomLeadDialog by remember { mutableStateOf(false) }
     var customLeadInput by remember { mutableStateOf("") }
+    var showVersionDetailsDialog by remember { mutableStateOf(false) }
 
     // Custom Alarm Lead Time Dialog
     if (showCustomLeadDialog) {
@@ -460,6 +461,109 @@ fun SettingsScreen(
         com.mustime.features.feedback.AnonymousFeedbackSheet(
             feedbackManager = feedbackMgr,
             onDismiss = { showFeedbackModal = false }
+        )
+    }
+
+    if (showVersionDetailsDialog) {
+        val meta = uiState.metadata
+        val isFinal = uiState.isFinal || uiState.timetableVersion.contains("Final", ignoreCase = true)
+        val stageLabel = if (isFinal) "Official Final Release" else "Active Draft ${meta?.draftNumber ?: ""}".trim()
+        val badgeBg = if (isFinal) Color(0xFFDCFCE7) else Color(0xFFFEF3C7)
+        val badgeColor = if (isFinal) Color(0xFF15803D) else Color(0xFFB45309)
+
+        AlertDialog(
+            onDismissRequest = { showVersionDetailsDialog = false },
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(badgeBg, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Verified,
+                        contentDescription = null,
+                        tint = badgeColor,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+            },
+            title = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        uiState.timetableVersion,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .background(badgeBg, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = stageLabel.uppercase(),
+                            color = badgeColor,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = meta?.releaseNotes ?: if (isFinal) {
+                            "Authoritative teaching schedule approved and ratified by MUST Academic Registrar."
+                        } else {
+                            "Draft schedule subject to departmental lecture and lab reviews."
+                        },
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Academic Session", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${meta?.academicYear ?: "2026/2027"} · ${meta?.semester ?: "Semester 1"}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Issuing Authority", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(meta?.source ?: "MUST Academic Registrar", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Scheduled Sessions", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${meta?.totalSessions ?: 1304} Sessions · 90 Rooms", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Draft Lifecycle", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(if (isFinal) "Final Ratified" else "Dynamic Review", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showVersionDetailsDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Close")
+                }
+            }
         )
     }
 
@@ -1061,26 +1165,38 @@ fun SettingsScreen(
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 14.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    val isFinalRelease = uiState.isFinal || uiState.timetableVersion.contains("Final", ignoreCase = true)
+                    val badgeText = uiState.metadata?.displayBadge ?: if (isFinalRelease) "FINAL" else uiState.timetableStatus.uppercase()
+                    val badgeBg = if (isFinalRelease) Color(0xFFDCFCE7) else Color(0xFFFEF3C7)
+                    val badgeColor = if (isFinalRelease) Color(0xFF15803D) else Color(0xFFB45309)
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { showVersionDetailsDialog = true }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
-                                .background(Color(0xFFDCFCE7), CircleShape),
+                                .background(badgeBg, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Verified, contentDescription = null, tint = Color(0xFF15803D), modifier = Modifier.size(22.dp))
+                            Icon(Icons.Default.Verified, contentDescription = null, tint = badgeColor, modifier = Modifier.size(22.dp))
                         }
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Timetable Version & Mode", fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Text("${uiState.timetableVersion} · Semester 1", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("${uiState.timetableVersion} · ${uiState.metadata?.semester ?: "Semester 1"}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Box(
                             modifier = Modifier
-                                .background(Color(0xFFDCFCE7), RoundedCornerShape(8.dp))
+                                .background(badgeBg, RoundedCornerShape(8.dp))
                                 .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
-                            Text(uiState.timetableStatus.uppercase(), color = Color(0xFF15803D), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text(badgeText, color = badgeColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

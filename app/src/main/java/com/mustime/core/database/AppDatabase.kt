@@ -119,19 +119,21 @@ abstract class AppDatabase : RoomDatabase() {
                         id INTEGER PRIMARY KEY NOT NULL,
                         versionLabel TEXT NOT NULL,
                         status TEXT NOT NULL,
-                        isFinal INTEGER NOT NULL DEFAULT 0,
+                        isFinal INTEGER NOT NULL DEFAULT 1,
+                        draftNumber INTEGER DEFAULT NULL,
                         academicYear TEXT NOT NULL,
                         semester TEXT NOT NULL,
                         releaseNotes TEXT,
                         lastUpdated INTEGER NOT NULL,
-                        source TEXT NOT NULL
+                        source TEXT NOT NULL,
+                        totalSessions INTEGER NOT NULL DEFAULT 1304
                     )
                 """.trimIndent())
                 db.execSQL("""
                     INSERT OR REPLACE INTO timetable_metadata (
-                        id, versionLabel, status, isFinal, academicYear, semester, releaseNotes, lastUpdated, source
+                        id, versionLabel, status, isFinal, draftNumber, academicYear, semester, releaseNotes, lastUpdated, source, totalSessions
                     ) VALUES (
-                        1, 'Draft 2', 'Active Draft', 0, '2026/2027', 'Semester 1', 'Semester 1 Timetable Draft 2 with departmental lab allocations', ${System.currentTimeMillis()}, 'MUST Academic Registrar'
+                        1, 'Final Timetable', 'Official Final', 1, NULL, '2026/2027', 'Semester 1', 'Authoritative MUST Teaching Timetable approved by Academic Registrar', ${System.currentTimeMillis()}, 'MUST Academic Registrar', 1304
                     )
                 """.trimIndent())
             }

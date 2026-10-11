@@ -287,12 +287,14 @@ class DatabaseMigrationTest {
 
         AppDatabase.MIGRATION_7_8.migrate(db)
 
-        val cursor = db.query("SELECT versionLabel, status, isFinal, academicYear FROM timetable_metadata WHERE id = 1")
+        val cursor = db.query("SELECT versionLabel, status, isFinal, academicYear, draftNumber, totalSessions FROM timetable_metadata WHERE id = 1")
         assertTrue(cursor.moveToFirst())
-        assertEquals("Draft 2", cursor.getString(0))
-        assertEquals("Active Draft", cursor.getString(1))
-        assertEquals(0, cursor.getInt(2))
+        assertEquals("Final Timetable", cursor.getString(0))
+        assertEquals("Official Final", cursor.getString(1))
+        assertEquals(1, cursor.getInt(2))
         assertEquals("2026/2027", cursor.getString(3))
+        assertTrue(cursor.isNull(4))
+        assertEquals(1304, cursor.getInt(5))
         cursor.close()
         db.close()
     }
