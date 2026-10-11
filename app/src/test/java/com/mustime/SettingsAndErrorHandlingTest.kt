@@ -52,7 +52,13 @@ class SettingsAndErrorHandlingTest {
             assignmentDao = db.assignmentDao(),
             etagStore = etagStore
         )
-        settingsViewModel = SettingsViewModel(repository, dataLoader, alarmScheduler, testDispatcher)
+        settingsViewModel = SettingsViewModel(
+            repository,
+            dataLoader,
+            alarmScheduler,
+            testDispatcher,
+            ApplicationProvider.getApplicationContext()
+        )
     }
 
     @After

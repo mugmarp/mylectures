@@ -19,10 +19,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
@@ -58,7 +58,7 @@ jobs:
         run: gradle wrapper --gradle-version 9.3.1 --distribution-type bin
 
       - name: Cache Gradle
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             ~/.gradle/caches
@@ -103,13 +103,15 @@ jobs:
       - name: Assemble release APK
         run: ./gradlew assembleRelease --stacktrace --no-daemon
 
+      # Unit tests must gate the build. Do NOT add continue-on-error here:
+      # it makes the job report green while the step exits 1, which hides real
+      # failures (that is exactly how a broken test compile went unnoticed).
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest --stacktrace --no-daemon
-        continue-on-error: true
 
       - name: Upload Debug APK
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: lectures-debug-apk
           path: app/build/outputs/apk/debug/*.apk
@@ -118,7 +120,7 @@ jobs:
 
       - name: Upload Release APK
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: lectures-release-apk
           path: app/build/outputs/apk/release/*.apk
@@ -127,7 +129,7 @@ jobs:
 
       - name: Upload test report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: test-report
           path: app/build/reports/tests/testDebugUnitTest/
@@ -152,7 +154,7 @@ jobs:
       # prepackaged database asset (createFromAsset) without hand-written SQL.
       - name: Upload Room exported schemas
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: room-schemas
           path: app/schemas/
