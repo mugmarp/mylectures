@@ -125,9 +125,29 @@ jobs:
           fi
           ls -la "$GITHUB_WORKSPACE/my-upload-key.jks"
 
-          # Fail here rather than at assembleRelease if the alias or password is wrong.
+          # What aliases does this keystore actually contain? keytool writes
+          # both listings AND errors to stdout, so never send its output to
+          # /dev/null — that hides the reason for a failure.
+          echo "=== Aliases present in the keystore ==="
           keytool -list -keystore "$GITHUB_WORKSPACE/my-upload-key.jks" \
-            -alias upload -storepass "$STORE_PASSWORD" > /dev/null
+            -storepass "$STORE_PASSWORD" || {
+              echo "::error::Cannot read the keystore — is STORE_PASSWORD correct?"
+              exit 1
+            }
+
+          # build.gradle.kts hardcodes keyAlias = "upload", so the keystore must
+          # contain that alias or signingConfigs.release will fail at build time.
+          if ! keytool -list -keystore "$GITHUB_WORKSPACE/my-upload-key.jks" \
+                 -alias upload -storepass "$STORE_PASSWORD" > /tmp/alias_check.txt 2>&1; then
+            echo "::error::Alias 'upload' is not present in the keystore."
+            cat /tmp/alias_check.txt
+            echo ""
+            echo "build.gradle.kts sets keyAlias = \"upload\". Either recreate the"
+            echo "keystore with -alias upload, or change keyAlias to match an"
+            echo "alias listed above."
+            exit 1
+          fi
+          echo "Alias 'upload' found."
 
           # Print the fingerprint. This must be identical on every run — that is
           # the value to register in Google Cloud Console for the API key's
