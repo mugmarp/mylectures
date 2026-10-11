@@ -83,6 +83,40 @@ Circular clock dial for times, unified day+time picker for tasks, and `+1 hr` / 
 
 ---
 
+## Screenshots
+
+**Welcome** — app identity, feature overview, and onboarding entry point.
+![Welcome screen](docs/screenshots/Lectures_welcome_screen.png)
+
+**Faculty selection** — step 1 of 3: choose from six faculties with programme counts.
+![Faculty selection](docs/screenshots/choose_facult_screen.png)
+
+**Programme selection** — step 2: pick a degree within the selected faculty.
+![Programme selection](docs/screenshots/select_program_busines_and_management_science.png)
+
+**Class group selection** — step 3: choose your year group, with live timetable entry counts.
+![Class group selection](docs/screenshots/BS-ECO-CLASS-GROUP.png)
+
+**Timetable** — card-based daily view with a live "Happening Now" tracker: progress bar, elapsed/remaining time, venue, lecturer, and quick actions.
+![Timetable](docs/screenshots/BSE_II_timetable_screen.png)
+
+**Academic profile** — enrolled programme, campus, semester, and timetable sync status.
+![Academic profile](docs/screenshots/academi_profile_sheet.png)
+
+**Tasks & deadlines** — week progress, daily breakdown, priority filters, and course-tagged assignments.
+![Tasks](docs/screenshots/tasks_screen.png)
+
+**Lecture notes** — Markdown editor with Write/Preview toggle, course linking, templates, pre-class reminders, and attachments.
+![Note editor](docs/screenshots/take_note_screen.png)
+
+**Vacant rooms (Kihumuro)** — FCI Building: 14 rooms, 8 free now, with floor badges and per-room availability.
+![Vacant rooms Kihumuro](docs/screenshots/room_finder_at_kihumuro.png)
+
+**Vacant rooms (Town)** — Science Block: free-until times with the next scheduled class shown.
+![Vacant rooms Town](docs/screenshots/vacant_room_finder_on_town_campus.png)
+
+---
+
 ## Privacy
 
 **No accounts. No analytics. No tracking. Fully usable without a connection.**
