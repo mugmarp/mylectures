@@ -59,7 +59,7 @@ fun SettingsScreen(
     }
 
     val viewModel: SettingsViewModel = viewModel(
-        factory = SettingsViewModel.provideFactory(repository, dataLoader, alarmScheduler)
+        factory = SettingsViewModel.provideFactory(repository, dataLoader, alarmScheduler, Dispatchers.IO, context.applicationContext as android.app.Application)
     )
 
     val uiState by viewModel.uiState.collectAsState()
