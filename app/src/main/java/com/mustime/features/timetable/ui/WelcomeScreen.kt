@@ -196,13 +196,13 @@ fun WelcomeScreen(
                     )
 
                     Text(
-                        text = "4. Local Privacy Guarantee",
+                        text = "4. Data Privacy & Local Storage",
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
                         color = primaryBlue
                     )
                     Text(
-                        text = "All notes, personal tasks, and timetable preferences are stored 100% locally on your device in private SQLite storage without remote telemetry.",
+                        text = "All notes, personal tasks, and timetable schedules are stored locally on your device in secure SQLite storage with transparent service diagnostics.",
                         fontSize = 12.sp,
                         color = textSecondary
                     )
