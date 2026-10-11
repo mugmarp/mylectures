@@ -19,7 +19,7 @@ import com.mustime.features.timetable.domain.TimetableMetadata
         TimetableMetadata::class
     ],
     version = 9,
-    exportSchema = false
+    exportSchema = true
 )
 @androidx.room.TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -28,12 +28,14 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun assignmentDao(): AssignmentDao
 
     companion object {
+        const val PREPOPULATED_DB_NAME = "mustime_prepopulated.db"
+        
         val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Migrate lecture_notes: recreation with naturalKey as PrimaryKey
                 db.execSQL("DROP TABLE IF EXISTS lecture_notes_old")
                 db.execSQL("ALTER TABLE lecture_notes RENAME TO lecture_notes_old")
-                db.execSQL("""
+                db.execSQL("""\
                     CREATE TABLE IF NOT EXISTS lecture_notes (
                         naturalKey TEXT NOT NULL PRIMARY KEY,
                         content TEXT NOT NULL,
@@ -42,7 +44,7 @@ abstract class AppDatabase : RoomDatabase() {
                         alarmMinutes INTEGER
                     )
                 """.trimIndent())
-                db.execSQL("""
+                db.execSQL("""\
                     INSERT OR REPLACE INTO lecture_notes (naturalKey, content, updatedAt, colourTag, alarmMinutes)
                     SELECT naturalKey, content, updatedAt, colourTag, alarmMinutes FROM lecture_notes_old
                 """.trimIndent())
@@ -67,7 +69,7 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("DROP TABLE IF EXISTS timetable")
-                db.execSQL("""
+                db.execSQL("""\
                     CREATE TABLE IF NOT EXISTS timetable (
                         natural_key TEXT NOT NULL PRIMARY KEY,
                         program_group TEXT NOT NULL,
@@ -114,7 +116,7 @@ abstract class AppDatabase : RoomDatabase() {
 
         val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("""
+                db.execSQL("""\
                     CREATE TABLE IF NOT EXISTS timetable_metadata (
                         id INTEGER PRIMARY KEY NOT NULL,
                         versionLabel TEXT NOT NULL,
@@ -127,7 +129,7 @@ abstract class AppDatabase : RoomDatabase() {
                         source TEXT NOT NULL
                     )
                 """.trimIndent())
-                db.execSQL("""
+                db.execSQL("""\
                     INSERT OR REPLACE INTO timetable_metadata (
                         id, versionLabel, status, isFinal, academicYear, semester, releaseNotes, lastUpdated, source
                     ) VALUES (
@@ -141,7 +143,7 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("DROP TABLE IF EXISTS timetable_metadata_old")
                 db.execSQL("ALTER TABLE timetable_metadata RENAME TO timetable_metadata_old")
-                db.execSQL("""
+                db.execSQL("""\
                     CREATE TABLE IF NOT EXISTS timetable_metadata (
                         id INTEGER PRIMARY KEY NOT NULL,
                         versionLabel TEXT NOT NULL,
@@ -156,7 +158,7 @@ abstract class AppDatabase : RoomDatabase() {
                         totalSessions INTEGER NOT NULL DEFAULT 1304
                     )
                 """.trimIndent())
-                db.execSQL("""
+                db.execSQL("""\
                     INSERT OR REPLACE INTO timetable_metadata (
                         id, versionLabel, status, isFinal, draftNumber, academicYear, semester, releaseNotes, lastUpdated, source, totalSessions
                     ) VALUES (
