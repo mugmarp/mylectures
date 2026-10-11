@@ -24,6 +24,11 @@ This document details the functional specifications, user interface behaviors, a
   * **Contextual Guidance & Tailored Cohorts**:
     * Clinical medical programmes (`DCM`, `DEM`, `DCAM`) clearly inform students of hospital clinical rotations for unscheduled terms.
     * For programmes where specific academic years are absent from the central timetable (such as `BGWH` which only has Year III scheduled in this export), the onboarding and profile switcher restrict selection to genuine class groups (`BGWH III`), preventing confusing 0-entry choices.
+* **Academic Week Indicator**: The profile sheet and timetable header display the current academic week (e.g. `Week 7 · Sem 1`), computed from the semester start date.
+* **Dynamic Campus Resolution**: Campus is derived from the enrolled programme — Kihumuro for Engineering/Computing/Science, Town for Medicine/Nursing/Business — not hardcoded.
+* **Timetable Version & Status**: The profile sheet and Settings display the current timetable release (e.g. `Final Timetable · Official Release` or `Draft 2 · Active Draft`), synced from Firestore metadata on launch and refreshable via Settings → Sync Now.
+* **Sound Profiles**: Four notification sound options — System Default (uses device notification sound), Chime, Gentle Bell, and Standard — applied to all three notification channels immediately on selection.
+* **Anonymous Feedback**: Settings → Anonymous Feedback & Bugs opens a sheet with category chips (Bug Report, Timetable Discrepancy, Feature Request, Room Finder Issue, General), a message field, and optional diagnostics. Submissions are sent to Firestore `/feedback/` with an anonymous install UUID; offline submissions are queued and retried on next launch.
 * **Happening Now / Next Up Hero Card**:
   * Dynamically computes the active class session in real-time.
   * **Live Mode**: Displays an animated glowing `LIVE NOW` badge, real-time progress bar (percentage completed), elapsed time ("35m elapsed"), and remaining time ("45m left · Ends 15:30").

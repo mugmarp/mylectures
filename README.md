@@ -7,7 +7,7 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF.svg)](https://kotlinlang.org/)
 [![UI](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-4285F4.svg)](https://developer.android.com/jetpack/compose)
 [![Storage](https://img.shields.io/badge/Storage-Room%20(SQLite)-orange.svg)](https://developer.android.com/training/data-storage/room)
-[![No Telemetry](https://img.shields.io/badge/Telemetry-none-brightgreen.svg)](#privacy)
+[![Local-First](https://img.shields.io/badge/Local-First-yes-brightgreen.svg)](#privacy)
 
 ---
 
@@ -110,38 +110,21 @@ The only data that leaves the device is **pseudonymous technical diagnostics**: 
 
 ### Network behaviour, precisely
 
-Verified by inspecting the built APK's bytecode, not by reading the build file:
-
 | | Status |
 |---|---|
 | Analytics / advertising SDKs | **None packaged** — Firebase Analytics, Google Analytics, AdMob, Crashlytics, Facebook, Sentry, Amplitude, Mixpanel, AppsFlyer, Adjust, Bugsnag, New Relic all absent from the DEX |
 | Accounts or sign-in required | **No** |
-| Network requests made today | **None** — no Firebase call site is ever reached |
-| Works with no connection | **Yes** — the timetable ships in the APK |
+| Network requests | **Yes** — pseudonymous diagnostics to Firestore `/user_telemetry/` and `/feedback/` collections; no behavioural or advertising tracking |
+| Works with no connection | **Yes** — the timetable ships in the APK and the app is fully functional offline |
 
-**However — Google's Firebase SDKs *are* bundled in the APK.** They are compiled in even though nothing invokes them:
+**Firebase SDKs are bundled in the APK** — `firebase-common`, `firebase-firestore`, `firebase-auth`, `firebase-appcheck`, `firebase-ai`. Since `startTimetableSync()` runs at app launch and `AnalyticsManager` writes telemetry on first use, network requests **are** made. The data sent is limited to:
 
-| SDK | In the APK |
-|---|---|
-| `firebase-common` (FirebaseApp) | yes |
-| `firebase-firestore` | yes |
-| `firebase-auth` | yes — `identitytoolkit` endpoint strings present |
-| `firebase-appcheck` (reCAPTCHA) | yes |
-| `firebase-ai` | yes — the largest single dependency |
+- Anonymous installation UUID (no IMEI, MAC, or account linkage)
+- Device model and Android OS version
+- Launch count and enrolled programme code
+- Aggregate feature usage counters
 
-These libraries are *capable* of transmitting to Google — App Check sends attestation data, and Firebase Auth sends device and app metadata to Google's `identitytoolkit` endpoints. Because no code path invokes them, **nothing is sent today.** But that is a property of the current code, not a guarantee enforced by the build.
-
-**So the accurate claim is:** *no analytics or advertising is included, and no data is transmitted in the current version* — **not** "no third party is involved." Firebase is present in the binary.
-
-Removing the unused Firebase dependencies is a planned cleanup. It would cut roughly a third off the APK and shrink the privacy surface to what is actually used.
-
-An **opt-in** cloud sync is planned, so notes and tasks can follow you between devices. When that lands it will be:
-
-- off by default, enabled per user
-- restricted to student email addresses (`@std.must.ac.ug`)
-- limited to user-authored content — notes, tasks, custom events — never your schedule
-
-**Analytics will remain absent regardless.** Syncing your own notes to your own account is not telemetry, and no behavioural tracking will be added.
+No names, emails, phone numbers, note contents, or personal data of any kind is collected. The `INTERNET` and `ACCESS_NETWORK_STATE` permissions exist solely for this telemetry and the future opt-in cloud sync.
 
 ### Permissions
 
@@ -214,9 +197,9 @@ app/src/main/java/com/mustime/
 ├── core/
 │   ├── alarm/                     schedulers, receivers, boot re-arm
 │   ├── database/                  AppDatabase, DAOs, converters
-│   ├── network/                   Firebase factory (sync not yet wired)
-│   ├── notification/              notification helper
-│   ├── sync/                      Firestore sync — present but not started
+│   ├── network/                   Firebase factory (Firestore, Auth)
+│   ├── notification/              notification helper, sound profiles
+│   ├── sync/                      Firestore sync — started at app launch
 │   └── util/                      TimeUtil, permissions
 ├── features/
 │   ├── calendar/                  month grid + unified day timeline
@@ -258,9 +241,11 @@ app/src/main/java/com/mustime/
 
 ### CI
 
-Every push to `main` or `test` runs [`.github/workflows/android-ci.yml`](.github/workflows/android-ci.yml): Kotlin compile, debug APK assembly, unit tests, and both artifacts uploaded. The debug APK is ~29 MB.
+Every push to `main` runs [`.github/workflows/android-ci.yml`](.github/workflows/android-ci.yml): Kotlin compile, debug and release APK assembly, unit tests, and artifact uploads. The release APK is ~18 MB (the debug APK is ~27 MB).
 
-The workflow generates a throwaway debug keystore, since `debug.keystore` is gitignored.
+The workflow generates a throwaway debug keystore, since `debug.keystore` is gitignored. The release signing config falls back to the debug keystore when no upload key is present, so CI produces a signed release APK.
+
+`google-services.json` is injected from a GitHub Secret (`GOOGLE_SERVICES_JSON`) at build time. It is gitignored and never committed.
 
 ---
 
@@ -271,21 +256,19 @@ Timetable and room data come from the university's public timetable pages:
 - `index_teaching.html` — one table per programme (1,348 entries)
 - `index_rooms_teaching.html` — one table per room (92 rooms, 892 sessions)
 
-Room campus assignment is **derived from the faculties of the cohorts that actually use each room**, not guessed from room names. See [`docs/`](docs/) for the full analysis.
+Room campus assignment is **derived from the faculties of the cohorts that actually use each room**, not guessed from room names.
 
 ### How updates reach the app
 
-**Currently: they don't, automatically.** The dataset is bundled at build time and read from local storage on first launch. If the university revises a timetable mid-semester, the app will not know until a new build ships.
+**Currently: via the bundled snapshot + manual refresh.** The dataset is bundled at build time and read from local storage on first launch. If the university revises a timetable mid-semester, the app will not automatically know — but you can tap **Sync Now** in Settings to fetch the latest timetable metadata (draft version, final release) from Firestore.
 
-This is a known limitation, not an oversight. Keeping the app genuinely offline-first means the data has to be *in* the app; adding live sync brings back the connection dependency the app exists to avoid. The plan is to make any refresh **opt-in and additive**:
+The sync architecture is:
 
-1. **Manual refresh** — a "check for timetable updates" action, showing what changed
-2. **Silent background check** — a periodic, low-cost comparison against the published page, downloading only when it differs
-3. **Change notifications** — alert you if a class you have a note or alarm attached to moves or is cancelled
+1. **On launch** — `startTimetableSync()` observes the central `/timetable` and `/timetable/metadata` Firestore documents. New drafts or the final timetable are detected automatically and written to local Room storage.
+2. **Manual refresh** — Settings → Sync Now queries the live Firestore metadata on demand, falling back to local caching when offline.
+3. **Offline-first** — the app is fully functional without a connection. Sync only updates the timetable version label and metadata; your notes, tasks, and alarms always work locally.
 
-Until that is built, treat the timetable as a snapshot of when you installed it, and cross-check the official site for late changes.
-
-There is also a **partial, unwired** sync layer in the codebase (`core/sync/SyncRepository.kt`) built for Firestore. It has never been started, and a real implementation needs three things that do not exist yet: a sign-in flow, Firestore security rules in the repo, and a merge strategy for local edits.
+There is also a **partial, unwired** user-sync layer (`SyncRepository.startAllSync()`) for per-user notes and tasks via Firestore. It requires authentication and is not yet started — a sign-in flow and merge strategy are needed before it can be enabled.
 
 ---
 

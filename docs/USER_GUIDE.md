@@ -75,7 +75,29 @@ Lectures uses a Google Clock-inspired circular dial:
 
 ---
 
-## 6. Finding Vacant Study Rooms on Campus
+## 6. Customising Notification Sounds
+
+1. Open **Settings** → scroll to **Audio & Haptic Feedback**.
+2. Under **Sound Profile**, tap one of four options:
+   * **System Default** — uses your device's default notification sound
+   * **Chime** — a short, high-pitched beep
+   * **Gentle Bell** — a soft, longer-decay tone
+   * **Standard** — a mid-frequency double beep
+3. The change applies immediately to all notification channels (class reminders, task deadlines, and class alarms).
+4. Use **Vibrate on Alarms** to toggle haptic feedback independently.
+
+---
+
+## 7. Sending Anonymous Feedback
+
+1. Open **Settings** → scroll to **Anonymous Feedback & Bugs**.
+2. Choose a category: *Bug Report*, *Timetable Discrepancy*, *Feature Request*, *Room Finder Issue*, or *General Thought*.
+3. Type your message. Optionally enable diagnostics (device model, OS version, enrolled programme) to help diagnose issues.
+4. Tap **Send**. If you are offline, the submission is queued and sent automatically on next launch.
+
+---
+
+## 8. Finding Vacant Study Rooms on Campus
 
 1. From the Timetable screen, tap the **Building/Door** icon in the top app bar.
 2. The **Vacant Rooms** directory opens. Your campus is detected automatically from your

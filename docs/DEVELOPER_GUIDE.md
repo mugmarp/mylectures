@@ -36,7 +36,7 @@ gradle check
 ## 2. Adding a New Academic Programme or Timetable Dataset
 
 Timetable schedules are bundled inside the assets folder:
-* Location: `app/src/main/assets/timetable_entries.json`
+* Location: `app/src/main/assets/timetable_export.json`
 
 ### JSON Structure:
 ```json
@@ -50,14 +50,14 @@ Timetable schedules are bundled inside the assets folder:
     "room": "LT 2",
     "lecturer": "Dr. Sarah Namubiru",
     "sessionType": "Lecture",
-    "programmeGroup": "Faculty of Computing - BCS Year 2 Sem 1"
+    "program_group": "BCS II"
   }
 ]
 ```
 
 ### Steps to Add:
 1. Append new JSON entries with the corresponding `programmeGroup` string.
-2. In `app/src/main/java/com/mustime/features/onboarding/UniversityDirectory.kt`, ensure the faculty, programme name, and years are registered in the directory maps.
+2. In `app/src/main/java/com/mustime/features/onboarding/FacultyData.kt`, ensure the faculty, programme name, and years are registered in the `FACULTIES` list.
 3. Upon launch, `DataLoader.kt` automatically verifies hashes and updates SQLite via Room.
 
 ---

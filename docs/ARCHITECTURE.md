@@ -84,9 +84,15 @@
   * Exposes public methods for saving notes, adding custom events, toggling task completion, and retrieving timetable sessions.
 * **Strict Non-Destructive Migrations (`AppDatabase`)**:
   * Guarantees 100% preservation of student coursework, notes, and deadlines.
-  * Disallows `fallbackToDestructiveMigration()` so schema evolution strictly requires explicit migration steps (`MIGRATION_2_3` through `MIGRATION_6_7`), preventing accidental table drops in production.
+  * Uses `fallbackToDestructiveMigrationFrom(1)` — only the pre-release prototype v1 can be wiped; v2+ are protected by explicit migration steps (`MIGRATION_2_3` through `MIGRATION_8_9`).
+* **`AnalyticsManager`** (`com.mustime.core.analytics`):
+  * Collects pseudonymous diagnostics (install UUID, device model, OS version, launch count, enrolled programme) and writes to Firestore `/user_telemetry/{installId}`.
+  * No PII, no behavioural tracking, no advertising SDKs.
+* **`FeedbackManager`** (`com.mustime.feedback`):
+  * Anonymous feedback submission to Firestore `/feedback/` collection.
+  * Offline retry queue — submissions persist locally until network is available.
 * **`DataLoader`**:
-  * Pre-populates the local database on initial launch from bundled academic assets (`timetable_export.json` / `timetable_entries.json`).
+  * Pre-populates the local database on initial launch from bundled academic assets (`timetable_export.json`).
   * Employs MD5 and ETag tracking (`ETagStore`) to avoid redundant parsing.
   * **Scraper Swap Self-Healing**: Automatically cleans entries where upstream scraper inverted `course_code` and `shared_with` (e.g. DLT and clinical entries where lecturer name occupied `course_code` and the real course code was in `shared_with`).
 
@@ -100,6 +106,21 @@
     * True clinical hospital rotations (`DCM`, `DEM`, `DCAM` Years I & II) explicitly indicate clinical hospital rotations as the reason for absence.
     * Non-existent cohorts are eliminated at the root data level (`FacultyData.kt` supports `customYears`, ensuring `BGWH` strictly offers `BGWH III` as its sole valid class group, preventing false offerings of absent Year I/II groups while accurately delivering its 12 lectures).
     * General empty off-campus sessions display appropriate contextual schedule notices rather than misleading clinical hospital tags.
+
+### E. Timetable Metadata & Version Sync
+* **`TimetableMetadata`** entity (Room table `timetable_metadata`):
+  * Tracks the current timetable release: `versionLabel`, `status`, `isFinal`, `draftNumber`, `academicYear`, `semester`, `totalSessions`, `lastUpdated`, `source`.
+  * `draftNumber` is `null` when `isFinal = true`; an integer (1, 2, 3…) during draft cycles.
+* **`TimetableVersionResolver`** (`com.mustime.features.timetable.domain`):
+  * Pure function that parses a raw version string into structured metadata.
+  * Dynamically handles any integer draft (Draft 1 through Draft N), Roman numerals (Draft I–VI), and Final releases.
+* **`SyncRepository.startTimetableSync(scope)`**:
+  * Observes Firestore `/timetable` and `/timetable/metadata` on app launch.
+  * Writes resolved metadata to Room; does not require user authentication.
+* **`SyncRepository.fetchRemoteTimetableMetadata()`**:
+  * On-demand query used by Settings → Sync Now, with offline fallback to local cache.
+* **`SyncRepository.startAllSync(userId, scope)`**:
+  * Per-user notes/tasks sync via Firestore. Requires authentication — not yet started.
 
 ---
 

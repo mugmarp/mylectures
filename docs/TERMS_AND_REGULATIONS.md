@@ -69,7 +69,7 @@ To maintain high service availability, guarantee schedule accuracy across all ac
 
 5.3. **Strict Privacy Safeguards**:  
 * **Zero PII**: Telemetry never collects student names, registration numbers, phone numbers, email addresses, precise geolocation, personal note text, or attached media files.
-* **No Commercial Data Sharing**: No telemetry or user engagement metrics are ever monetized, sold, rented, or distributed to third-party advertising networks.
+* **No Commercial Data Sharing**: No telemetry or user engagement metrics are ever monetized, sold, rented, or distributed to third-party advertising networks. The telemetry described in 5.2 is used exclusively for application stability, timetable discrepancy resolution, and capacity planning.
 * **Service Improvement Only**: Collected metrics are used exclusively for application stability, timetable discrepancy resolution, and capacity planning.
 
 5.4. **Timetable Data & Dynamic Version Synchronization**:  
