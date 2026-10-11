@@ -35,6 +35,10 @@ class TimetableApplication : Application() {
 
         // Initialize Android NotificationChannels for academic task reminders and class alarms
         com.mustime.core.notification.NotificationHelper.createNotificationChannels(this)
+        // Apply saved sound profile so notification channels reflect the user's choice
+        com.mustime.core.notification.NotificationHelper.applySoundProfile(
+            this, com.mustime.features.timetable.data.ETagStore(this).getAlarmSound()
+        )
         
         database = Room.databaseBuilder(
             this,

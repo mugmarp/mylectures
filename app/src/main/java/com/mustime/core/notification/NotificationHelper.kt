@@ -23,6 +23,32 @@ object NotificationHelper {
     private const val TAG = "NotificationHelper"
 
     /**
+     * Applies the user's selected sound profile to all notification channels.
+     * "System Default" uses the device's default notification sound;
+     * named profiles map to bundled raw audio resources.
+     */
+    fun applySoundProfile(context: Context, soundName: String) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+        val soundUri = when (soundName.lowercase()) {
+            "chime" -> android.net.Uri.parse("android.resource://${context.packageName}/raw/sound_chime")
+            "gentle bell" -> android.net.Uri.parse("android.resource://${context.packageName}/raw/sound_gentle_bell")
+            "standard" -> android.net.Uri.parse("android.resource://${context.packageName}/raw/sound_standard")
+            else -> android.media.RingtoneManager.getActualDefaultRingtoneUri(
+                context, android.media.RingtoneManager.TYPE_NOTIFICATION
+            )
+        }
+        if (soundUri == null) return
+        val audioAttrs = android.media.AudioAttributes.Builder()
+            .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+        notificationManager.getNotificationChannel(CHANNEL_ACADEMIC_TASKS)?.apply { setSound(soundUri, audioAttrs) }
+        notificationManager.getNotificationChannel(CHANNEL_CLASSES)?.apply { setSound(soundUri, audioAttrs) }
+        notificationManager.getNotificationChannel(CHANNEL_CLASS_ALARMS)?.apply { setSound(soundUri, audioAttrs) }
+    }
+
+    /**
      * Creates and registers Notification Channels with Android OS (API 26+).
      */
     fun createNotificationChannels(context: Context) {

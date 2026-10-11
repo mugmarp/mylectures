@@ -23,6 +23,9 @@ class BootReceiver : BroadcastReceiver() {
             Log.d(TAG, "Boot or package update detected. Rescheduling alarms and initializing channels.")
 
             NotificationHelper.createNotificationChannels(context)
+            NotificationHelper.applySoundProfile(
+                context, com.mustime.features.timetable.data.ETagStore(context).getAlarmSound()
+            )
 
             val app = context.applicationContext as? TimetableApplication ?: return
             val repository = app.repository

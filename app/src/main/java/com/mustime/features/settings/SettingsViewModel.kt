@@ -1,7 +1,8 @@
 package com.mustime.features.settings
 
+import android.app.Application
 import android.content.Context
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.mustime.core.alarm.TaskAlarmScheduler
@@ -46,8 +47,9 @@ class SettingsViewModel(
     private val repository: TimetableRepository,
     private val dataLoader: DataLoader? = null,
     private val alarmScheduler: TaskAlarmScheduler? = null,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) : ViewModel() {
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val application: android.app.Application
+) : AndroidViewModel(application) {
 
     private val initialProg = repository.getInitialProgramme() ?: ""
     private val _uiState = MutableStateFlow(SettingsUiState(currentProgramme = initialProg))
@@ -272,6 +274,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             try {
                 repository.setAlarmSound(sound)
+                NotificationHelper.applySoundProfile(getApplication(), sound)
                 _uiState.value = _uiState.value.copy(
                     alarmSound = sound,
                     successMessage = "Alarm sound profile set to $sound."
@@ -416,12 +419,13 @@ class SettingsViewModel(
             repository: TimetableRepository,
             dataLoader: DataLoader? = null,
             alarmScheduler: TaskAlarmScheduler? = null,
-            ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+            ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+            application: Application
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return SettingsViewModel(repository, dataLoader, alarmScheduler, ioDispatcher) as T
+                    return SettingsViewModel(repository, dataLoader, alarmScheduler, ioDispatcher, application) as T
                 }
             }
     }

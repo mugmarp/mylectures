@@ -962,7 +962,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    val soundOptions = listOf("Chime", "Gentle Bell", "Standard")
+                    val soundOptions = listOf("System Default", "Chime", "Gentle Bell", "Standard")
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
