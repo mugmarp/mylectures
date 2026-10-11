@@ -20,3 +20,12 @@ debug.keystore
 app/google-services.json
 __pycache__/
 *.pyc
+
+# Signing material must never be committed.
+# app/build.gradle.kts falls back to ${rootDir}/my-upload-key.jks, so a real
+# upload key placed there would otherwise be one `git add -A` from the repo.
+*.jks
+*.keystore
+!debug.keystore
+my-upload-key.jks
+keystore.properties
