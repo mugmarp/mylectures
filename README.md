@@ -85,16 +85,19 @@ Circular clock dial for times, unified day+time picker for tasks, and `+1 hr` / 
 
 ## Screenshots
 
-| Onboarding | Timetable & Profile | Productivity | Vacant Room Finder |
-|---|---|---|---|
-| ![Welcome](docs/screenshots/Lectures_welcome_screen.png) | ![Timetable](docs/screenshots/BSE_II_timetable_screen.png) | ![Tasks](docs/screenshots/tasks_screen.png) | ![Kihumuro](docs/screenshots/room_finder_at_kihumuro.png) |
-| *Welcome & feature overview* | *BSE II live timetable* | *Week progress & deadlines* | *FCI Building — 14 rooms* |
-| ![Faculty](docs/screenshots/choose_facult_screen.png) | ![Profile](docs/screenshots/academi_profile_sheet.png) | ![Notes](docs/screenshots/take_note_screen.png) | ![Town](docs/screenshots/vacant_room_finder_on_town_campus.png) |
-| *Six faculties, programme counts* | *Campus, semester, sync status* | *Markdown editor & reminders* | *Science Block — 13 rooms* |
-| ![Programme](docs/screenshots/select_program_busines_and_management_science.png) | | | |
-| *Degree selection within faculty* | | | |
-| ![Class Group](docs/screenshots/BS-ECO-CLASS-GROUP.png) | | | |
-| *Year group with entry counts* | | | |
+![Welcome](docs/screenshots/Lectures_welcome_screen.png)
+*Welcome & feature overview*
+
+![Timetable](docs/screenshots/BSE_II_timetable_screen.png)
+*BSE II live timetable with "Happening Now" tracker*
+
+![Tasks](docs/screenshots/tasks_screen.png)
+*Week progress, daily breakdown & priority filters*
+
+![Vacant Rooms](docs/screenshots/room_finder_at_kihumuro.png)
+*Vacant Room Finder — Kihumuro campus, FCI Building*
+
+**[View all 10 screenshots →](docs/SCREENSHOTS.md)**
 
 ---
 
