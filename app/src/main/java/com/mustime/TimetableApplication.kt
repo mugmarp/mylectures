@@ -29,6 +29,10 @@ class TimetableApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        try {
+            com.google.firebase.FirebaseApp.initializeApp(this)
+        } catch (_: Exception) { }
+
         // Initialize Android NotificationChannels for academic task reminders and class alarms
         com.mustime.core.notification.NotificationHelper.createNotificationChannels(this)
         
