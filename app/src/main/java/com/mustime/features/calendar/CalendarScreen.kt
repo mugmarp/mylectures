@@ -38,6 +38,7 @@ import com.mustime.TimetableApplication
 import com.mustime.core.alarm.AlarmScheduler
 import com.mustime.features.timetable.domain.ActivityCategory
 import com.mustime.features.timetable.domain.CustomEvent
+import com.mustime.features.timetable.domain.Assignment
 import com.mustime.features.timetable.domain.TimetableEntry
 import com.mustime.features.timetable.ui.ActivityCard
 import com.mustime.features.timetable.ui.AddActivitySheet
@@ -51,6 +52,7 @@ import com.mustime.ui.components.RoomFloorBadge
 private sealed class CalendarItem(val startTime: String) {
     data class Lecture(val entry: TimetableEntry) : CalendarItem(entry.startTime)
     data class Activity(val event: CustomEvent) : CalendarItem(event.startTime)
+    data class Task(val assignment: Assignment) : CalendarItem("23:59")
 }
 
 @Composable
@@ -107,10 +109,18 @@ fun CalendarScreen(
             .sortedBy { it.startTime }
     }
 
+    // Tasks due on selected day
+    val selectedDayTasks = remember(uiState.assignments, uiState.selectedDayOfWeek) {
+        uiState.assignments.filter { assignment ->
+            !assignment.completed && assignment.dueDate.equals(uiState.selectedDayOfWeek, ignoreCase = true)
+        }
+    }
+
     // Combined & Filtered items
     val displayedItems = remember(
         selectedDayLectures,
         selectedDayActivities,
+        selectedDayTasks,
         uiState.selectedFilter
     ) {
         val list = mutableListOf<CalendarItem>()
@@ -120,6 +130,7 @@ fun CalendarScreen(
         if (uiState.selectedFilter != CalendarFilter.LECTURES) {
             list.addAll(selectedDayActivities.map { CalendarItem.Activity(it) })
         }
+        list.addAll(selectedDayTasks.map { CalendarItem.Task(it) })
         list.sortedBy { it.startTime }
     }
 
@@ -334,6 +345,9 @@ fun CalendarScreen(
                                     val activitiesThisDay = uiState.customEvents.filter {
                                         it.dayOfWeek.equals(cellDayName, ignoreCase = true)
                                     }
+                                    val hasTasksThisDay = uiState.assignments.any {
+                                        !it.completed && it.dueDate.equals(cellDayName, ignoreCase = true)
+                                    }
 
                                     Box(
                                         modifier = Modifier
@@ -374,7 +388,7 @@ fun CalendarScreen(
                                             )
 
                                             // Distinguished color dots below date
-                                            if (hasClassesThisDay || activitiesThisDay.isNotEmpty()) {
+                                            if (hasClassesThisDay || activitiesThisDay.isNotEmpty() || hasTasksThisDay) {
                                                 Spacer(modifier = Modifier.height(2.dp))
                                                 Row(
                                                     horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -395,6 +409,12 @@ fun CalendarScreen(
                                                             ActivityCategory.colorForHex(act.colorTag.ifBlank { cat.colorHex })
                                                         }
                                                         Dot(color = dotColor)
+                                                    }
+                                                    // Task due indicator dot
+                                                    if (hasTasksThisDay) {
+                                                        Dot(
+                                                            color = if (isSelected) Color.White else Color(0xFFF59E0B)
+                                                        )
                                                     }
                                                 }
                                             }
@@ -426,7 +446,7 @@ fun CalendarScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${selectedDayLectures.size} classes • ${selectedDayActivities.size} activities • Swipe to change",
+                                text = "${selectedDayLectures.size} classes • ${selectedDayActivities.size} activities • ${selectedDayTasks.size} tasks • Swipe to change",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -468,7 +488,7 @@ fun CalendarScreen(
                     ) {
                         items(CalendarFilter.entries.toTypedArray()) { filter ->
                             val count = when (filter) {
-                                CalendarFilter.ALL -> selectedDayLectures.size + selectedDayActivities.size
+                                CalendarFilter.ALL -> selectedDayLectures.size + selectedDayActivities.size + selectedDayTasks.size
                                 CalendarFilter.LECTURES -> selectedDayLectures.size
                                 CalendarFilter.ACTIVITIES -> selectedDayActivities.size
                             }
@@ -566,6 +586,7 @@ fun CalendarScreen(
                     when (item) {
                         is CalendarItem.Lecture -> "lec_${item.entry.naturalKey}"
                         is CalendarItem.Activity -> "act_${item.event.id}"
+                        is CalendarItem.Task -> "task_${item.assignment.id}"
                     }
                 }) { item ->
                     Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
@@ -583,6 +604,68 @@ fun CalendarScreen(
                                     onEdit = { activityToEdit = item.event },
                                     onDelete = { eventToDelete = item.event }
                                 )
+                            }
+                            is CalendarItem.Task -> {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFFFFF7ED)
+                                    ),
+                                    border = BorderStroke(
+                                        1.dp,
+                                        Color(0xFFF59E0B).copy(alpha = 0.3f)
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(Color(0xFFF59E0B).copy(alpha = 0.15f)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.TaskAlt,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFFF59E0B),
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Column {
+                                                Text(
+                                                    text = item.assignment.title,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    fontSize = 14.sp,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                Text(
+                                                    text = "Due ${item.assignment.dueDate} • ${item.assignment.priority}",
+                                                    fontSize = 11.sp,
+                                                    color = Color(0xFFF59E0B)
+                                                )
+                                            }
+                                        }
+                                        if (item.assignment.reminderMinutes != null) {
+                                            Icon(
+                                                Icons.Default.Notifications,
+                                                contentDescription = "Reminder set",
+                                                tint = Color(0xFFF59E0B),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
