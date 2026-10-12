@@ -824,7 +824,11 @@ fun TimetableScreen(
     }
 
     if (showNotificationCenterSheet) {
+        val activeNotes = notes.values.filter { it.alarmMinutes != null }
+        val activeTasks = assignments.filter { !it.completed && it.reminderMinutes != null }
         NotificationCenterSheet(
+            activeNotesWithAlarms = activeNotes,
+            activeTasksWithAlarms = activeTasks,
             onDismiss = { showNotificationCenterSheet = false }
         )
     }
