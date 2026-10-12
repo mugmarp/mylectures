@@ -43,6 +43,8 @@ import com.mustime.features.tasks.TasksScreen
 import com.mustime.features.timetable.ui.TimetableRoute
 import com.mustime.features.timetable.ui.WelcomeScreen
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 
 sealed class AppNavState {
     data object Welcome : AppNavState()
@@ -53,7 +55,10 @@ sealed class AppNavState {
 }
 
 @Composable
-fun MainScaffold() {
+fun MainScaffold(
+    initialTab: Int = 0,
+    notificationIntentFlow: SharedFlow<Pair<Int, Long?>>? = null
+) {
     val context = LocalContext.current
     val app = context.applicationContext as? TimetableApplication
     val repository = app?.repository
@@ -70,14 +75,23 @@ fun MainScaffold() {
     val savedProgramme by repository.programmePref.collectAsState(initial = initialProg)
     val initialOnboarding = remember { repository.isOnboardingCompleted() }
     val onboardingCompleted by repository.onboardingCompletedPref.collectAsState(initial = initialOnboarding)
-    
+
     var navState by remember {
         mutableStateOf<AppNavState>(
             if (initialOnboarding) AppNavState.MainApp else AppNavState.Welcome
         )
     }
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(initialTab) }
     var isNotesEditing by remember { mutableStateOf(false) }
+
+    // Handle notification deep-link intents.
+    LaunchedEffect(notificationIntentFlow) {
+        notificationIntentFlow?.collect { (tab, _) ->
+            if (navState is AppNavState.MainApp) {
+                selectedTab = tab
+            }
+        }
+    }
 
     // First app launch resolution via DataStore / Preferences
     LaunchedEffect(onboardingCompleted) {
