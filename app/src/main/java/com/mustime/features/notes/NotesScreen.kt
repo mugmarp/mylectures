@@ -739,14 +739,14 @@ fun NoteCardItem(
                 if (!note.attachmentName.isNullOrBlank()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            if (note.attachmentName.endsWith(".m4a")) Icons.Default.Mic else Icons.Default.AttachFile,
+                            Icons.Default.AttachFile,
                             contentDescription = null,
                             tint = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
                             modifier = Modifier.size(13.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            if (note.attachmentName.endsWith(".m4a")) "Audio" else "1 File",
+                            "1 File",
                             fontSize = 11.sp,
                             color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
                             fontWeight = FontWeight.Medium

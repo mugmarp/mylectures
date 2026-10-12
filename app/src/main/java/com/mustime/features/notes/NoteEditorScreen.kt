@@ -142,21 +142,8 @@ fun NoteEditorScreen(
         }
     }
 
-    val audioPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            val name = try {
-                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                        if (idx != -1) cursor.getString(idx) else null
-                    } else null
-                }
-            } catch (_: Exception) { null }
-            attachmentName = name ?: "Audio_Memo_${System.currentTimeMillis() % 10000}.m4a"
-        }
-    }
+    // Audio picker removed — was only used by the fake Voice Memo recorder.
+    // A real implementation would require RECORD_AUDIO permission and MediaRecorder.
 
     // Modals
     var showClassPicker by remember { mutableStateOf(false) }
@@ -1416,7 +1403,7 @@ fun NoteEditorScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    if (attachmentName.endsWith(".m4a")) Icons.Default.Mic else Icons.Default.Description,
+                                    Icons.Default.Description,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(18.dp)
@@ -1432,7 +1419,7 @@ fun NoteEditorScreen(
                                     maxLines = 1
                                 )
                                 Text(
-                                    if (attachmentName.endsWith(".m4a")) "Audio Memo · Attached" else "Attached Document",
+                                    "Attached Document",
                                     fontSize = 10.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

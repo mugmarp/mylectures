@@ -1,31 +1,145 @@
 rules_version = '2';
+
+// Firestore security rules for the Lectures app (project: mustttdb).
+//
+// Design constraints, derived from the actual client code:
+//
+//  * The app NEVER signs in to Firebase Auth. There is no signInAnonymously,
+//    signInWith*, or currentUser usage anywhere in app/src/main/java. Every
+//    request therefore arrives with request.auth == null, so any rule gated on
+//    request.auth != null is unsatisfiable by this client.
+//  * The app WRITES two collections and READS neither:
+//      - /user_telemetry/{installId}  (set + merge, one doc per install)
+//      - /feedback/{autoId}           (add, anonymous submissions)
+//  * The app READS /timetable via snapshot listeners. That path is currently
+//    denied, and the failure is silent because SyncRepository discards the
+//    listener's error parameter. The bundled asset and prepackaged database are
+//    what actually populate the schedule today.
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Central timetable collection is read-only for authenticated students, writable only by admins
+
+    // ---------------------------------------------------------------------
+    // /timetable — published university teaching timetable.
+    //
+    // Public information (scraped from timetable.must.ac.ug), no personal data.
+    // Readable without auth so the sync path can actually function; the client
+    // cannot authenticate, so requiring auth here makes sync permanently dead.
+    // Writes stay closed: the data is managed out of band.
+    // ---------------------------------------------------------------------
     match /timetable/{entryId} {
-      allow read: if request.auth != null;
-      allow write: if false; // Scraped/managed through backend admin processes
+      allow read: if true;
+      allow write: if false;
     }
-    
-    // Student user document and personal lecture notes
+
+    // ---------------------------------------------------------------------
+    // /user_telemetry — pseudonymous install heartbeat.
+    //
+    // READ IS DENIED. The client never reads this collection; the only access
+    // is the write below. Leaving read open exposed install IDs, device models,
+    // Android versions, enrolled programmes and launch counts to anyone holding
+    // the (public, in-APK) API key.
+    //
+    // Writes cannot be tied to an identity because there is no auth, so the
+    // shape is constrained instead: the document ID must match install_id and
+    // the field set, types and lengths are validated.
+    // ---------------------------------------------------------------------
+    match /user_telemetry/{installId} {
+      allow read: if false;
+      allow delete: if false;
+
+      allow create, update: if isValidTelemetry(installId);
+    }
+
+    function isValidTelemetry(installId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly([
+          'install_id',
+          'app_version',
+          'enrolled_programme',
+          'device_model',
+          'android_version',
+          'sdk_int',
+          'first_launch_timestamp',
+          'last_active_at',
+          'total_launches',
+          'features_used'
+        ])
+        // Bind the document to its own identifier so one install cannot
+        // overwrite another install's record.
+        && d.install_id is string
+        && d.install_id == installId
+        && d.install_id.size() <= 64
+        && d.app_version is string && d.app_version.size() <= 32
+        && d.enrolled_programme is string && d.enrolled_programme.size() <= 128
+        && d.device_model is string && d.device_model.size() <= 128
+        && d.android_version is string && d.android_version.size() <= 32
+        && d.sdk_int is int && d.sdk_int >= 1 && d.sdk_int <= 100
+        && d.first_launch_timestamp is int
+        && d.last_active_at == request.time
+        && d.total_launches is int && d.total_launches >= 0
+        && d.features_used is map;
+    }
+
+    // ---------------------------------------------------------------------
+    // /feedback — anonymous student feedback.
+    //
+    // Create-only. The client never reads this collection, so read, update and
+    // delete are all denied. Field lengths are capped to keep a public,
+    // unauthenticated write endpoint from being used as bulk storage.
+    // ---------------------------------------------------------------------
+    match /feedback/{feedbackId} {
+      allow read, update, delete: if false;
+      allow create: if isValidFeedback();
+    }
+
+    function isValidFeedback() {
+      let d = request.resource.data;
+      return d.keys().hasOnly([
+          'id',
+          'instanceId',
+          'category',
+          'categoryKey',
+          'message',
+          'formattedDate',
+          'appVersion',
+          'androidRelease',
+          'deviceModel',
+          'enrolledProgramme',
+          'submittedAt'
+        ])
+        && d.id is string && d.id.size() <= 64
+        && d.instanceId is string && d.instanceId.size() <= 64
+        && d.category is string && d.category.size() <= 64
+        && d.categoryKey is string && d.categoryKey.size() <= 64
+        && d.message is string && d.message.size() <= 4000
+        && d.formattedDate is string && d.formattedDate.size() <= 64
+        && d.appVersion is string && d.appVersion.size() <= 32
+        && d.androidRelease is string && d.androidRelease.size() <= 32
+        && d.deviceModel is string && d.deviceModel.size() <= 128
+        && d.enrolledProgramme is string && d.enrolledProgramme.size() <= 128
+        && d.submittedAt is int;
+    }
+
+    // ---------------------------------------------------------------------
+    // /users/{userId} — personal notes sync.
+    //
+    // Requires an authenticated user matching the document ID. The client does
+    // not currently authenticate and startAllSync() has no call sites, so this
+    // path is inert. Left auth-gated deliberately: it holds personal notes and
+    // must not be opened up. Wiring it requires adding Firebase Auth first.
+    // ---------------------------------------------------------------------
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      
+
       match /notes/{noteId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
 
-    // Essential service quality telemetry and anonymous diagnostics
-    match /user_telemetry/{installId} {
-      allow read, write: if true;
-    }
-
-    // Anonymous student feedback submissions
-    match /feedback/{feedbackId} {
-      allow create: if true;
-      allow read: if request.auth != null;
+    // Default deny for anything not matched above.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
