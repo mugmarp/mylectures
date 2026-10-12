@@ -50,7 +50,6 @@ import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.components.AcademicProfileSheet
 import com.mustime.ui.components.NotificationCenterSheet
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.ui.platform.LocalDensity
 import com.mustime.ui.components.RoomFloorBadge
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -228,8 +227,7 @@ fun TimetableScreen(
     var dragTotal by remember { mutableFloatStateOf(0f) }
     var showNotificationCenterSheet by remember { mutableStateOf(false) }
 
-    val density = LocalDensity.current
-    val navBarBottom = WindowInsets.navigationBars.getBottom(density)
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomPadding = (navBarBottom + 60.dp + 16.dp)
 
     Scaffold(

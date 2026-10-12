@@ -35,7 +35,6 @@ import com.mustime.TimetableApplication
 import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.ui.*
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.ui.platform.LocalDensity
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.components.AcademicProfileSheet
 import java.text.SimpleDateFormat
@@ -109,8 +108,7 @@ fun NotesScreen(
     }
 
     // Main Academic Notes Dashboard Screen
-    val density = LocalDensity.current
-    val navBarBottom = WindowInsets.navigationBars.getBottom(density)
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomPadding = (navBarBottom + 60.dp + 16.dp)
 
     Scaffold(

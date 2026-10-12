@@ -51,7 +51,6 @@ import java.util.Locale
 import kotlinx.coroutines.flow.flowOf
 import com.mustime.features.timetable.domain.Assignment
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.ui.platform.LocalDensity
 import com.mustime.features.timetable.ui.*
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.components.*
@@ -215,8 +214,7 @@ fun TasksScreen(
         )
     }
 
-    val density = LocalDensity.current
-    val navBarBottom = WindowInsets.navigationBars.getBottom(density)
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomPadding = (navBarBottom + 60.dp + 16.dp)
 
     Scaffold(
