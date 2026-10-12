@@ -169,20 +169,6 @@ fun NoteEditorScreen(
     var showCustomReminderDialog by remember { mutableStateOf(false) }
     var customReminderText by remember { mutableStateOf(selectedAlarmMinutes?.toString() ?: "45") }
 
-    // Audio recording state
-    var isRecordingAudio by remember { mutableStateOf(false) }
-    var recordingDurationSeconds by remember { mutableIntStateOf(0) }
-
-    LaunchedEffect(isRecordingAudio) {
-        if (isRecordingAudio) {
-            recordingDurationSeconds = 0
-            while (isRecordingAudio) {
-                delay(1000)
-                recordingDurationSeconds++
-            }
-        }
-    }
-
     // Determine if form has unsaved modifications
     val isModified = selectedCourse != initialCourse ||
             title != initialTitleVal ||
@@ -1337,128 +1323,71 @@ fun NoteEditorScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            // Lecture Slide PDF (via real System Document Picker)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { documentPickerLauncher.launch("application/pdf") },
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
             ) {
-                // Record Audio / Audio Memo
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable {
-                            if (isRecordingAudio) {
-                                isRecordingAudio = false
-                                attachmentName = "VoiceMemo_${selectedCourse.ifBlank { "Lecture" }}_${recordingDurationSeconds}s.m4a"
-                            } else {
-                                isRecordingAudio = true
-                            }
-                        },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isRecordingAudio) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surface
-                    ),
-                    border = BorderStroke(
-                        1.dp,
-                        if (isRecordingAudio) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
-                    )
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (isRecordingAudio) MaterialTheme.colorScheme.error
-                                    else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                if (isRecordingAudio) Icons.Default.Stop else Icons.Default.Mic,
-                                contentDescription = if (isRecordingAudio) "Stop Recording" else "Record Audio",
-                                tint = if (isRecordingAudio) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = if (isRecordingAudio) "Stop (${recordingDurationSeconds}s)" else "Voice Memo",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp,
-                            color = if (isRecordingAudio) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
+                        Icon(
+                            Icons.Default.PictureAsPdf,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text("Slide PDF", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
                 }
+            }
 
-                // Lecture Slide PDF (via real System Document Picker)
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { documentPickerLauncher.launch("application/pdf") },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+            // Whiteboard Photo (via zero-permission Android Photo Picker)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        photoPickerLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.tertiaryContainer),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.PictureAsPdf,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text("Slide PDF", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Icon(
+                            Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
-                }
-
-                // Whiteboard Photo (via zero-permission Android Photo Picker)
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable {
-                            photoPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.tertiaryContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.CameraAlt,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text("Whiteboard", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
-                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text("Whiteboard", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
 
