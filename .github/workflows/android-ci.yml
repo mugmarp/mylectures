@@ -216,13 +216,37 @@ jobs:
             exit 0
           fi
 
-          EXPECTED=$(echo "$EXPECTED_SHA1" | tr -d ':' | tr -d ' ' | tr 'a-f' 'A-F')
+          # Print only what is safe. Never echo the secret's raw contents: this
+          # step previously printed the expected value verbatim and leaked a
+          # pasted keytool blob into the build log. Only a short prefix is shown
+          # so a mismatch is still diagnosable.
+          EXPECTED_RAW="$EXPECTED_SHA1"
+
+          # Tolerate a pasted `keytool -v` dump: if the secret contains an
+          # "SHA1:" line, take the digest from it rather than failing.
+          if printf '%s' "$EXPECTED_RAW" | grep -qi 'SHA1:'; then
+            EXPECTED_RAW=$(printf '%s' "$EXPECTED_RAW" \
+              | grep -i 'SHA1:' | head -1 | sed 's/.*SHA1:[[:space:]]*//')
+            echo "Note: SHA1 secret looks like pasted keytool output; extracted the digest from it."
+          fi
+
+          EXPECTED=$(printf '%s' "$EXPECTED_RAW" | tr -d ':' | tr -d ' ' | tr -d '\r\n' | tr 'a-f' 'A-F')
+
+          # A valid SHA-1 is exactly 40 hex chars; anything else cannot match.
+          if ! printf '%s' "$EXPECTED" | grep -qE '^[0-9A-F]{40}$'; then
+            echo "::error::The SHA1 secret does not contain a valid 40-character SHA-1."
+            echo "  received ${#EXPECTED} characters (first 8: ${EXPECTED:0:8}...)"
+            echo "  Set it to just the hex digest, e.g.:"
+            echo "    echo -n '49F65E01AD0A2D45B1450AA3DA0DE781ECF1D0D0' | gh secret set SHA1 -R \$GITHUB_REPOSITORY"
+            exit 1
+          fi
+
           if [ "$ACTUAL" = "$EXPECTED" ]; then
             echo "Release APK is signed with the expected upload key."
           else
             echo "::error::Release APK signing certificate does not match the SHA1 secret."
-            echo "  expected: $EXPECTED"
-            echo "  actual  : $ACTUAL"
+            echo "  actual   : $ACTUAL"
+            echo "  expected : ${EXPECTED:0:8}...(truncated, ${#EXPECTED} chars)"
             echo "A mismatch means signingConfigs.release fell back to debug.keystore,"
             echo "or the SHA1 secret does not correspond to the KEYSTORE_BASE64 key."
             exit 1
