@@ -55,7 +55,6 @@ import com.mustime.features.timetable.ui.*
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.components.*
 import com.mustime.ui.components.AcademicProfileSheet
-import com.mustime.ui.components.NotificationCenterSheet
 
 enum class TaskDueStatus {
     OVERDUE,
@@ -159,7 +158,6 @@ fun TasksScreen(
 
     var showAddDialog by remember { mutableStateOf(false) }
     var taskToEdit by remember { mutableStateOf<Assignment?>(null) }
-    var showNotificationSheet by remember { mutableStateOf(false) }
     var showProfileSheet by remember { mutableStateOf(false) }
 
     var hasNotificationPermission by remember {
@@ -657,10 +655,6 @@ fun TasksScreen(
                 }
             }
         )
-    }
-
-    if (showNotificationSheet) {
-        NotificationCenterSheet(onDismiss = { showNotificationSheet = false })
     }
 
     if (showProfileSheet) {

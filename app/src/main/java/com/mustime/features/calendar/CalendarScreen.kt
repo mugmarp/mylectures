@@ -50,7 +50,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import com.mustime.features.timetable.ui.LectureCard
 import com.mustime.features.timetable.ui.LectureDetailSheet
 import com.mustime.ui.components.AcademicProfileSheet
-import com.mustime.ui.components.NotificationCenterSheet
 import com.mustime.ui.components.RoomFloorBadge
 
 private sealed class CalendarItem(val startTime: String) {
@@ -93,7 +92,6 @@ fun CalendarScreen(
 
     var showAddActivitySheet by remember { mutableStateOf(false) }
     var activityToEdit by remember { mutableStateOf<CustomEvent?>(null) }
-    var showNotificationSheet by remember { mutableStateOf(false) }
     var showProfileSheet by remember { mutableStateOf(false) }
     var eventToDelete by remember { mutableStateOf<CustomEvent?>(null) }
     var selectedActivityForDetail by remember { mutableStateOf<CustomEvent?>(null) }
@@ -784,11 +782,6 @@ fun CalendarScreen(
                 viewModel.addCustomEvent(newEvent)
             }
         )
-    }
-
-    // Notification Center Sheet
-    if (showNotificationSheet) {
-        NotificationCenterSheet(onDismiss = { showNotificationSheet = false })
     }
 
     // Academic Profile Sheet
