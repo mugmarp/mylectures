@@ -213,9 +213,17 @@ jobs:
             | awk '/SHA1:/ {print $2}' | head -1 | tr -d ':' | tr 'a-f' 'A-F')
 
           # Actual: the certificate that signed the built APK.
+          #
+          # Do NOT split on ": " — build-tools 35.x prints
+          #   "Signer #1 certificate SHA-1 digest: <hex>"
+          # but 37.x prints
+          #   "V2 Signer: certificate SHA-1 digest: <hex>"
+          # so $2 is the label text on 37.x. Take the LAST colon-separated field
+          # and strip anything that is not a hex digit or colon instead.
           ACTUAL=$("$APKSIGNER" verify --print-certs "$APK" 2>/dev/null \
-            | awk -F': ' '/certificate SHA-1 digest/ {print $2}' \
-            | head -1 | tr -d ':' | tr -d ' ' | tr 'a-f' 'A-F')
+            | grep -i 'certificate SHA-1 digest' | head -1 \
+            | sed 's/.*: *//' \
+            | tr -cd '0-9a-fA-F:' | tr -d ':' | tr 'a-f' 'A-F')
 
           # Fail closed: an empty value on either side means the check is void.
           if ! printf '%s' "$EXPECTED" | grep -qE '^[0-9A-F]{40}$'; then
@@ -244,8 +252,9 @@ jobs:
           # and Firebase App Check / Play Integrity. These are public
           # fingerprints, not secrets.
           APK_SHA256=$("$APKSIGNER" verify --print-certs "$APK" 2>/dev/null \
-            | awk -F': ' '/certificate SHA-256 digest/ {print $2}' \
-            | head -1 | tr -d ':' | tr -d ' ' | tr 'a-f' 'A-F')
+            | grep -i 'certificate SHA-256 digest' | head -1 \
+            | sed 's/.*: *//' \
+            | tr -cd '0-9a-fA-F:' | tr -d ':' | tr 'a-f' 'A-F')
           {
             echo "### Release signing certificate"
             echo ""
