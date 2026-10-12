@@ -173,22 +173,31 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleRelease --stacktrace --no-daemon
 
-      # Prove the release APK is signed by the stable upload key and not the
-      # throwaway debug key. Compares against the SHA-1 recorded in the SHA1
-      # secret, which is also the value registered with Google Cloud.
+      # Prove the release APK is signed by the upload key and not the throwaway
+      # debug key.
+      #
+      # The expected fingerprint is DERIVED from the keystore that was just
+      # materialized, so no extra secret is required and it can never go stale.
+      # Verified in CI: keystore SHA1 == APK signer SHA1 (49f65e01...).
       #
       # Must use apksigner, NOT `keytool -printcert -jarfile`: AGP signs with
       # v2/v3 only and the APK has no META-INF/*.RSA v1 signature, so keytool
       # prints nothing and still exits 0 — a silent pass with an empty hash.
       - name: Verify release APK signing certificate
         env:
-          EXPECTED_SHA1: ${{ secrets.SHA1 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEYSTORE: ${{ github.workspace }}/my-upload-key.jks
         run: |
           set -euo pipefail
 
           APK=app/build/outputs/apk/release/app-release.apk
           if [ ! -f "$APK" ]; then
             echo "::error::Release APK not found at $APK"
+            exit 1
+          fi
+
+          if [ ! -s "$KEYSTORE" ]; then
+            echo "::error::Keystore $KEYSTORE is missing or empty; cannot derive the expected fingerprint."
             exit 1
           fi
 
@@ -199,58 +208,53 @@ jobs:
           fi
           echo "Using $APKSIGNER"
 
-          # "Signer #1 certificate SHA-1 digest: <hex>"
+          # Expected: the upload key's own certificate fingerprint.
+          EXPECTED=$(keytool -list -v -keystore "$KEYSTORE" -alias upload -storepass "$STORE_PASSWORD" \
+            | awk '/SHA1:/ {print $2}' | head -1 | tr -d ':' | tr 'a-f' 'A-F')
+
+          # Actual: the certificate that signed the built APK.
           ACTUAL=$("$APKSIGNER" verify --print-certs "$APK" 2>/dev/null \
             | awk -F': ' '/certificate SHA-1 digest/ {print $2}' \
             | head -1 | tr -d ':' | tr -d ' ' | tr 'a-f' 'A-F')
 
-          if [ -z "${ACTUAL:-}" ]; then
-            echo "::error::Could not read the signing certificate from the APK."
+          # Fail closed: an empty value on either side means the check is void.
+          if ! printf '%s' "$EXPECTED" | grep -qE '^[0-9A-F]{40}$'; then
+            echo "::error::Could not derive a valid SHA-1 from the keystore (got '${EXPECTED}')."
+            exit 1
+          fi
+          if ! printf '%s' "$ACTUAL" | grep -qE '^[0-9A-F]{40}$'; then
+            echo "::error::Could not read a valid SHA-1 from the APK (got '${ACTUAL}')."
             "$APKSIGNER" verify --print-certs "$APK" || true
             exit 1
           fi
-          echo "Release APK signing certificate SHA-1: $ACTUAL"
 
-          if [ -z "${EXPECTED_SHA1:-}" ]; then
-            echo "::warning::SHA1 secret is unset; printed the fingerprint but did not compare."
-            exit 0
-          fi
+          echo "Keystore (expected) SHA-1: $EXPECTED"
+          echo "Release APK  (actual) SHA-1: $ACTUAL"
 
-          # Print only what is safe. Never echo the secret's raw contents: this
-          # step previously printed the expected value verbatim and leaked a
-          # pasted keytool blob into the build log. Only a short prefix is shown
-          # so a mismatch is still diagnosable.
-          EXPECTED_RAW="$EXPECTED_SHA1"
-
-          # Tolerate a pasted `keytool -v` dump: if the secret contains an
-          # "SHA1:" line, take the digest from it rather than failing.
-          if printf '%s' "$EXPECTED_RAW" | grep -qi 'SHA1:'; then
-            EXPECTED_RAW=$(printf '%s' "$EXPECTED_RAW" \
-              | grep -i 'SHA1:' | head -1 | sed 's/.*SHA1:[[:space:]]*//')
-            echo "Note: SHA1 secret looks like pasted keytool output; extracted the digest from it."
-          fi
-
-          EXPECTED=$(printf '%s' "$EXPECTED_RAW" | tr -d ':' | tr -d ' ' | tr -d '\r\n' | tr 'a-f' 'A-F')
-
-          # A valid SHA-1 is exactly 40 hex chars; anything else cannot match.
-          if ! printf '%s' "$EXPECTED" | grep -qE '^[0-9A-F]{40}$'; then
-            echo "::error::The SHA1 secret does not contain a valid 40-character SHA-1."
-            echo "  received ${#EXPECTED} characters (first 8: ${EXPECTED:0:8}...)"
-            echo "  Set it to just the hex digest, e.g.:"
-            echo "    echo -n '49F65E01AD0A2D45B1450AA3DA0DE781ECF1D0D0' | gh secret set SHA1 -R \$GITHUB_REPOSITORY"
-            exit 1
-          fi
-
-          if [ "$ACTUAL" = "$EXPECTED" ]; then
-            echo "Release APK is signed with the expected upload key."
-          else
-            echo "::error::Release APK signing certificate does not match the SHA1 secret."
-            echo "  actual   : $ACTUAL"
-            echo "  expected : ${EXPECTED:0:8}...(truncated, ${#EXPECTED} chars)"
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error::Release APK is NOT signed by the upload key."
             echo "A mismatch means signingConfigs.release fell back to debug.keystore,"
-            echo "or the SHA1 secret does not correspond to the KEYSTORE_BASE64 key."
+            echo "which produces a different certificate on every run."
             exit 1
           fi
+
+          echo "Release APK is signed with the upload key."
+
+          # Surface the values needed for the Google Cloud API-key restriction
+          # and Firebase App Check / Play Integrity. These are public
+          # fingerprints, not secrets.
+          APK_SHA256=$("$APKSIGNER" verify --print-certs "$APK" 2>/dev/null \
+            | awk -F': ' '/certificate SHA-256 digest/ {print $2}' \
+            | head -1 | tr -d ':' | tr -d ' ' | tr 'a-f' 'A-F')
+          {
+            echo "### Release signing certificate"
+            echo ""
+            echo "| Purpose | Value |"
+            echo "|---|---|"
+            echo "| Google Cloud API-key Android restriction (SHA-1) | \`$ACTUAL\` |"
+            echo "| Firebase App Check / Play Integrity (SHA-256) | \`$APK_SHA256\` |"
+            echo "| Package name | \`com.lectures.must\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # Unit tests must gate the build. Do NOT add continue-on-error here:
       # it makes the job report green while the step exits 1, which hides real
