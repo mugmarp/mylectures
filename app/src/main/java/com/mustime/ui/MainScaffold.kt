@@ -263,7 +263,7 @@ fun MainScaffold() {
                             border = BorderStroke(1.dp, navBorder),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(60.dp)
+                                .heightIn(min = 60.dp)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -311,7 +311,9 @@ fun MainScaffold() {
                                                 text = tab,
                                                 fontSize = 10.sp,
                                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                color = if (isSelected) primaryBlue else textMuted
+                                                color = if (isSelected) primaryBlue else textMuted,
+                                                maxLines = 1,
+                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                             )
                                         }
                                     }

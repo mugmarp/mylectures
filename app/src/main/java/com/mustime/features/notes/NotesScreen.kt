@@ -34,6 +34,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mustime.TimetableApplication
 import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.ui.*
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.ui.platform.LocalDensity
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.components.AcademicProfileSheet
 import java.text.SimpleDateFormat
@@ -107,6 +109,10 @@ fun NotesScreen(
     }
 
     // Main Academic Notes Dashboard Screen
+    val density = LocalDensity.current
+    val navBarBottom = WindowInsets.navigationBars.getBottom(density)
+    val listBottomPadding = (navBarBottom + 60.dp + 16.dp)
+
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
@@ -123,7 +129,7 @@ fun NotesScreen(
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
                 modifier = Modifier
                     .navigationBarsPadding()
-                    .padding(bottom = 96.dp)
+                    .padding(bottom = 72.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Note", modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
@@ -385,7 +391,7 @@ fun NotesScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 150.dp),
+                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = listBottomPadding),
                     verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
                     grouped.forEach { (courseCode, notes) ->

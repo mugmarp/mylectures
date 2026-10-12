@@ -41,6 +41,8 @@ import com.mustime.features.timetable.domain.CustomEvent
 import com.mustime.features.timetable.domain.TimetableEntry
 import com.mustime.features.timetable.ui.ActivityCard
 import com.mustime.features.timetable.ui.AddActivitySheet
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.ui.platform.LocalDensity
 import com.mustime.features.timetable.ui.LectureCard
 import com.mustime.features.timetable.ui.LectureDetailSheet
 import com.mustime.ui.components.AcademicProfileSheet
@@ -122,6 +124,10 @@ fun CalendarScreen(
         list.sortedBy { it.startTime }
     }
 
+    val density = LocalDensity.current
+    val navBarBottom = WindowInsets.navigationBars.getBottom(density)
+    val listBottomPadding = (navBarBottom + 60.dp + 16.dp)
+
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = MaterialTheme.colorScheme.background,
@@ -135,7 +141,7 @@ fun CalendarScreen(
                 text = { Text("Add Activity", fontWeight = FontWeight.Bold) },
                 modifier = Modifier
                     .navigationBarsPadding()
-                    .padding(bottom = 96.dp)
+                    .padding(bottom = 72.dp)
             )
         }
     ) { innerPadding ->
@@ -144,7 +150,7 @@ fun CalendarScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .statusBarsPadding(),
-            contentPadding = PaddingValues(bottom = 150.dp)
+            contentPadding = PaddingValues(bottom = listBottomPadding)
         ) {
             // Top Header
             item {

@@ -49,6 +49,8 @@ import com.mustime.features.timetable.domain.TimetableEntry
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.components.AcademicProfileSheet
 import com.mustime.ui.components.NotificationCenterSheet
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.ui.platform.LocalDensity
 import com.mustime.ui.components.RoomFloorBadge
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -226,6 +228,10 @@ fun TimetableScreen(
     var dragTotal by remember { mutableFloatStateOf(0f) }
     var showNotificationCenterSheet by remember { mutableStateOf(false) }
 
+    val density = LocalDensity.current
+    val navBarBottom = WindowInsets.navigationBars.getBottom(density)
+    val listBottomPadding = (navBarBottom + 60.dp + 16.dp)
+
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = if (isDark) DarkSurfaceBase else SurfaceBaseLight,
@@ -268,7 +274,7 @@ fun TimetableScreen(
                 },
                 modifier = Modifier
                     .navigationBarsPadding()
-                    .padding(bottom = 96.dp)
+                    .padding(bottom = 72.dp)
                     .testTag("timetable_fab")
             )
         }
@@ -306,7 +312,7 @@ fun TimetableScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 150.dp)
+                contentPadding = PaddingValues(bottom = listBottomPadding)
             ) {
                 // Prompt to select programme if not yet chosen
                 if (programme.isBlank()) {

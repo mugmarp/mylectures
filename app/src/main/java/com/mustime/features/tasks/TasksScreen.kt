@@ -50,6 +50,8 @@ import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.flow.flowOf
 import com.mustime.features.timetable.domain.Assignment
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.ui.platform.LocalDensity
 import com.mustime.features.timetable.ui.*
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.components.*
@@ -213,6 +215,10 @@ fun TasksScreen(
         )
     }
 
+    val density = LocalDensity.current
+    val navBarBottom = WindowInsets.navigationBars.getBottom(density)
+    val listBottomPadding = (navBarBottom + 60.dp + 16.dp)
+
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = bg,
@@ -241,7 +247,7 @@ fun TasksScreen(
                 },
                 modifier = Modifier
                     .navigationBarsPadding()
-                    .padding(bottom = 96.dp)
+                    .padding(bottom = 72.dp)
                     .testTag("add_task_fab")
             )
         }
@@ -412,7 +418,7 @@ fun TasksScreen(
                     .fillMaxSize()
                     .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(top = 4.dp, bottom = 150.dp)
+                contentPadding = PaddingValues(top = 4.dp, bottom = listBottomPadding)
             ) {
                 // 1. Visual Progress Dashboard for Total Tasks Completed vs Pending
                 item(key = "task_progress_dashboard_item") {
