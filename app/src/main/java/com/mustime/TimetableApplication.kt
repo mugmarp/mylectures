@@ -33,6 +33,16 @@ class TimetableApplication : Application() {
             com.google.firebase.FirebaseApp.initializeApp(this)
         } catch (_: Exception) { }
 
+        // Install App Check so every Firestore request carries a valid attestation token.
+        // Play Integrity is the provider; the debug provider is used automatically in
+        // debug builds when FIREBASE_APPCHECK_DEBUG_TOKEN is configured.
+        try {
+            com.google.firebase.appcheck.FirebaseAppCheck.getInstance()
+                .installAppCheckProviderFactory(
+                    com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory.getInstance()
+                )
+        } catch (_: Exception) { }
+
         // Initialize Android NotificationChannels for academic task reminders and class alarms
         com.mustime.core.notification.NotificationHelper.createNotificationChannels(this)
         // Apply saved sound profile so notification channels reflect the user's choice
