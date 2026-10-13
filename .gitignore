@@ -29,3 +29,6 @@ __pycache__/
 !debug.keystore
 my-upload-key.jks
 keystore.properties
+
+# Firebase CLI output
+firepit-log.txt
