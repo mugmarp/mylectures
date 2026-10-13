@@ -168,6 +168,7 @@ class TimetableRepository(
         tag: String? = null,
         attachedClass: String? = null,
         attachmentName: String? = null,
+        attachmentPath: String? = null,
         colourTag: String? = null,
         isPinned: Boolean = false
     ) {
@@ -181,6 +182,7 @@ class TimetableRepository(
             tag = tag,
             attachedClass = attachedClass,
             attachmentName = attachmentName,
+            attachmentPath = attachmentPath,
             isPinned = isPinned
         )
         dao.upsertNote(note)

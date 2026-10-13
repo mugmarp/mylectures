@@ -20,5 +20,14 @@ data class LectureNote(
     val tag: String? = null,
     val attachedClass: String? = null,
     val attachmentName: String? = null,
+    /**
+     * Relative path of the copied attachment inside the app's private
+     * `files/attachments/` directory (e.g. `attachments/1234_slides.pdf`).
+     *
+     * The picked content URI is copied into internal storage on selection so the
+     * file survives the picker's transient read grant; only this stable path is
+     * persisted. Null for legacy name-only rows.
+     */
+    val attachmentPath: String? = null,
     val isPinned: Boolean = false
 )

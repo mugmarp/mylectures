@@ -4,8 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.PickVisualMediaRequest
+import android.content.Intent
 import android.net.Uri
-import android.provider.OpenableColumns
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -44,6 +44,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mustime.core.storage.AttachmentStore
 import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.domain.TimetableEntry
 import com.mustime.ui.components.AcademicProfileSheet
@@ -66,6 +67,7 @@ fun NoteEditorScreen(
     timetableClasses: List<TimetableEntry>,
     onSettingsClick: () -> Unit = {},
     onReconfigureAcademicProfile: () -> Unit = {},
+    onAttachmentError: ((String) -> Unit)? = null,
     onSave: (
         naturalKey: String?,
         courseCode: String,
@@ -74,7 +76,8 @@ fun NoteEditorScreen(
         alarmMinutes: Int?,
         tag: String?,
         attachedClass: String?,
-        attachmentName: String?
+        attachmentName: String?,
+        attachmentPath: String?
     ) -> Unit,
     onCancel: () -> Unit
 ) {
@@ -87,6 +90,7 @@ fun NoteEditorScreen(
     val initialTag = initialNote?.tag ?: "Lecture"
     val initialClassText = initialNote?.attachedClass ?: ""
     val initialAttachment = initialNote?.attachmentName ?: ""
+    val initialAttachmentPath = initialNote?.attachmentPath
 
     var selectedCourse by remember { mutableStateOf(initialCourse) }
     var title by remember { mutableStateOf(initialTitleVal) }
@@ -104,6 +108,7 @@ fun NoteEditorScreen(
     var attachedLocation by remember { mutableStateOf("📍 Lecture Room") }
     var lecturer by remember { mutableStateOf("Course Lecturer") }
     var attachmentName by remember { mutableStateOf(initialAttachment) }
+    var attachmentPath by remember { mutableStateOf(initialAttachmentPath) }
 
     // Editor tab: Write vs Live Preview
     var currentTab by remember { mutableStateOf(NoteEditorTab.WRITE) }
@@ -114,15 +119,13 @@ fun NoteEditorScreen(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         if (uri != null) {
-            val name = try {
-                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                        if (idx != -1) cursor.getString(idx) else null
-                    } else null
-                }
-            } catch (_: Exception) { null }
-            attachmentName = name ?: "Whiteboard_${System.currentTimeMillis() % 10000}.jpg"
+            val fallback = "Whiteboard_${System.currentTimeMillis() % 10000}.jpg"
+            attachmentName = AttachmentStore.queryDisplayName(context, uri) ?: fallback
+            attachmentPath = AttachmentStore.copyIntoPrivateStorage(context, uri, fallback)
+            if (attachmentPath == null) {
+                attachmentName = ""
+                onAttachmentError?.invoke("Could not read the selected photo")
+            }
         }
     }
 
@@ -130,15 +133,13 @@ fun NoteEditorScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            val name = try {
-                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                        if (idx != -1) cursor.getString(idx) else null
-                    } else null
-                }
-            } catch (_: Exception) { null }
-            attachmentName = name ?: "Slides_${selectedCourse.ifBlank { "Lecture" }}.pdf"
+            val fallback = "Slides_${selectedCourse.ifBlank { "Lecture" }}.pdf"
+            attachmentName = AttachmentStore.queryDisplayName(context, uri) ?: fallback
+            attachmentPath = AttachmentStore.copyIntoPrivateStorage(context, uri, fallback)
+            if (attachmentPath == null) {
+                attachmentName = ""
+                onAttachmentError?.invoke("Could not read the selected file")
+            }
         }
     }
 
@@ -163,7 +164,8 @@ fun NoteEditorScreen(
             selectedAlarmMinutes != initialAlarm ||
             tag != initialTag ||
             attachedClassText != initialClassText ||
-            attachmentName != initialAttachment
+            attachmentName != initialAttachment ||
+            attachmentPath != initialAttachmentPath
 
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -179,6 +181,15 @@ fun NoteEditorScreen(
     }
 
     BackHandler(enabled = true, onBack = handleBackPress)
+
+    // Tell parent we're editing so dock can hide
+    LaunchedEffect(Unit) {
+        onEditingChanged(true)
+    }
+    // Reset when leaving editor
+    DisposableEffect(Unit) {
+        onDispose { onEditingChanged(false) }
+    }
 
     // Markdown insertion helper supporting selection wrapping
     val applyMarkdown: (prefix: String, suffix: String, defaultPlaceholder: String) -> Unit = { prefix, suffix, defaultPlaceholder ->
@@ -693,8 +704,9 @@ fun NoteEditorScreen(
                                     selectedAlarmMinutes,
                                     tag,
                                     attachedClassText,
-                                    attachmentName
-                                )
+                                    attachmentName,
+                                    attachmentPath
+                                    )
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
@@ -1394,7 +1406,28 @@ fun NoteEditorScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable(enabled = attachmentPath != null) {
+                                    val path = attachmentPath ?: return@clickable
+                                    val uri = AttachmentStore.contentUriFor(context, path)
+                                    if (uri == null) {
+                                        onAttachmentError?.invoke("Attachment file is missing")
+                                    } else {
+                                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                                            setDataAndType(uri, context.contentResolver.getType(uri) ?: "*/*")
+                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        }
+                                        try {
+                                            context.startActivity(intent)
+                                        } catch (_: Exception) {
+                                            onAttachmentError?.invoke("No app can open this file")
+                                        }
+                                    }
+                                }
+                        ) {
                             Box(
                                 modifier = Modifier
                                     .size(32.dp)
@@ -1416,10 +1449,12 @@ fun NoteEditorScreen(
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    "Attached Document",
+                                    // Legacy name-only rows have no stored file.
+                                    if (attachmentPath != null) "Tap to open" else "Name only — file not stored",
                                     fontSize = 10.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1427,7 +1462,11 @@ fun NoteEditorScreen(
                         }
 
                         IconButton(
-                            onClick = { attachmentName = "" },
+                            onClick = {
+                                AttachmentStore.delete(context, attachmentPath)
+                                attachmentName = ""
+                                attachmentPath = null
+                            },
                             modifier = Modifier.size(26.dp)
                         ) {
                             Icon(

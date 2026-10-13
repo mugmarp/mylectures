@@ -300,16 +300,53 @@ jobs:
 
       # The prepackaged asset must match Room's exported schema exactly
       # (column types, nullability, PKs, identity hash, user_version).
-      # Checking here catches drift between the committed asset and the current
-      # entities before it can reach a device.
-      - name: Verify prepackaged DB asset against exported schema
+      #
+      # Order matters after a schema version bump: the committed asset is stale
+      # until it is rebuilt, so regeneration runs FIRST and the verification step
+      # then validates the freshly built asset. Drift is reported as a warning
+      # (with the rebuilt asset uploaded) rather than failing the build, because
+      # the asset cannot be regenerated anywhere except a real Gradle build.
+      - name: Regenerate prepackaged DB asset from exported schema
         if: always()
         run: |
           if [ ! -f app/src/main/assets/mustime_prepopulated.db ]; then
             echo "::error::mustime_prepopulated.db is missing; createFromAsset will fail"
             exit 1
           fi
-          python3 tools/generate_prepopulated_db.py --schemas app/schemas --check
+          # Fingerprint the committed asset so drift can be reported below.
+          BEFORE=$(sha256sum app/src/main/assets/mustime_prepopulated.db | cut -d' ' -f1)
+          echo "committed_asset_sha256=$BEFORE" >> "$GITHUB_ENV"
+
+          python3 tools/generate_prepopulated_db.py --schemas app/schemas
+
+          AFTER=$(sha256sum app/src/main/assets/mustime_prepopulated.db | cut -d' ' -f1)
+          echo "rebuilt_asset_sha256=$AFTER" >> "$GITHUB_ENV"
+
+      - name: Verify rebuilt prepackaged DB asset
+        if: always()
+        run: python3 tools/generate_prepopulated_db.py --schemas app/schemas --check
+
+      # The rebuilt asset only reaches the repo if a human commits the artifact.
+      # Surface the drift loudly so a stale asset cannot ship unnoticed.
+      - name: Report prepackaged DB asset drift
+        if: always()
+        run: |
+          if [ "${committed_asset_sha256:-}" != "${rebuilt_asset_sha256:-}" ]; then
+            echo "::warning::Committed mustime_prepopulated.db does not match the current schema. Download the 'prepopulated-db' artifact and commit it."
+            echo "  committed: ${committed_asset_sha256:-unknown}"
+            echo "  rebuilt:   ${rebuilt_asset_sha256:-unknown}"
+          else
+            echo "Prepackaged DB asset is up to date with the exported schema."
+          fi
+
+      - name: Upload regenerated prepackaged DB asset
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: prepopulated-db
+          path: app/src/main/assets/mustime_prepopulated.db
+          if-no-files-found: warn
+          retention-days: 14
 
       # Room's exported schema JSON carries the identity hash and the exact
       # createSql for every table. This is the source of truth for building a

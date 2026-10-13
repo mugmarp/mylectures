@@ -18,10 +18,11 @@ import java.util.Calendar
 import java.util.Locale
 
 enum class CalendarFilter(val label: String) {
-    ALL("All Events"),
-    LECTURES("Lectures"),
-    ACTIVITIES("Activities")
-}
+        ALL("All Events"),
+        LECTURES("Lectures"),
+        ACTIVITIES("Activities"),
+        TASKS("Tasks")
+    }
 
 data class CalendarUiState(
     val isLoading: Boolean = true,

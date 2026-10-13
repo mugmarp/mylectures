@@ -126,13 +126,22 @@ fun CalendarScreen(
         uiState.selectedFilter
     ) {
         val list = mutableListOf<CalendarItem>()
-        if (uiState.selectedFilter != CalendarFilter.ACTIVITIES) {
-            list.addAll(selectedDayLectures.map { CalendarItem.Lecture(it) })
+        when (uiState.selectedFilter) {
+            CalendarFilter.ALL -> {
+                list.addAll(selectedDayLectures.map { CalendarItem.Lecture(it) })
+                list.addAll(selectedDayActivities.map { CalendarItem.Activity(it) })
+                list.addAll(selectedDayTasks.map { CalendarItem.Task(it) })
+            }
+            CalendarFilter.LECTURES -> {
+                list.addAll(selectedDayLectures.map { CalendarItem.Lecture(it) })
+            }
+            CalendarFilter.ACTIVITIES -> {
+                list.addAll(selectedDayActivities.map { CalendarItem.Activity(it) })
+            }
+            CalendarFilter.TASKS -> {
+                list.addAll(selectedDayTasks.map { CalendarItem.Task(it) })
+            }
         }
-        if (uiState.selectedFilter != CalendarFilter.LECTURES) {
-            list.addAll(selectedDayActivities.map { CalendarItem.Activity(it) })
-        }
-        list.addAll(selectedDayTasks.map { CalendarItem.Task(it) })
         list.sortedBy { it.startTime }
     }
 
@@ -490,10 +499,11 @@ fun CalendarScreen(
                     ) {
                         items(CalendarFilter.entries.toTypedArray()) { filter ->
                             val count = when (filter) {
-                                CalendarFilter.ALL -> selectedDayLectures.size + selectedDayActivities.size + selectedDayTasks.size
-                                CalendarFilter.LECTURES -> selectedDayLectures.size
-                                CalendarFilter.ACTIVITIES -> selectedDayActivities.size
-                            }
+                                                              CalendarFilter.ALL -> selectedDayLectures.size + selectedDayActivities.size + selectedDayTasks.size
+                                                              CalendarFilter.LECTURES -> selectedDayLectures.size
+                                                              CalendarFilter.ACTIVITIES -> selectedDayActivities.size
+                                                              CalendarFilter.TASKS -> selectedDayTasks.size
+                                                          }
                             FilterChip(
                                 selected = uiState.selectedFilter == filter,
                                 onClick = { viewModel.setFilter(filter) },

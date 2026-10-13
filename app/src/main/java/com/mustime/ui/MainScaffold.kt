@@ -21,7 +21,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -211,57 +210,46 @@ fun MainScaffold(
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
                 ) {
-                    // Main Screen Content — all tabs stay composed; only visibility changes.
-                    // This preserves remember state (filters, scroll position) across tab switches
-                    // and avoids rebuilding 1200+ line trees on every switch.
-                    //
-                    // CRITICAL: hidden tabs use size(0.dp) so they don't participate in hit-testing.
-                    // alpha(0f) alone only hides drawing — invisible layers still intercept touches.
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        Box(modifier = if (selectedTab == 0) Modifier.fillMaxSize() else Modifier.size(0.dp)) {
-                            TimetableRoute(
-                                onSettingsClick = { isSettingsOpen = true },
-                                onNavigateToNotes = { selectedTab = 2 },
-                                onNavigateToCalendar = { selectedTab = 1 },
-                                onNavigateToTasks = { selectedTab = 3 },
-                                onReconfigureAcademicProfile = {
-                                    isSettingsOpen = false
-                                    navState = AppNavState.FacultySelection
-                                },
-                                onOpenVacantRooms = { isVacantRoomsOpen = true }
-                            )
-                        }
-                        Box(modifier = if (selectedTab == 1) Modifier.fillMaxSize() else Modifier.size(0.dp)) {
-                            CalendarScreen(
-                                onBack = null,
-                                onSettingsClick = { isSettingsOpen = true },
-                                onReconfigureAcademicProfile = {
-                                    isSettingsOpen = false
-                                    navState = AppNavState.FacultySelection
-                                }
-                            )
-                        }
-                        Box(modifier = if (selectedTab == 2) Modifier.fillMaxSize() else Modifier.size(0.dp)) {
-                            NotesScreen(
-                                onBack = null,
-                                onSettingsClick = { isSettingsOpen = true },
-                                onReconfigureAcademicProfile = {
-                                    isSettingsOpen = false
-                                    navState = AppNavState.FacultySelection
-                                },
-                                onEditingChanged = { isNotesEditing = it }
-                            )
-                        }
-                        Box(modifier = if (selectedTab == 3) Modifier.fillMaxSize() else Modifier.size(0.dp)) {
-                            TasksScreen(
-                                onBack = null,
-                                onSettingsClick = { isSettingsOpen = true },
-                                onReconfigureAcademicProfile = {
-                                    isSettingsOpen = false
-                                    navState = AppNavState.FacultySelection
-                                }
-                            )
-                        }
+                    // Main Screen Content — only the selected tab is composed.
+                    // ViewModels are Activity-scoped so they survive; only composition dies.
+                    // This avoids: 4x POST_NOTIFICATIONS requests, heavy init, competing BackHandlers.
+                    when (selectedTab) {
+                        0 -> TimetableRoute(
+                            onSettingsClick = { isSettingsOpen = true },
+                            onNavigateToNotes = { selectedTab = 2 },
+                            onNavigateToCalendar = { selectedTab = 1 },
+                            onNavigateToTasks = { selectedTab = 3 },
+                            onReconfigureAcademicProfile = {
+                                isSettingsOpen = false
+                                navState = AppNavState.FacultySelection
+                            },
+                            onOpenVacantRooms = { isVacantRoomsOpen = true }
+                        )
+                        1 -> CalendarScreen(
+                            onBack = null,
+                            onSettingsClick = { isSettingsOpen = true },
+                            onReconfigureAcademicProfile = {
+                                isSettingsOpen = false
+                                navState = AppNavState.FacultySelection
+                            }
+                        )
+                        2 -> NotesScreen(
+                            onBack = null,
+                            onSettingsClick = { isSettingsOpen = true },
+                            onReconfigureAcademicProfile = {
+                                isSettingsOpen = false
+                                navState = AppNavState.FacultySelection
+                            },
+                            onEditingChanged = { isNotesEditing = it }
+                        )
+                        3 -> TasksScreen(
+                            onBack = null,
+                            onSettingsClick = { isSettingsOpen = true },
+                            onReconfigureAcademicProfile = {
+                                isSettingsOpen = false
+                                navState = AppNavState.FacultySelection
+                            }
+                        )
                     }
 
                     // Floating Pill Dock (overlaid above content, letting unoccupied space reveal content behind - hidden when in dedicated Note Editor)

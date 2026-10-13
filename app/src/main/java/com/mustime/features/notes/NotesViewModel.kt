@@ -158,7 +158,8 @@ class NotesViewModel(
         alarmMinutes: Int?,
         tag: String?,
         attachedClass: String?,
-        attachmentName: String?
+        attachmentName: String?,
+        attachmentPath: String? = null
     ) {
         viewModelScope.launch {
             try {
@@ -185,6 +186,7 @@ class NotesViewModel(
                     tag = tag,
                     attachedClass = attachedClass,
                     attachmentName = attachmentName,
+                    attachmentPath = attachmentPath,
                     colourTag = courseColor,
                     isPinned = isPinned
                 )

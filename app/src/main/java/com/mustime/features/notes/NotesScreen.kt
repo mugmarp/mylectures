@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.mustime.core.storage.AttachmentStore
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mustime.TimetableApplication
@@ -85,7 +86,14 @@ fun NotesScreen(
             timetableClasses = uiState.timetableClasses,
             onSettingsClick = onSettingsClick,
             onReconfigureAcademicProfile = onReconfigureAcademicProfile,
-            onSave = { key, course, title, content, alarm, tag, attachedClass, attachment ->
+            onAttachmentError = { message ->
+                android.widget.Toast.makeText(
+                    context,
+                    message,
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            },
+            onSave = { key, course, title, content, alarm, tag, attachedClass, attachment, attachmentPath ->
                 viewModel.saveNote(
                     naturalKey = key,
                     courseCode = course,
@@ -94,7 +102,8 @@ fun NotesScreen(
                     alarmMinutes = alarm,
                     tag = tag,
                     attachedClass = attachedClass,
-                    attachmentName = attachment
+                    attachmentName = attachment,
+                    attachmentPath = attachmentPath
                 )
                 isEditing = false
                 noteToEdit = null
@@ -471,6 +480,9 @@ fun NotesScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        // Drop the backing file too, so files/attachments/ does not
+                        // accumulate orphans after the note row is removed.
+                        AttachmentStore.delete(context, target.attachmentPath)
                         viewModel.deleteNote(target.naturalKey)
                         noteToDelete = null
                     },
@@ -746,7 +758,8 @@ fun NoteCardItem(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            "1 File",
+                            // Distinguish real stored files from legacy name-only rows.
+                            if (note.attachmentPath != null) "1 File" else "Name only",
                             fontSize = 11.sp,
                             color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
                             fontWeight = FontWeight.Medium

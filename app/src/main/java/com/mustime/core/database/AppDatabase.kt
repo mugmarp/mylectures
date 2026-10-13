@@ -18,7 +18,7 @@ import com.mustime.features.timetable.domain.TimetableMetadata
         Assignment::class,
         TimetableMetadata::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 @androidx.room.TypeConverters(Converters::class)
@@ -166,6 +166,14 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                 """.trimIndent())
                 db.execSQL("DROP TABLE IF EXISTS timetable_metadata_old")
+            }
+        }
+
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Store a stable relative path to a copy of the picked attachment
+                // inside files/attachments/. Legacy rows keep attachmentName only.
+                db.execSQL("ALTER TABLE lecture_notes ADD COLUMN attachmentPath TEXT")
             }
         }
     }
