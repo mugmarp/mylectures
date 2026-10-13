@@ -1,8 +1,6 @@
 package com.mustime.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -212,15 +210,12 @@ fun MainScaffold(
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
                 ) {
-                    // Main Screen Content (flows edge-to-edge behind floating dock with smooth transitions)
-                    Crossfade(
-                        targetState = selectedTab,
-                        animationSpec = tween(90),
-                        label = "main_tab_crossfade",
-                        modifier = Modifier.fillMaxSize()
-                    ) { tabIndex ->
-                        when (tabIndex) {
-                            0 -> TimetableRoute(
+                    // Main Screen Content — all tabs stay composed; only visibility changes.
+                    // This preserves remember state (filters, scroll position) across tab switches
+                    // and avoids rebuilding 1200+ line trees on every switch.
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Box(modifier = Modifier.fillMaxSize().alpha(if (selectedTab == 0) 1f else 0f)) {
+                            TimetableRoute(
                                 onSettingsClick = { isSettingsOpen = true },
                                 onNavigateToNotes = { selectedTab = 2 },
                                 onNavigateToCalendar = { selectedTab = 1 },
@@ -231,7 +226,9 @@ fun MainScaffold(
                                 },
                                 onOpenVacantRooms = { isVacantRoomsOpen = true }
                             )
-                            1 -> CalendarScreen(
+                        }
+                        Box(modifier = Modifier.fillMaxSize().alpha(if (selectedTab == 1) 1f else 0f)) {
+                            CalendarScreen(
                                 onBack = null,
                                 onSettingsClick = { isSettingsOpen = true },
                                 onReconfigureAcademicProfile = {
@@ -239,7 +236,9 @@ fun MainScaffold(
                                     navState = AppNavState.FacultySelection
                                 }
                             )
-                            2 -> NotesScreen(
+                        }
+                        Box(modifier = Modifier.fillMaxSize().alpha(if (selectedTab == 2) 1f else 0f)) {
+                            NotesScreen(
                                 onBack = null,
                                 onSettingsClick = { isSettingsOpen = true },
                                 onReconfigureAcademicProfile = {
@@ -248,7 +247,9 @@ fun MainScaffold(
                                 },
                                 onEditingChanged = { isNotesEditing = it }
                             )
-                            3 -> TasksScreen(
+                        }
+                        Box(modifier = Modifier.fillMaxSize().alpha(if (selectedTab == 3) 1f else 0f)) {
+                            TasksScreen(
                                 onBack = null,
                                 onSettingsClick = { isSettingsOpen = true },
                                 onReconfigureAcademicProfile = {
