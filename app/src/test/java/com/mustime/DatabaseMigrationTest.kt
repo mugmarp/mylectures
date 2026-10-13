@@ -341,4 +341,95 @@ class DatabaseMigrationTest {
         cursor.close()
         db.close()
     }
+
+    /**
+     * v10 adds lecture_notes.attachmentPath, which stores the relative path of an
+     * attachment copied into files/attachments/.
+     *
+     * Guards two failure modes: the column must exist after upgrading (otherwise
+     * Room's schema validation rejects the open), and pre-existing notes must
+     * survive with attachmentPath NULL — a legacy row keeps its name-only
+     * attachmentName and must not be dropped.
+     */
+    @Test
+    fun testMigration9To10AddsAttachmentPathAndPreservesExistingNotes() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.deleteDatabase("test_migration_9_10.db")
+
+        val config = SupportSQLiteOpenHelper.Configuration.builder(context)
+            .name("test_migration_9_10.db")
+            .callback(object : SupportSQLiteOpenHelper.Callback(9) {
+                override fun onCreate(db: SupportSQLiteDatabase) {
+                    // Version 9 schema: no attachmentPath column.
+                    db.execSQL("""
+                        CREATE TABLE IF NOT EXISTS lecture_notes (
+                            naturalKey TEXT NOT NULL PRIMARY KEY,
+                            content TEXT NOT NULL,
+                            updatedAt INTEGER NOT NULL,
+                            colourTag TEXT,
+                            alarmMinutes INTEGER,
+                            title TEXT,
+                            tag TEXT,
+                            attachedClass TEXT,
+                            attachmentName TEXT,
+                            isPinned INTEGER NOT NULL
+                        )
+                    """.trimIndent())
+
+                    // A pre-upgrade note carrying a name-only attachment.
+                    db.execSQL("""
+                        INSERT INTO lecture_notes (
+                            naturalKey, content, updatedAt, title, attachmentName, isPinned
+                        ) VALUES (
+                            'CSC1101|Legacy|Monday|08:00', 'legacy body', 1700000000000,
+                            'Legacy Note', 'old_slides.pdf', 1
+                        )
+                    """.trimIndent())
+                }
+
+                override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
+            })
+            .build()
+
+        val helper = FrameworkSQLiteOpenHelperFactory().create(config)
+        val db = helper.writableDatabase
+
+        AppDatabase.MIGRATION_9_10.migrate(db)
+
+        // The column must exist, be nullable TEXT, and default to NULL.
+        val columns = mutableMapOf<String, Pair<String, Boolean>>()
+        db.query("PRAGMA table_info(`lecture_notes`)").use { cursor ->
+            while (cursor.moveToNext()) {
+                columns[cursor.getString(1)] = cursor.getString(2) to (cursor.getInt(3) == 1)
+            }
+        }
+        assertTrue("attachmentPath column missing after migration", columns.containsKey("attachmentPath"))
+        assertEquals("TEXT" to false, columns["attachmentPath"])
+
+        // The pre-existing row survives with a NULL path.
+        db.query(
+            "SELECT naturalKey, content, attachmentName, attachmentPath FROM lecture_notes WHERE naturalKey = ?",
+            arrayOf("CSC1101|Legacy|Monday|08:00")
+        ).use { cursor ->
+            assertTrue("legacy note was dropped by the migration", cursor.moveToFirst())
+            assertEquals("legacy body", cursor.getString(1))
+            assertEquals("old_slides.pdf", cursor.getString(2))
+            assertTrue("legacy row must have NULL attachmentPath", cursor.isNull(3))
+        }
+
+        // And the column is writable for new attachments.
+        db.execSQL(
+            "UPDATE lecture_notes SET attachmentPath = ? WHERE naturalKey = ?",
+            arrayOf("attachments/1700000000000_new_slides.pdf", "CSC1101|Legacy|Monday|08:00")
+        )
+        db.query(
+            "SELECT attachmentPath FROM lecture_notes WHERE naturalKey = ?",
+            arrayOf("CSC1101|Legacy|Monday|08:00")
+        ).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("attachments/1700000000000_new_slides.pdf", cursor.getString(0))
+        }
+
+        db.close()
+    }
 }
