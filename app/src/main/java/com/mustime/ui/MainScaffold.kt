@@ -277,12 +277,12 @@ fun MainScaffold(
                             border = BorderStroke(1.dp, navBorder),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 60.dp)
+                                .heightIn(min = 60.dp, max = 72.dp)
                         ) {
                             Row(
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 4.dp),
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp, vertical = 6.dp),
                                 horizontalArrangement = Arrangement.SpaceEvenly,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {

@@ -154,18 +154,14 @@ fun TimetableScreen(
         }
     }
 
-    // Real-time clock pulse to re-evaluate next-up, countdowns, and progress bars periodically
-    var timeTick by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(15_000L)
-            timeTick = System.currentTimeMillis()
-        }
-    }
-
-    // 2. Compute TRUE Global Real-Time Next Up (Consistent across ALL day views)
-    val globalNextUp: GlobalNextUp? = remember(entries, todayName, timeTick) {
+    // Real-time clock pulse to re-evaluate next-up, countdowns, and progress bars periodically.
+    // Kept in the smallest possible composable so only that strip recomposes every 15s,
+    // not the entire TimetableScreen.
+    val globalNextUp: GlobalNextUp? = remember(entries, todayName) {
         findActualNextUp(entries, todayName)
+    }
+    NextUpTicker(todayEntries) { completed ->
+        allTodayClassesCompleted = completed
     }
 
     // 3. Filter sessions for the selected day from the real Room database
@@ -211,17 +207,7 @@ fun TimetableScreen(
             ?: SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date())
     }
 
-    val allTodayClassesCompleted = remember(todayEntries, timeTick) {
-        if (todayEntries.isEmpty()) false
-        else {
-            val now = Calendar.getInstance()
-            val curMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
-            todayEntries.all { entry ->
-                val endMin = TimeUtil.toMinutes(entry.endTime)
-                endMin > 0 && endMin <= curMin
-            }
-        }
-    }
+    var allTodayClassesCompleted by remember { mutableStateOf(false) }
 
     // Horizontal drag gesture tracking for swiping between days
     var dragTotal by remember { mutableFloatStateOf(0f) }
@@ -1155,6 +1141,45 @@ private fun GlobalNextUpHeroCard(
                 }
             }
         }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// LOGIC: Real-Time "Today Classes Completed" ticker
+// -----------------------------------------------------------------------------
+
+/**
+ * Ticks every 15 seconds and recomputes whether all of today's classes have ended.
+ *
+ * This is intentionally a separate composable: it owns the only `timeTick` state in
+ * the timetable, so a 15-second refresh recomposes this leaf (and its parent's
+ * `allTodayClassesCompleted` assignment) rather than the whole TimetableScreen tree.
+ */
+@Composable
+private fun NextUpTicker(
+    todayEntries: List<TimetableEntry>,
+    onCompletedChanged: (Boolean) -> Unit
+) {
+    var timeTick by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(15_000L)
+            timeTick = System.currentTimeMillis()
+        }
+    }
+
+    LaunchedEffect(todayEntries, timeTick) {
+        val completed = if (todayEntries.isEmpty()) {
+            false
+        } else {
+            val now = Calendar.getInstance()
+            val curMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+            todayEntries.all { entry ->
+                val endMin = TimeUtil.toMinutes(entry.endTime)
+                endMin > 0 && endMin <= curMin
+            }
+        }
+        onCompletedChanged(completed)
     }
 }
 

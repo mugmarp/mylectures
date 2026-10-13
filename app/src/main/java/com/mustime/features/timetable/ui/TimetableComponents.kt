@@ -367,7 +367,7 @@ fun DayCapsuleStrip(
                 isActive -> {
                     Modifier
                         .weight(1f)
-                        .height(44.dp)
+                        .heightIn(min = 44.dp)
                         .shadow(
                             elevation = 4.dp,
                             shape = RoundedCornerShape(12.dp),
@@ -380,7 +380,7 @@ fun DayCapsuleStrip(
                 isToday -> {
                     Modifier
                         .weight(1f)
-                        .height(44.dp)
+                        .heightIn(min = 44.dp)
                         .background(
                             if (isDark) PrimaryBlue.copy(alpha = 0.22f) else PrimaryBlue.copy(alpha = 0.12f),
                             RoundedCornerShape(12.dp)
@@ -395,7 +395,7 @@ fun DayCapsuleStrip(
                 else -> {
                     Modifier
                         .weight(1f)
-                        .height(44.dp)
+                        .heightIn(min = 44.dp)
                         .background(
                             if (isDark) DarkSurfaceCard else Color.White,
                             RoundedCornerShape(12.dp)
@@ -422,7 +422,9 @@ fun DayCapsuleStrip(
                         isToday -> PrimaryBlue
                         isDark -> Color.White
                         else -> TextSecondaryLight
-                    }
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -461,7 +463,7 @@ fun DayCapsuleStrip(
                 isActive -> {
                     Modifier
                         .weight(1f)
-                        .height(44.dp)
+                        .heightIn(min = 44.dp)
                         .shadow(
                             elevation = 4.dp,
                             shape = RoundedCornerShape(12.dp),
@@ -474,7 +476,7 @@ fun DayCapsuleStrip(
                 isToday -> {
                     Modifier
                         .weight(1f)
-                        .height(44.dp)
+                        .heightIn(min = 44.dp)
                         .background(
                             if (isDark) PrimaryBlue.copy(alpha = 0.22f) else PrimaryBlue.copy(alpha = 0.12f),
                             RoundedCornerShape(12.dp)
@@ -489,7 +491,7 @@ fun DayCapsuleStrip(
                 else -> {
                     Modifier
                         .weight(1f)
-                        .height(44.dp)
+                        .heightIn(min = 44.dp)
                         .background(
                             if (isDark) DarkSurfaceCard else Color.White,
                             RoundedCornerShape(12.dp)
