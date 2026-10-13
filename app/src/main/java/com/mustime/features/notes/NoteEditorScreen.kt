@@ -68,6 +68,7 @@ fun NoteEditorScreen(
     onSettingsClick: () -> Unit = {},
     onReconfigureAcademicProfile: () -> Unit = {},
     onAttachmentError: ((String) -> Unit)? = null,
+    onEditingChanged: (Boolean) -> Unit = {},
     onSave: (
         naturalKey: String?,
         courseCode: String,

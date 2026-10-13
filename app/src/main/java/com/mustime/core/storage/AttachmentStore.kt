@@ -57,31 +57,33 @@ object AttachmentStore {
         context: Context,
         source: Uri,
         fallbackName: String
-    ): String? = try {
-        val displayName = queryDisplayName(context, source)
-            ?.takeIf { it.isNotBlank() }
-            ?: fallbackName
+    ): String? {
+        try {
+            val displayName = queryDisplayName(context, source)
+                ?.takeIf { it.isNotBlank() }
+                ?: fallbackName
 
-        // Strip path separators so a hostile display name cannot escape the dir.
-        val safeName = displayName
-            .substringAfterLast('/')
-            .substringAfterLast('\\')
-            .ifBlank { fallbackName }
+            // Strip path separators so a hostile display name cannot escape the dir.
+            val safeName = displayName
+                .substringAfterLast('/')
+                .substringAfterLast('\\')
+                .ifBlank { fallbackName }
 
-        val target = File(attachmentDir(context), "${System.currentTimeMillis()}_$safeName")
+            val target = File(attachmentDir(context), "${System.currentTimeMillis()}_$safeName")
 
-        context.contentResolver.openInputStream(source)?.use { input ->
-            target.outputStream().use { output -> input.copyTo(output) }
-        } ?: return null
+            context.contentResolver.openInputStream(source)?.use { input ->
+                target.outputStream().use { output -> input.copyTo(output) }
+            } ?: return null
 
-        if (target.length() == 0L) {
-            target.delete()
+            if (target.length() == 0L) {
+                target.delete()
+                return null
+            }
+
+            return "$DIR_NAME/${target.name}"
+        } catch (_: Exception) {
             return null
         }
-
-        "$DIR_NAME/${target.name}"
-    } catch (_: Exception) {
-        null
     }
 
     /** Absolute file for a stored relative path, or null when it is missing. */
