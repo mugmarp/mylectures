@@ -160,9 +160,6 @@ fun TimetableScreen(
     val globalNextUp: GlobalNextUp? = remember(entries, todayName) {
         findActualNextUp(entries, todayName)
     }
-    NextUpTicker(todayEntries) { completed ->
-        allTodayClassesCompleted = completed
-    }
 
     // 3. Filter sessions for the selected day from the real Room database
     val dayEntries = remember(entries, selectedDay, selectedFilter) {
@@ -208,6 +205,10 @@ fun TimetableScreen(
     }
 
     var allTodayClassesCompleted by remember { mutableStateOf(false) }
+
+    NextUpTicker(todayEntries) { completed ->
+        allTodayClassesCompleted = completed
+    }
 
     // Horizontal drag gesture tracking for swiping between days
     var dragTotal by remember { mutableFloatStateOf(0f) }
