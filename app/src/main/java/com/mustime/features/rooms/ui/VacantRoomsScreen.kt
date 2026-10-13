@@ -62,9 +62,6 @@ fun VacantRoomsScreen(
     val app = context.applicationContext as? TimetableApplication
     val repository = app?.repository
 
-    val allEntries by (repository?.getAllEntries() ?: kotlinx.coroutines.flow.flowOf(emptyList()))
-        .collectAsState(initial = emptyList())
-
     val customEvents by (repository?.getCustomEvents() ?: kotlinx.coroutines.flow.flowOf(emptyList()))
         .collectAsState(initial = emptyList())
 
@@ -86,6 +83,12 @@ fun VacantRoomsScreen(
     var queryDay by remember { mutableStateOf(initialDay) }
     var queryTime by remember { mutableStateOf(initialTimeStr) }
     var isLiveNow by remember { mutableStateOf(true) }
+
+    // Day-scoped query: only load entries for the selected day instead of all 1304 rows.
+    val allEntries by remember(queryDay) {
+        app?.database?.timetableDao()?.getScheduleForDay(queryDay)
+            ?: kotlinx.coroutines.flow.flowOf(emptyList())
+    }.collectAsState(initial = emptyList())
 
     // ---- Faculty default: strictly derives default Faculty Building and Campus ----
     val activeProgramme = enrolledProgramme ?: repository?.getInitialProgramme()
