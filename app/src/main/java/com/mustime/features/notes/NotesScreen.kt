@@ -93,7 +93,6 @@ fun NotesScreen(
                     android.widget.Toast.LENGTH_SHORT
                 ).show()
             },
-            onEditingChanged = { isNotesEditing = it },
             onSave = { key, course, title, content, alarm, tag, attachedClass, attachment, attachmentPath ->
                 viewModel.saveNote(
                     naturalKey = key,

@@ -68,7 +68,6 @@ fun NoteEditorScreen(
     onSettingsClick: () -> Unit = {},
     onReconfigureAcademicProfile: () -> Unit = {},
     onAttachmentError: ((String) -> Unit)? = null,
-    onEditingChanged: (Boolean) -> Unit = {},
     onSave: (
         naturalKey: String?,
         courseCode: String,
@@ -182,15 +181,6 @@ fun NoteEditorScreen(
     }
 
     BackHandler(enabled = true, onBack = handleBackPress)
-
-    // Tell parent we're editing so dock can hide
-    LaunchedEffect(Unit) {
-        onEditingChanged(true)
-    }
-    // Reset when leaving editor
-    DisposableEffect(Unit) {
-        onDispose { onEditingChanged(false) }
-    }
 
     // Markdown insertion helper supporting selection wrapping
     val applyMarkdown: (prefix: String, suffix: String, defaultPlaceholder: String) -> Unit = { prefix, suffix, defaultPlaceholder ->
