@@ -214,8 +214,11 @@ fun MainScaffold(
                     // Main Screen Content — all tabs stay composed; only visibility changes.
                     // This preserves remember state (filters, scroll position) across tab switches
                     // and avoids rebuilding 1200+ line trees on every switch.
+                    //
+                    // CRITICAL: hidden tabs use size(0.dp) so they don't participate in hit-testing.
+                    // alpha(0f) alone only hides drawing — invisible layers still intercept touches.
                     Box(modifier = Modifier.fillMaxSize()) {
-                        Box(modifier = Modifier.fillMaxSize().alpha(if (selectedTab == 0) 1f else 0f)) {
+                        Box(modifier = if (selectedTab == 0) Modifier.fillMaxSize() else Modifier.size(0.dp)) {
                             TimetableRoute(
                                 onSettingsClick = { isSettingsOpen = true },
                                 onNavigateToNotes = { selectedTab = 2 },
@@ -228,7 +231,7 @@ fun MainScaffold(
                                 onOpenVacantRooms = { isVacantRoomsOpen = true }
                             )
                         }
-                        Box(modifier = Modifier.fillMaxSize().alpha(if (selectedTab == 1) 1f else 0f)) {
+                        Box(modifier = if (selectedTab == 1) Modifier.fillMaxSize() else Modifier.size(0.dp)) {
                             CalendarScreen(
                                 onBack = null,
                                 onSettingsClick = { isSettingsOpen = true },
@@ -238,7 +241,7 @@ fun MainScaffold(
                                 }
                             )
                         }
-                        Box(modifier = Modifier.fillMaxSize().alpha(if (selectedTab == 2) 1f else 0f)) {
+                        Box(modifier = if (selectedTab == 2) Modifier.fillMaxSize() else Modifier.size(0.dp)) {
                             NotesScreen(
                                 onBack = null,
                                 onSettingsClick = { isSettingsOpen = true },
@@ -249,7 +252,7 @@ fun MainScaffold(
                                 onEditingChanged = { isNotesEditing = it }
                             )
                         }
-                        Box(modifier = Modifier.fillMaxSize().alpha(if (selectedTab == 3) 1f else 0f)) {
+                        Box(modifier = if (selectedTab == 3) Modifier.fillMaxSize() else Modifier.size(0.dp)) {
                             TasksScreen(
                                 onBack = null,
                                 onSettingsClick = { isSettingsOpen = true },
