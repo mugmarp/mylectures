@@ -102,6 +102,7 @@ data class SpecClassSession(
     val isAlarmSet: Boolean = false,
     val alarmMinutes: Int? = null,
     val isHappeningNow: Boolean = false,
+    val hasConflict: Boolean = false,
     val progress: Float = 0.70f,
     val elapsedText: String = "1h 45m elapsed",
     val remainingText: String = "35 mins left · Ends 11:00"
@@ -1292,7 +1293,11 @@ fun TimelineClassCard(
             .padding(horizontal = 20.dp)
             .shadow(elevation = 2.dp, shape = TimelineCardShape)
             .background(cardBg, TimelineCardShape)
-            .border(1.dp, borderSubtle, TimelineCardShape)
+            .border(
+                width = if (session.hasConflict) 2.dp else 1.dp,
+                color = if (session.hasConflict) Color(0xFFDC2626) else borderSubtle,
+                shape = TimelineCardShape
+            )
             .clickable(onClick = onClick)
     ) {
         // Left Category Bar (4dp) - zero intrinsic overhead
@@ -1353,6 +1358,34 @@ fun TimelineClassCard(
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
+
+                // Conflict warning badge
+                if (session.hasConflict) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .background(
+                                Color(0xFFDC2626).copy(alpha = 0.08f),
+                                RoundedCornerShape(6.dp)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = Color(0xFFDC2626),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Schedule conflict detected",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFFDC2626)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
 
                 // Title
                 Text(

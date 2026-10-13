@@ -633,7 +633,10 @@ fun TimetableScreen(
                     // Render real lectures with TimelineClassCard from specification
                     items(dayEntries, key = { it.naturalKey.ifBlank { "${it.courseCode}_${it.startTime}_${it.dayOfWeek}" } }) { entry ->
                         val entryNote = notes[entry.naturalKey]
+                        val hasConflict = com.mustime.features.timetable.domain.TimetableConflictDetector
+                            .hasConflict(entry, dayEntries)
                         val specSession = entry.toSpecClassSession(
+                            hasConflict = hasConflict,
                             note = entryNote,
                             startsInText = if (isViewingToday) {
                                 val now = Calendar.getInstance()
@@ -863,7 +866,8 @@ private fun TimetableEntry.toSpecClassSession(
     note: LectureNote? = null,
     isLive: Boolean = false,
     progress: SessionProgress? = null,
-    startsInText: String? = null
+    startsInText: String? = null,
+    hasConflict: Boolean = false
 ): SpecClassSession {
     val codeUpper = courseCode.trim().uppercase()
     val titleUpper = courseTitle.trim().uppercase()
@@ -918,6 +922,7 @@ private fun TimetableEntry.toSpecClassSession(
         isAlarmSet = note?.alarmMinutes != null,
         alarmMinutes = note?.alarmMinutes,
         isHappeningNow = isLive,
+        hasConflict = hasConflict,
         progress = progress?.progress ?: 0.5f,
         elapsedText = elapsedStr,
         remainingText = remStr
