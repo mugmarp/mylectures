@@ -270,7 +270,7 @@ fun MainScaffold(
                             border = BorderStroke(1.dp, navBorder),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 60.dp, max = 72.dp)
+                                .height(60.dp)
                         ) {
                             Row(
                                 modifier = Modifier
