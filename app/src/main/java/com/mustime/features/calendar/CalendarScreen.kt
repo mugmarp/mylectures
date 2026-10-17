@@ -49,6 +49,8 @@ import com.mustime.features.timetable.ui.AddActivitySheet
 import androidx.compose.foundation.layout.WindowInsets
 import com.mustime.features.timetable.ui.LectureCard
 import com.mustime.features.timetable.ui.LectureDetailSheet
+import com.mustime.ui.Chrome
+import com.mustime.ui.rememberLecturesWindow
 import com.mustime.ui.components.AcademicProfileSheet
 import com.mustime.ui.components.RoomFloorBadge
 
@@ -145,24 +147,39 @@ fun CalendarScreen(
         list.sortedBy { it.startTime }
     }
 
+    val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val listBottomPadding = (navBarBottom + 60.dp + 16.dp)
+    val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showAddActivitySheet = true },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = RoundedCornerShape(16.dp),
-                icon = { Icon(Icons.Default.Add, contentDescription = "Add Activity") },
-                text = { Text("Add Activity", fontWeight = FontWeight.Bold) },
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(bottom = 72.dp)
-            )
+            if (windowInfo.collapseFab) {
+                FloatingActionButton(
+                    onClick = { showAddActivitySheet = true },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = Chrome.fabBottomPadding())
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Activity")
+                }
+            } else {
+                ExtendedFloatingActionButton(
+                    onClick = { showAddActivitySheet = true },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(16.dp),
+                    icon = { Icon(Icons.Default.Add, contentDescription = "Add Activity") },
+                    text = { Text("Add Activity", fontWeight = FontWeight.Bold) },
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = Chrome.fabBottomPadding())
+                )
+            }
         }
     ) { innerPadding ->
         LazyColumn(
@@ -305,15 +322,15 @@ fun CalendarScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceAround
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     dayNames.forEach { name ->
                         Text(
                             text = name,
-                            fontSize = 14.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.width(40.dp),
+                            modifier = Modifier.weight(1f),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
@@ -326,21 +343,22 @@ fun CalendarScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     var currentDay = 1
                     for (row in 0..5) {
                         if (currentDay > uiState.daysInMonth) break
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceAround
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             for (col in 0..6) {
                                 val cellIndex = row * 7 + col
                                 if (cellIndex < uiState.firstDayOfWeekOffset || currentDay > uiState.daysInMonth) {
                                     Box(
                                         modifier = Modifier
-                                            .size(44.dp)
+                                            .weight(1f)
+                                            .aspectRatio(1f)
                                             .clip(RoundedCornerShape(10.dp))
                                             .background(Color.Transparent)
                                     )
@@ -362,7 +380,8 @@ fun CalendarScreen(
 
                                     Box(
                                         modifier = Modifier
-                                            .size(44.dp)
+                                            .weight(1f)
+                                            .aspectRatio(1f)
                                             .clip(RoundedCornerShape(10.dp))
                                             .background(
                                                 when {

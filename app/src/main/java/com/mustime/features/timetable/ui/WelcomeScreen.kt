@@ -34,12 +34,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mustime.R
 import com.mustime.ui.LocalAppTheme
+import com.mustime.ui.rememberLecturesWindow
 
 @Composable
 fun WelcomeScreen(
     onGetStarted: () -> Unit
 ) {
     val isDark = LocalAppTheme.current.isDark
+    val windowInfo = rememberLecturesWindow()
 
     var termsAcknowledged by remember { mutableStateOf(false) }
     var showDisclaimerDialog by remember { mutableStateOf(false) }
@@ -228,12 +230,16 @@ fun WelcomeScreen(
             .navigationBarsPadding(),
         contentAlignment = Alignment.Center
     ) {
+        val logoSize = if (windowInfo.isShort) 68.dp else 92.dp
+        val logoImageSize = if (windowInfo.isShort) 54.dp else 76.dp
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = if (windowInfo.isShort) Arrangement.spacedBy(16.dp) else Arrangement.SpaceBetween
         ) {
             // 1. Top Hero Header: Prominent Brand Emblem, Name & Tagline
             Column(
@@ -243,7 +249,7 @@ fun WelcomeScreen(
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Surface(
-                    modifier = Modifier.size(92.dp),
+                    modifier = Modifier.size(logoSize),
                     shape = RoundedCornerShape(26.dp),
                     color = cardBg,
                     shadowElevation = 6.dp,
@@ -257,7 +263,7 @@ fun WelcomeScreen(
                             painter = painterResource(R.drawable.app_logo),
                             contentDescription = "Lectures App Logo",
                             modifier = Modifier
-                                .size(76.dp)
+                                .size(logoImageSize)
                                 .clip(RoundedCornerShape(20.dp))
                         )
                     }

@@ -46,7 +46,9 @@ import com.mustime.features.timetable.domain.Assignment
 import com.mustime.features.timetable.domain.CustomEvent
 import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.domain.TimetableEntry
+import com.mustime.ui.Chrome
 import com.mustime.ui.LocalAppTheme
+import com.mustime.ui.rememberLecturesWindow
 import com.mustime.ui.components.AcademicProfileSheet
 import com.mustime.ui.components.NotificationCenterSheet
 import androidx.compose.foundation.layout.WindowInsets
@@ -214,8 +216,9 @@ fun TimetableScreen(
     var dragTotal by remember { mutableFloatStateOf(0f) }
     var showNotificationCenterSheet by remember { mutableStateOf(false) }
 
+    val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val listBottomPadding = (navBarBottom + 60.dp + 16.dp)
+    val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -238,30 +241,49 @@ fun TimetableScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showQuickAddSheet = true },
-                containerColor = PrimaryBlue,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp),
-                icon = {
+            if (windowInfo.collapseFab) {
+                FloatingActionButton(
+                    onClick = { showQuickAddSheet = true },
+                    containerColor = PrimaryBlue,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = Chrome.fabBottomPadding())
+                        .testTag("timetable_fab")
+                ) {
                     Icon(
                         Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        contentDescription = "Add Activity",
+                        modifier = Modifier.size(24.dp)
                     )
-                },
-                text = {
-                    Text(
-                        text = "Add Activity",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp
-                    )
-                },
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(bottom = 72.dp)
-                    .testTag("timetable_fab")
-            )
+                }
+            } else {
+                ExtendedFloatingActionButton(
+                    onClick = { showQuickAddSheet = true },
+                    containerColor = PrimaryBlue,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    icon = {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = "Add Activity",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                    },
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = Chrome.fabBottomPadding())
+                        .testTag("timetable_fab")
+                )
+            }
         }
     ) { innerPadding ->
         Box(

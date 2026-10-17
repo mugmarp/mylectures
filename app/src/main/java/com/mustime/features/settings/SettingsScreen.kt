@@ -575,7 +575,6 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
         ) {
             if (onBack != null) {

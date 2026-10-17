@@ -52,7 +52,9 @@ import kotlinx.coroutines.flow.flowOf
 import com.mustime.features.timetable.domain.Assignment
 import androidx.compose.foundation.layout.WindowInsets
 import com.mustime.features.timetable.ui.*
+import com.mustime.ui.Chrome
 import com.mustime.ui.LocalAppTheme
+import com.mustime.ui.rememberLecturesWindow
 import com.mustime.ui.components.*
 import com.mustime.ui.components.AcademicProfileSheet
 
@@ -212,40 +214,63 @@ fun TasksScreen(
         )
     }
 
+    val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val listBottomPadding = (navBarBottom + 60.dp + 16.dp)
+    val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = bg,
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    taskToEdit = null
-                    showAddDialog = true
-                },
-                containerColor = primaryColor,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp),
-                icon = {
+            if (windowInfo.collapseFab) {
+                FloatingActionButton(
+                    onClick = {
+                        taskToEdit = null
+                        showAddDialog = true
+                    },
+                    containerColor = primaryColor,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = Chrome.fabBottomPadding())
+                        .testTag("add_task_fab")
+                ) {
                     Icon(
                         Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        contentDescription = "Add Task",
+                        modifier = Modifier.size(24.dp)
                     )
-                },
-                text = {
-                    Text(
-                        text = "Add Task",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp
-                    )
-                },
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(bottom = 72.dp)
-                    .testTag("add_task_fab")
-            )
+                }
+            } else {
+                ExtendedFloatingActionButton(
+                    onClick = {
+                        taskToEdit = null
+                        showAddDialog = true
+                    },
+                    containerColor = primaryColor,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    icon = {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = "Add Task",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                    },
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = Chrome.fabBottomPadding())
+                        .testTag("add_task_fab")
+                )
+            }
         }
     ) { innerPadding ->
         Column(

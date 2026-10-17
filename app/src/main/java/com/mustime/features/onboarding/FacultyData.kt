@@ -100,7 +100,7 @@ val FACULTIES = listOf(
     )),
     Faculty("interdisciplinary", "Faculty of Interdisciplinary Studies", null, "Users", listOf(
         Programme("BSAL", "BSc in Agriculture and Livelihoods", 4),
-        Programme("BGWH", "BSc in Gender and Applied Women Health", 3, customYears = listOf("III")),
+        Programme("BGWH", "BSc in Gender and Applied Women Health", 3),
         Programme("BPCD", "BSc in Planning and Community Development", 3)
     ))
 )

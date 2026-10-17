@@ -35,8 +35,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mustime.TimetableApplication
 import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.ui.*
-import androidx.compose.foundation.layout.WindowInsets
+import com.mustime.ui.Chrome
 import com.mustime.ui.LocalAppTheme
+import com.mustime.ui.rememberLecturesWindow
 import com.mustime.ui.components.AcademicProfileSheet
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -117,30 +118,51 @@ fun NotesScreen(
     }
 
     // Main Academic Notes Dashboard Screen
+    val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val listBottomPadding = (navBarBottom + 60.dp + 16.dp)
+    val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    focusManager.clearFocus()
-                    keyboardController?.hide()
-                    noteToEdit = null
-                    isEditing = true
-                },
-                containerColor = Color(0xFF0052CC),
-                contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp),
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(bottom = 72.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Note", modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Note", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+            if (windowInfo.collapseFab) {
+                FloatingActionButton(
+                    onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        noteToEdit = null
+                        isEditing = true
+                    },
+                    containerColor = Color(0xFF0052CC),
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = Chrome.fabBottomPadding())
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Note", modifier = Modifier.size(24.dp))
+                }
+            } else {
+                ExtendedFloatingActionButton(
+                    onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        noteToEdit = null
+                        isEditing = true
+                    },
+                    containerColor = Color(0xFF0052CC),
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = Chrome.fabBottomPadding())
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Note", modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Add Note", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                }
             }
         }
     ) { innerPadding ->
