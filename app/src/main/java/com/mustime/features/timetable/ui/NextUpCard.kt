@@ -31,6 +31,7 @@ import com.mustime.core.util.TimeUtil
 import com.mustime.features.timetable.domain.TimetableEntry
 import com.mustime.ui.components.RoomFloorBadge
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NextUpCard(entry: TimetableEntry, minutesUntil: Int, onClick: () -> Unit) {
     val style = sessionStyle(entry.sessionType, entry.room ?: "", entry.courseTitle)
@@ -110,19 +111,26 @@ fun NextUpCard(entry: TimetableEntry, minutesUntil: Int, onClick: () -> Unit) {
             
             Spacer(modifier = Modifier.height(14.dp))
             
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.Schedule, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("${entry.startTime} – ${entry.endTime}", color = Color.White, fontSize = 14.sp)
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.Schedule, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("${entry.startTime} – ${entry.endTime}", color = Color.White, fontSize = 14.sp)
+                }
                 
                 val roomText = entry.room?.trim()
                 if (!roomText.isNullOrEmpty() && roomText.uppercase() !in listOf("TBA", "TBD", "NONE", "N/A")) {
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Icon(Icons.Outlined.MeetingRoom, contentDescription = "Venue", tint = Color.White, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(roomText, color = Color.White, fontSize = 14.sp)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    RoomFloorBadge(roomName = roomText, floor = entry.floor, compact = true, useContrastColor = true)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.MeetingRoom, contentDescription = "Venue", tint = Color.White, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(roomText, color = Color.White, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        RoomFloorBadge(roomName = roomText, floor = entry.floor, compact = true, useContrastColor = true)
+                    }
                 }
             }
 

@@ -252,14 +252,16 @@ fun MainScaffold(
                         )
                     }
 
-                    // Floating Pill Dock (overlaid above content, letting unoccupied space reveal content behind - hidden when in dedicated Note Editor)
-                    if (!isNotesEditing) {
+                    val windowInfo = rememberLecturesWindow()
+
+                    // Floating Pill Dock (overlaid above content, letting unoccupied space reveal content behind - hidden when in dedicated Note Editor or when soft keyboard is up)
+                    if (!isNotesEditing && !windowInfo.isImeVisible) {
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
                                 .fillMaxWidth()
                                 .navigationBarsPadding()
-                                .padding(start = 14.dp, end = 14.dp, bottom = 6.dp),
+                                .padding(start = Chrome.DockSideInset, end = Chrome.DockSideInset, bottom = Chrome.DockBottomGap),
                             contentAlignment = Alignment.Center
                         ) {
                         Surface(
@@ -269,8 +271,9 @@ fun MainScaffold(
                             shadowElevation = 8.dp,
                             border = BorderStroke(1.dp, navBorder),
                             modifier = Modifier
+                                .widthIn(max = 440.dp)
                                 .fillMaxWidth()
-                                .height(60.dp)
+                                .height(Chrome.DockHeight)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -303,25 +306,27 @@ fun MainScaffold(
                                                 modifier = Modifier
                                                     .clip(RoundedCornerShape(14.dp))
                                                     .background(if (isSelected) primaryBlue.copy(alpha = 0.12f) else Color.Transparent)
-                                                .padding(horizontal = 12.dp, vertical = 2.dp),
+                                                    .padding(horizontal = if (windowInfo.dockIconOnly) 16.dp else 10.dp, vertical = if (windowInfo.dockIconOnly) 6.dp else 2.dp),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Icon(
                                                     imageVector = icon,
                                                     contentDescription = tab,
                                                     tint = if (isSelected) primaryBlue else textMuted,
-                                                    modifier = Modifier.size(21.dp)
+                                                    modifier = Modifier.size(if (windowInfo.dockIconOnly) 24.dp else 21.dp)
                                                 )
                                             }
-                                            Spacer(modifier = Modifier.height(1.dp))
-                                            Text(
-                                                text = tab,
-                                                fontSize = 10.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                color = if (isSelected) primaryBlue else textMuted,
-                                                maxLines = 1,
-                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                            )
+                                            if (!windowInfo.dockIconOnly) {
+                                                Spacer(modifier = Modifier.height(1.dp))
+                                                Text(
+                                                    text = tab,
+                                                    fontSize = 10.sp,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    color = if (isSelected) primaryBlue else textMuted,
+                                                    maxLines = 1,
+                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                )
+                                            }
                                         }
                                     }
                                 }

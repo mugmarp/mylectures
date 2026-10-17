@@ -33,6 +33,7 @@ import com.mustime.features.timetable.domain.TimetableEntry
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.components.RoomFloorBadge
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LectureCard(entry: TimetableEntry, onClick: () -> Unit) {
     val style = sessionStyle(entry.sessionType, entry.room ?: "", entry.courseTitle)
@@ -101,19 +102,26 @@ fun LectureCard(entry: TimetableEntry, onClick: () -> Unit) {
                 
                 Spacer(modifier = Modifier.height(10.dp))
                 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("${entry.startTime} – ${entry.endTime}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("${entry.startTime} – ${entry.endTime}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                    }
                     
                     val roomText = entry.room?.trim()
                     if (!roomText.isNullOrEmpty() && roomText.uppercase() !in listOf("TBA", "TBD", "NONE", "N/A")) {
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Icon(Icons.Outlined.MeetingRoom, contentDescription = "Venue", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(roomText, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        RoomFloorBadge(roomName = roomText, floor = entry.floor, compact = true, isDark = LocalAppTheme.current.isDark)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.MeetingRoom, contentDescription = "Venue", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(roomText, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            RoomFloorBadge(roomName = roomText, floor = entry.floor, compact = true, isDark = LocalAppTheme.current.isDark)
+                        }
                     }
                 }
 
@@ -169,10 +177,19 @@ fun LectureCard(entry: TimetableEntry, onClick: () -> Unit) {
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     if (lecturerText != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f, fill = false)
+                        ) {
                             Icon(Icons.Outlined.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(lecturerText, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                            Text(
+                                lecturerText,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 14.sp,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
                             
                             if (entry.sharedWithRaw.isNotBlank()) {
                                 val count = entry.sharedWithRaw.split(",").size
@@ -182,7 +199,15 @@ fun LectureCard(entry: TimetableEntry, onClick: () -> Unit) {
                         }
                     } else if (entry.sharedWithRaw.isNotBlank()) {
                         val count = entry.sharedWithRaw.split(",").size
-                        Text("Shared with $count groups", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                        Text(
+                            "Shared with $count groups",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.weight(1f, fill = false),
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
                     } else {
                         Spacer(modifier = Modifier.width(1.dp))
                     }
