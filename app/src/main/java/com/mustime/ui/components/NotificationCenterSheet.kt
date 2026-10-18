@@ -70,8 +70,9 @@ fun NotificationCenterSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .navigationBarsPadding()
                 .padding(horizontal = 24.dp)
-                .padding(bottom = 36.dp)
+                .padding(bottom = 24.dp)
         ) {
             // Header Row
             Row(
