@@ -159,8 +159,8 @@ fun TimetableScreen(
     // Real-time clock pulse to re-evaluate next-up, countdowns, and progress bars periodically.
     // Kept in the smallest possible composable so only that strip recomposes every 15s,
     // not the entire TimetableScreen.
-    val globalNextUp: GlobalNextUp? = remember(entries, todayName) {
-        findActualNextUp(entries, todayName)
+    var globalNextUp by remember(entries, todayName) {
+        mutableStateOf(findActualNextUp(entries, todayName))
     }
 
     // 3. Filter sessions for the selected day from the real Room database
@@ -208,9 +208,13 @@ fun TimetableScreen(
 
     var allTodayClassesCompleted by remember { mutableStateOf(false) }
 
-    NextUpTicker(todayEntries) { completed ->
-        allTodayClassesCompleted = completed
-    }
+    NextUpTicker(
+        entries = entries,
+        todayEntries = todayEntries,
+        todayName = todayName,
+        onCompletedChanged = { allTodayClassesCompleted = it },
+        onNextUpChanged = { globalNextUp = it }
+    )
 
     // Horizontal drag gesture tracking for swiping between days
     var dragTotal by remember { mutableFloatStateOf(0f) }
@@ -413,7 +417,8 @@ fun TimetableScreen(
                 }
 
                 // SECTION 2: HAPPENING NOW / NEXT UP HERO CARD (ABOVE THE DAYS)
-                if (allTodayClassesCompleted && globalNextUp != null && !globalNextUp.isLive) {
+                val currentNextUp = globalNextUp
+                if (allTodayClassesCompleted && currentNextUp != null && !currentNextUp.isLive) {
                     item(key = "today_completed_badge") {
                         PaddingBox(top = 4.dp, bottom = 2.dp) {
                             Surface(
@@ -445,16 +450,16 @@ fun TimetableScreen(
                     }
                 }
 
-                if (globalNextUp != null) {
+                if (currentNextUp != null) {
                     item(key = "today_hero_card") {
-                        val entry = globalNextUp.entry
+                        val entry = currentNextUp.entry
                         val note = notes[entry.naturalKey]
 
-                        if (globalNextUp.isLive) {
+                        if (currentNextUp.isLive) {
                             val session = entry.toSpecClassSession(
                                 note = note,
                                 isLive = true,
-                                progress = globalNextUp.progress
+                                progress = currentNextUp.progress
                             )
                             HappeningNowHeroCard(
                                 session = session,
@@ -470,14 +475,14 @@ fun TimetableScreen(
                             )
                         } else {
                             val countdownText = when {
-                                globalNextUp.dayLabel.equals("Today", ignoreCase = true) -> {
+                                currentNextUp.dayLabel.equals("Today", ignoreCase = true) -> {
                                     when {
-                                        globalNextUp.minutesUntil in 1..59 -> "in ${globalNextUp.minutesUntil}m"
-                                        globalNextUp.minutesUntil >= 60 -> "in ${globalNextUp.minutesUntil / 60}h ${globalNextUp.minutesUntil % 60}m"
+                                        currentNextUp.minutesUntil in 1..59 -> "in ${currentNextUp.minutesUntil}m"
+                                        currentNextUp.minutesUntil >= 60 -> "in ${currentNextUp.minutesUntil / 60}h ${currentNextUp.minutesUntil % 60}m"
                                         else -> "Starting soon"
                                     }
                                 }
-                                else -> "${globalNextUp.dayLabel} at ${entry.startTime}"
+                                else -> "${currentNextUp.dayLabel} at ${entry.startTime}"
                             }
 
                             val session = entry.toSpecClassSession(
@@ -1185,8 +1190,11 @@ private fun GlobalNextUpHeroCard(
  */
 @Composable
 private fun NextUpTicker(
+    entries: List<TimetableEntry>,
     todayEntries: List<TimetableEntry>,
-    onCompletedChanged: (Boolean) -> Unit
+    todayName: String,
+    onCompletedChanged: (Boolean) -> Unit,
+    onNextUpChanged: (GlobalNextUp?) -> Unit
 ) {
     var timeTick by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
@@ -1196,7 +1204,7 @@ private fun NextUpTicker(
         }
     }
 
-    LaunchedEffect(todayEntries, timeTick) {
+    LaunchedEffect(todayEntries, entries, todayName, timeTick) {
         val completed = if (todayEntries.isEmpty()) {
             false
         } else {
@@ -1208,6 +1216,7 @@ private fun NextUpTicker(
             }
         }
         onCompletedChanged(completed)
+        onNextUpChanged(findActualNextUp(entries, todayName))
     }
 }
 

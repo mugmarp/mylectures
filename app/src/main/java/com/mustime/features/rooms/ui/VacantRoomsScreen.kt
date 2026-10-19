@@ -39,6 +39,7 @@ import com.mustime.features.rooms.UniversityDirectory
 import com.mustime.features.timetable.domain.TimetableEntry
 import com.mustime.features.timetable.ui.*
 import com.mustime.ui.LocalAppTheme
+import com.mustime.ui.rememberLecturesWindow
 import com.mustime.ui.components.FloorIndicatorBadge
 import com.mustime.ui.components.DedicatedDayPickerDialog
 import com.mustime.ui.components.DedicatedTimePickerDialog
@@ -198,6 +199,7 @@ fun VacantRoomsScreen(
     }
     val occupiedCount = vacancyStatuses.count { it.isOccupied && it.room.isStudyFriendly }
     val permanentCount = vacancyStatuses.count { it.room.isPermanentlyVacant && it.room.isStudyFriendly }
+    val windowInfo = rememberLecturesWindow()
 
     Scaffold(
         containerColor = bgColor,
@@ -272,8 +274,11 @@ fun VacantRoomsScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(
+                top = padding.calculateTopPadding() + 2.dp,
+                bottom = padding.calculateBottomPadding() + 16.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item(key = "header_spacer") { Spacer(modifier = Modifier.height(2.dp)) }
@@ -281,11 +286,7 @@ fun VacantRoomsScreen(
             // SECTION 1: LOCATION DROPDOWNS (Campus on left, Building on right)
             item(key = "location_dropdowns") {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        // Campus Dropdown (Left)
+                    val campusSelector = @Composable { mod: Modifier ->
                         val campusDisplayText = selectedCampus?.let { cName ->
                             Campus.entries.firstOrNull { it.displayName == cName }?.shortName ?: cName
                         } ?: "All Campuses"
@@ -296,7 +297,7 @@ fun VacantRoomsScreen(
                             icon = Icons.Outlined.School,
                             expanded = campusDropdownExpanded,
                             onExpandedChange = { campusDropdownExpanded = it },
-                            modifier = Modifier.weight(1f),
+                            modifier = mod,
                             isDark = isDark,
                             badgeText = if (selectedCampus == defaultScope.campus) "Default" else null
                         ) {
@@ -391,8 +392,9 @@ fun VacantRoomsScreen(
                                 }
                             )
                         }
+                    }
 
-                        // Building Dropdown (Right)
+                    val buildingSelector = @Composable { mod: Modifier ->
                         val currentBuildingObj = UniversityDirectory.BUILDINGS.firstOrNull { it.code == selectedBuilding }
                         val displayBuildingName = currentBuildingObj?.name ?: "All Buildings"
                         val isFacultyBuildingSelected = selectedBuilding == defaultScope.buildingCode && selectedCampus == defaultScope.campus
@@ -403,7 +405,7 @@ fun VacantRoomsScreen(
                             icon = Icons.Outlined.Domain,
                             expanded = buildingDropdownExpanded,
                             onExpandedChange = { buildingDropdownExpanded = it },
-                            modifier = Modifier.weight(1f),
+                            modifier = mod,
                             isDark = isDark,
                             badgeText = if (isFacultyBuildingSelected) "Faculty" else null,
                             menuAlignmentEnd = true
@@ -497,6 +499,24 @@ fun VacantRoomsScreen(
                                     buildingDropdownExpanded = false
                                 }
                             )
+                        }
+                    }
+
+                    if (windowInfo.filtersStacked) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            campusSelector(Modifier.fillMaxWidth())
+                            buildingSelector(Modifier.fillMaxWidth())
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            campusSelector(Modifier.weight(1f))
+                            buildingSelector(Modifier.weight(1f))
                         }
                     }
 
@@ -741,9 +761,10 @@ fun VacantRoomsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .navigationBarsPadding()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp)
-                    .padding(bottom = 32.dp),
+                    .padding(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Row(

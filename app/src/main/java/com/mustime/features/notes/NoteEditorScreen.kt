@@ -721,6 +721,7 @@ fun NoteEditorScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
                 .imePadding()
+                .navigationBarsPadding()
                 .verticalScroll(scrollState)
                 .padding(horizontal = 18.dp, vertical = 12.dp)
         ) {
@@ -1458,13 +1459,13 @@ fun NoteEditorScreen(
                                 attachmentName = ""
                                 attachmentPath = null
                             },
-                            modifier = Modifier.size(26.dp)
+                            modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
                                 Icons.Default.Close,
                                 contentDescription = "Remove attachment",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.mustime.core.alarm.AlarmScheduler
+import com.mustime.core.alarm.TaskDateTimeParser
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -32,6 +33,8 @@ data class CalendarUiState(
     val customEvents: List<CustomEvent> = emptyList(),
     val selectedFilter: CalendarFilter = CalendarFilter.ALL,
     val yearMonthText: String = "",
+    val currentYear: Int = 2026,
+    val currentMonth: Int = 0,
     val daysInMonth: Int = 30,
     val firstDayOfWeekOffset: Int = 0,
     val selectedDay: Int = 1,
@@ -136,6 +139,8 @@ class CalendarViewModel(
 
         val monthFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
         val yearMonthText = monthFormat.format(calendar.time)
+        val currentYear = calendar.get(Calendar.YEAR)
+        val currentMonth = calendar.get(Calendar.MONTH)
 
         temp.set(Calendar.DAY_OF_MONTH, validSelectedDay)
         val dayOfWeekFormat = SimpleDateFormat("EEEE", Locale.getDefault())
@@ -143,11 +148,32 @@ class CalendarViewModel(
 
         _uiState.value = _uiState.value.copy(
             yearMonthText = yearMonthText,
+            currentYear = currentYear,
+            currentMonth = currentMonth,
             daysInMonth = daysInMonth,
             firstDayOfWeekOffset = firstDayOfWeekOffset,
             selectedDay = validSelectedDay,
             selectedDayOfWeek = selectedDayOfWeek
         )
+    }
+
+    fun isTaskDueOnDay(assignment: Assignment, day: Int): Boolean {
+        val dueMillis = TaskDateTimeParser.calculateDueMillis(assignment.dueDate)
+        if (dueMillis != null) {
+            val dueCal = Calendar.getInstance().apply { timeInMillis = dueMillis }
+            return dueCal.get(Calendar.YEAR) == _uiState.value.currentYear &&
+                    dueCal.get(Calendar.MONTH) == _uiState.value.currentMonth &&
+                    dueCal.get(Calendar.DAY_OF_MONTH) == day
+        }
+        val dayOfWeekName = getDayOfWeekNameForDay(day)
+        return assignment.dueDate.contains(dayOfWeekName, ignoreCase = true)
+    }
+
+    fun toggleTaskComplete(task: Assignment) {
+        viewModelScope.launch {
+            val updated = task.copy(completed = !task.completed)
+            repository.saveAssignment(updated)
+        }
     }
 
     fun previousMonth() {

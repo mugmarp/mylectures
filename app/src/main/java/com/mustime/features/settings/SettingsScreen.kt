@@ -977,7 +977,10 @@ fun SettingsScreen(
                                     .weight(1f)
                                     .clip(RoundedCornerShape(10.dp))
                                     .background(chipBg)
-                                    .clickable { viewModel.setAlarmSound(soundName) }
+                                    .clickable {
+                                        viewModel.setAlarmSound(soundName)
+                                        com.mustime.core.notification.NotificationHelper.previewSound(context, soundName)
+                                    }
                                     .padding(vertical = 8.dp),
                                 contentAlignment = Alignment.Center
                             ) {

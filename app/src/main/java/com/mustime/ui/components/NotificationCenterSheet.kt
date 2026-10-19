@@ -292,7 +292,7 @@ fun NotificationCenterSheet(
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column(modifier = Modifier.weight(1f)) {
-                                    val courseCode = note.naturalKey.split(":").firstOrNull()?.trim() ?: "Class Note"
+                                    val courseCode = note.naturalKey.split("|", ":").firstOrNull()?.trim() ?: "Class Note"
                                     val displayTitle = note.title?.ifBlank { null } ?: note.content.take(35).ifBlank { "Lecture Note" }
                                     Text(
                                         text = "$courseCode · ${note.alarmMinutes ?: 15}m before",

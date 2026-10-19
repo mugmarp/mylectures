@@ -49,6 +49,26 @@ object NotificationHelper {
     }
 
     /**
+     * Plays a preview of the requested sound profile.
+     */
+    fun previewSound(context: Context, soundName: String) {
+        try {
+            val soundUri = when (soundName.lowercase()) {
+                "chime" -> android.net.Uri.parse("android.resource://${context.packageName}/raw/sound_chime")
+                "gentle bell" -> android.net.Uri.parse("android.resource://${context.packageName}/raw/sound_gentle_bell")
+                "standard" -> android.net.Uri.parse("android.resource://${context.packageName}/raw/sound_standard")
+                else -> android.media.RingtoneManager.getActualDefaultRingtoneUri(
+                    context, android.media.RingtoneManager.TYPE_NOTIFICATION
+                )
+            } ?: return
+            val ringtone = android.media.RingtoneManager.getRingtone(context, soundUri)
+            ringtone?.play()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to preview sound: $soundName", e)
+        }
+    }
+
+    /**
      * Creates and registers Notification Channels with Android OS (API 26+).
      */
     fun createNotificationChannels(context: Context) {
