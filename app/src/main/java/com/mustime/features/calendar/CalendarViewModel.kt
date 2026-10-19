@@ -176,6 +176,18 @@ class CalendarViewModel(
         }
     }
 
+    fun deleteTask(task: Assignment) {
+        viewModelScope.launch {
+            repository.deleteAssignment(task.id)
+        }
+    }
+
+    fun saveTask(task: Assignment) {
+        viewModelScope.launch {
+            repository.saveAssignment(task)
+        }
+    }
+
     fun previousMonth() {
         calendar.add(Calendar.MONTH, -1)
         recalculateMonth(selectedDay = 1)

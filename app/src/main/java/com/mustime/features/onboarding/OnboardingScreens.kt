@@ -286,10 +286,20 @@ fun ClassGroupSelectionScreen(
         bottomBar = {
             Surface(
                 color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 2.dp,
                 shadowElevation = 8.dp,
-                modifier = Modifier.navigationBarsPadding()
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                ),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Box(modifier = Modifier.padding(20.dp)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                ) {
                     Button(
                         onClick = { onConfirm(selectedGroup) },
                         modifier = Modifier

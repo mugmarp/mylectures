@@ -98,6 +98,7 @@ fun CalendarScreen(
     var activityToEdit by remember { mutableStateOf<CustomEvent?>(null) }
     var showProfileSheet by remember { mutableStateOf(false) }
     var eventToDelete by remember { mutableStateOf<CustomEvent?>(null) }
+    var taskToDelete by remember { mutableStateOf<Assignment?>(null) }
     var selectedActivityForDetail by remember { mutableStateOf<CustomEvent?>(null) }
     var selectedLectureForDetail by remember { mutableStateOf<TimetableEntry?>(null) }
 
@@ -646,7 +647,7 @@ fun CalendarScreen(
                                     isDark = isDark,
                                     onToggleComplete = { viewModel.toggleTaskComplete(item.assignment) },
                                     onEdit = { },
-                                    onDelete = { },
+                                    onDelete = { taskToDelete = item.assignment },
                                     onTestAlarm = { }
                                 )
                             }
@@ -781,7 +782,7 @@ fun CalendarScreen(
         )
     }
 
-    // Delete Confirmation Dialog
+    // Delete Confirmation Dialog for Activity
     eventToDelete?.let { event ->
         AlertDialog(
             onDismissRequest = { eventToDelete = null },
@@ -800,6 +801,31 @@ fun CalendarScreen(
             },
             dismissButton = {
                 TextButton(onClick = { eventToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Delete Confirmation Dialog for Task
+    taskToDelete?.let { task ->
+        AlertDialog(
+            onDismissRequest = { taskToDelete = null },
+            title = { Text("Delete Task") },
+            text = { Text("Are you sure you want to delete \"${task.title}\"?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteTask(task)
+                        taskToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { taskToDelete = null }) {
                     Text("Cancel")
                 }
             }
