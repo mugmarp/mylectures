@@ -200,6 +200,8 @@ fun TimetableTopAppBar(
             }
         }
 
+        val windowInfo = com.mustime.ui.rememberLecturesWindow()
+
         // Right: Vacant Rooms Button & Profile Avatar
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -216,7 +218,7 @@ fun TimetableTopAppBar(
                     .testTag("topbar_vacant_rooms_btn")
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = if (windowInfo.topBarCompactAction) 8.dp else 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -225,13 +227,15 @@ fun TimetableTopAppBar(
                         tint = PrimaryBlue,
                         modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(5.dp))
-                    Text(
-                        text = "Free Rooms",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryBlue
-                    )
+                    if (!windowInfo.topBarCompactAction) {
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            text = "Free Rooms",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryBlue
+                        )
+                    }
                 }
             }
 
@@ -353,12 +357,14 @@ fun DayCapsuleStrip(
     modifier: Modifier = Modifier
 ) {
     val isDark = LocalAppTheme.current.isDark
+    val windowInfo = com.mustime.ui.rememberLecturesWindow()
+    val isCompact = windowInfo.dayStripCompact
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(if (isCompact) 4.dp else 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         dayItems.forEach { item ->
@@ -411,13 +417,28 @@ fun DayCapsuleStrip(
                 }
             }
 
+            val dayLabel = if (isCompact) {
+                when (item.name.lowercase().take(3)) {
+                    "thu" -> "Th"
+                    "tue" -> "Tu"
+                    "sun" -> "Su"
+                    "sat" -> "Sa"
+                    "wed" -> "W"
+                    "mon" -> "M"
+                    "fri" -> "F"
+                    else -> item.name.take(1)
+                }
+            } else {
+                item.name.take(3)
+            }
+
             Box(
                 modifier = capsuleModifier,
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = item.name.take(3),
-                    fontSize = 13.sp,
+                    text = dayLabel,
+                    fontSize = if (isCompact) 12.sp else 13.sp,
                     fontWeight = if (isActive || isToday) FontWeight.Bold else FontWeight.Medium,
                     color = when {
                         isActive -> Color.White
@@ -425,8 +446,7 @@ fun DayCapsuleStrip(
                         isDark -> Color.White
                         else -> TextSecondaryLight
                     },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    maxLines = 1
                 )
             }
         }

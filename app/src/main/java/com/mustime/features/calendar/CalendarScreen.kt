@@ -49,6 +49,10 @@ import com.mustime.features.timetable.ui.AddActivitySheet
 import androidx.compose.foundation.layout.WindowInsets
 import com.mustime.features.timetable.ui.LectureCard
 import com.mustime.features.timetable.ui.LectureDetailSheet
+import com.mustime.features.tasks.TaskCard
+import com.mustime.ui.Chrome
+import com.mustime.ui.LocalAppTheme
+import com.mustime.ui.rememberLecturesWindow
 import com.mustime.ui.components.AcademicProfileSheet
 import com.mustime.ui.components.RoomFloorBadge
 
@@ -94,6 +98,7 @@ fun CalendarScreen(
     var activityToEdit by remember { mutableStateOf<CustomEvent?>(null) }
     var showProfileSheet by remember { mutableStateOf(false) }
     var eventToDelete by remember { mutableStateOf<CustomEvent?>(null) }
+    var taskToDelete by remember { mutableStateOf<Assignment?>(null) }
     var selectedActivityForDetail by remember { mutableStateOf<CustomEvent?>(null) }
     var selectedLectureForDetail by remember { mutableStateOf<TimetableEntry?>(null) }
 
@@ -111,10 +116,12 @@ fun CalendarScreen(
             .sortedBy { it.startTime }
     }
 
-    // Tasks due on selected day
-    val selectedDayTasks = remember(uiState.assignments, uiState.selectedDayOfWeek) {
+    val isDark = LocalAppTheme.current.isDark
+
+    // Tasks due on selected day (supports exact calendar date and weekday fallbacks)
+    val selectedDayTasks = remember(uiState.assignments, uiState.selectedDay, uiState.currentMonth, uiState.currentYear) {
         uiState.assignments.filter { assignment ->
-            !assignment.completed && assignment.dueDate.equals(uiState.selectedDayOfWeek, ignoreCase = true)
+            !assignment.completed && viewModel.isTaskDueOnDay(assignment, uiState.selectedDay)
         }
     }
 
@@ -145,24 +152,39 @@ fun CalendarScreen(
         list.sortedBy { it.startTime }
     }
 
+    val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val listBottomPadding = (navBarBottom + 60.dp + 16.dp)
+    val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showAddActivitySheet = true },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = RoundedCornerShape(16.dp),
-                icon = { Icon(Icons.Default.Add, contentDescription = "Add Activity") },
-                text = { Text("Add Activity", fontWeight = FontWeight.Bold) },
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(bottom = 72.dp)
-            )
+            if (windowInfo.collapseFab) {
+                FloatingActionButton(
+                    onClick = { showAddActivitySheet = true },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = Chrome.fabBottomPadding())
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Activity")
+                }
+            } else {
+                ExtendedFloatingActionButton(
+                    onClick = { showAddActivitySheet = true },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(16.dp),
+                    icon = { Icon(Icons.Default.Add, contentDescription = "Add Activity") },
+                    text = { Text("Add Activity", fontWeight = FontWeight.Bold) },
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = Chrome.fabBottomPadding())
+                )
+            }
         }
     ) { innerPadding ->
         LazyColumn(
@@ -305,15 +327,15 @@ fun CalendarScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceAround
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     dayNames.forEach { name ->
                         Text(
                             text = name,
-                            fontSize = 14.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.width(40.dp),
+                            modifier = Modifier.weight(1f),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
@@ -326,21 +348,22 @@ fun CalendarScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     var currentDay = 1
                     for (row in 0..5) {
                         if (currentDay > uiState.daysInMonth) break
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceAround
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             for (col in 0..6) {
                                 val cellIndex = row * 7 + col
                                 if (cellIndex < uiState.firstDayOfWeekOffset || currentDay > uiState.daysInMonth) {
                                     Box(
                                         modifier = Modifier
-                                            .size(44.dp)
+                                            .weight(1f)
+                                            .aspectRatio(1f)
                                             .clip(RoundedCornerShape(10.dp))
                                             .background(Color.Transparent)
                                     )
@@ -357,12 +380,13 @@ fun CalendarScreen(
                                         it.dayOfWeek.equals(cellDayName, ignoreCase = true)
                                     }
                                     val hasTasksThisDay = uiState.assignments.any {
-                                        !it.completed && it.dueDate.equals(cellDayName, ignoreCase = true)
+                                        !it.completed && viewModel.isTaskDueOnDay(it, dayNum)
                                     }
 
                                     Box(
                                         modifier = Modifier
-                                            .size(44.dp)
+                                            .weight(1f)
+                                            .aspectRatio(1f)
                                             .clip(RoundedCornerShape(10.dp))
                                             .background(
                                                 when {
@@ -618,66 +642,14 @@ fun CalendarScreen(
                                 )
                             }
                             is CalendarItem.Task -> {
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = Color(0xFFFFF7ED)
-                                    ),
-                                    border = BorderStroke(
-                                        1.dp,
-                                        Color(0xFFF59E0B).copy(alpha = 0.3f)
-                                    )
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(36.dp)
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(Color(0xFFF59E0B).copy(alpha = 0.15f)),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    Icons.Default.TaskAlt,
-                                                    contentDescription = null,
-                                                    tint = Color(0xFFF59E0B),
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.width(12.dp))
-                                            Column {
-                                                Text(
-                                                    text = item.assignment.title,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    fontSize = 14.sp,
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                                Text(
-                                                    text = "Due ${item.assignment.dueDate} • ${item.assignment.priority}",
-                                                    fontSize = 11.sp,
-                                                    color = Color(0xFFF59E0B)
-                                                )
-                                            }
-                                        }
-                                        if (item.assignment.reminderMinutes != null) {
-                                            Icon(
-                                                Icons.Default.Notifications,
-                                                contentDescription = "Reminder set",
-                                                tint = Color(0xFFF59E0B),
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
-                                    }
-                                }
+                                TaskCard(
+                                    task = item.assignment,
+                                    isDark = isDark,
+                                    onToggleComplete = { viewModel.toggleTaskComplete(item.assignment) },
+                                    onEdit = { },
+                                    onDelete = { taskToDelete = item.assignment },
+                                    onTestAlarm = { }
+                                )
                             }
                         }
                     }
@@ -810,7 +782,7 @@ fun CalendarScreen(
         )
     }
 
-    // Delete Confirmation Dialog
+    // Delete Confirmation Dialog for Activity
     eventToDelete?.let { event ->
         AlertDialog(
             onDismissRequest = { eventToDelete = null },
@@ -829,6 +801,31 @@ fun CalendarScreen(
             },
             dismissButton = {
                 TextButton(onClick = { eventToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Delete Confirmation Dialog for Task
+    taskToDelete?.let { task ->
+        AlertDialog(
+            onDismissRequest = { taskToDelete = null },
+            title = { Text("Delete Task") },
+            text = { Text("Are you sure you want to delete \"${task.title}\"?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteTask(task)
+                        taskToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { taskToDelete = null }) {
                     Text("Cancel")
                 }
             }

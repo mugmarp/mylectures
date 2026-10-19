@@ -2,7 +2,7 @@ name: Android CI — Lectures
 
 on:
   push:
-    branches: [ main, test ]
+    branches: [ main, test, responsive/chrome ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:

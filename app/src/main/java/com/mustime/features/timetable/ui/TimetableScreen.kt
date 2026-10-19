@@ -46,7 +46,9 @@ import com.mustime.features.timetable.domain.Assignment
 import com.mustime.features.timetable.domain.CustomEvent
 import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.domain.TimetableEntry
+import com.mustime.ui.Chrome
 import com.mustime.ui.LocalAppTheme
+import com.mustime.ui.rememberLecturesWindow
 import com.mustime.ui.components.AcademicProfileSheet
 import com.mustime.ui.components.NotificationCenterSheet
 import androidx.compose.foundation.layout.WindowInsets
@@ -157,8 +159,8 @@ fun TimetableScreen(
     // Real-time clock pulse to re-evaluate next-up, countdowns, and progress bars periodically.
     // Kept in the smallest possible composable so only that strip recomposes every 15s,
     // not the entire TimetableScreen.
-    val globalNextUp: GlobalNextUp? = remember(entries, todayName) {
-        findActualNextUp(entries, todayName)
+    var globalNextUp by remember(entries, todayName) {
+        mutableStateOf(findActualNextUp(entries, todayName))
     }
 
     // 3. Filter sessions for the selected day from the real Room database
@@ -206,16 +208,21 @@ fun TimetableScreen(
 
     var allTodayClassesCompleted by remember { mutableStateOf(false) }
 
-    NextUpTicker(todayEntries) { completed ->
-        allTodayClassesCompleted = completed
-    }
+    NextUpTicker(
+        entries = entries,
+        todayEntries = todayEntries,
+        todayName = todayName,
+        onCompletedChanged = { allTodayClassesCompleted = it },
+        onNextUpChanged = { globalNextUp = it }
+    )
 
     // Horizontal drag gesture tracking for swiping between days
     var dragTotal by remember { mutableFloatStateOf(0f) }
     var showNotificationCenterSheet by remember { mutableStateOf(false) }
 
+    val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val listBottomPadding = (navBarBottom + 60.dp + 16.dp)
+    val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -238,30 +245,49 @@ fun TimetableScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showQuickAddSheet = true },
-                containerColor = PrimaryBlue,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp),
-                icon = {
+            if (windowInfo.collapseFab) {
+                FloatingActionButton(
+                    onClick = { showQuickAddSheet = true },
+                    containerColor = PrimaryBlue,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = Chrome.fabBottomPadding())
+                        .testTag("timetable_fab")
+                ) {
                     Icon(
                         Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        contentDescription = "Add Activity",
+                        modifier = Modifier.size(24.dp)
                     )
-                },
-                text = {
-                    Text(
-                        text = "Add Activity",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp
-                    )
-                },
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(bottom = 72.dp)
-                    .testTag("timetable_fab")
-            )
+                }
+            } else {
+                ExtendedFloatingActionButton(
+                    onClick = { showQuickAddSheet = true },
+                    containerColor = PrimaryBlue,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    icon = {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = "Add Activity",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                    },
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = Chrome.fabBottomPadding())
+                        .testTag("timetable_fab")
+                )
+            }
         }
     ) { innerPadding ->
         Box(
@@ -391,7 +417,8 @@ fun TimetableScreen(
                 }
 
                 // SECTION 2: HAPPENING NOW / NEXT UP HERO CARD (ABOVE THE DAYS)
-                if (allTodayClassesCompleted && globalNextUp != null && !globalNextUp.isLive) {
+                val currentNextUp = globalNextUp
+                if (allTodayClassesCompleted && currentNextUp != null && !currentNextUp.isLive) {
                     item(key = "today_completed_badge") {
                         PaddingBox(top = 4.dp, bottom = 2.dp) {
                             Surface(
@@ -423,16 +450,16 @@ fun TimetableScreen(
                     }
                 }
 
-                if (globalNextUp != null) {
+                if (currentNextUp != null) {
                     item(key = "today_hero_card") {
-                        val entry = globalNextUp.entry
+                        val entry = currentNextUp.entry
                         val note = notes[entry.naturalKey]
 
-                        if (globalNextUp.isLive) {
+                        if (currentNextUp.isLive) {
                             val session = entry.toSpecClassSession(
                                 note = note,
                                 isLive = true,
-                                progress = globalNextUp.progress
+                                progress = currentNextUp.progress
                             )
                             HappeningNowHeroCard(
                                 session = session,
@@ -448,14 +475,14 @@ fun TimetableScreen(
                             )
                         } else {
                             val countdownText = when {
-                                globalNextUp.dayLabel.equals("Today", ignoreCase = true) -> {
+                                currentNextUp.dayLabel.equals("Today", ignoreCase = true) -> {
                                     when {
-                                        globalNextUp.minutesUntil in 1..59 -> "in ${globalNextUp.minutesUntil}m"
-                                        globalNextUp.minutesUntil >= 60 -> "in ${globalNextUp.minutesUntil / 60}h ${globalNextUp.minutesUntil % 60}m"
+                                        currentNextUp.minutesUntil in 1..59 -> "in ${currentNextUp.minutesUntil}m"
+                                        currentNextUp.minutesUntil >= 60 -> "in ${currentNextUp.minutesUntil / 60}h ${currentNextUp.minutesUntil % 60}m"
                                         else -> "Starting soon"
                                     }
                                 }
-                                else -> "${globalNextUp.dayLabel} at ${entry.startTime}"
+                                else -> "${currentNextUp.dayLabel} at ${entry.startTime}"
                             }
 
                             val session = entry.toSpecClassSession(
@@ -1163,8 +1190,11 @@ private fun GlobalNextUpHeroCard(
  */
 @Composable
 private fun NextUpTicker(
+    entries: List<TimetableEntry>,
     todayEntries: List<TimetableEntry>,
-    onCompletedChanged: (Boolean) -> Unit
+    todayName: String,
+    onCompletedChanged: (Boolean) -> Unit,
+    onNextUpChanged: (GlobalNextUp?) -> Unit
 ) {
     var timeTick by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
@@ -1174,7 +1204,7 @@ private fun NextUpTicker(
         }
     }
 
-    LaunchedEffect(todayEntries, timeTick) {
+    LaunchedEffect(todayEntries, entries, todayName, timeTick) {
         val completed = if (todayEntries.isEmpty()) {
             false
         } else {
@@ -1186,6 +1216,7 @@ private fun NextUpTicker(
             }
         }
         onCompletedChanged(completed)
+        onNextUpChanged(findActualNextUp(entries, todayName))
     }
 }
 
