@@ -47,9 +47,12 @@ interface TimetableDao {
     suspend fun insertAll(entries: List<TimetableEntry>)
 
     @Query("DELETE FROM timetable WHERE natural_key = :naturalKey")
-    suspend fun deleteByNaturalKey(naturalKey: String)
+          suspend fun deleteByNaturalKey(naturalKey: String)
 
-    @Query("DELETE FROM timetable WHERE program_group = :programme")
+          @Query("SELECT * FROM timetable WHERE natural_key = :naturalKey LIMIT 1")
+          suspend fun getEntryByNaturalKey(naturalKey: String): TimetableEntry?
+
+          @Query("DELETE FROM timetable WHERE program_group = :programme")
     suspend fun deleteEntriesForProgramme(programme: String)
 
     @Query("DELETE FROM timetable")
