@@ -19,6 +19,7 @@ object NotificationHelper {
     const val CHANNEL_ACADEMIC_TASKS = "academic_task_reminders"
     const val CHANNEL_CLASSES = "class_reminders"
     const val CHANNEL_CLASS_ALARMS = "class_alarms"
+    const val CHANNEL_DAILY_DIGEST = "daily_class_digest"
 
     private const val TAG = "NotificationHelper"
 
@@ -39,13 +40,18 @@ object NotificationHelper {
             )
         }
         if (soundUri == null) return
-        val audioAttrs = android.media.AudioAttributes.Builder()
+        val notifAudioAttrs = android.media.AudioAttributes.Builder()
             .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
             .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
-        notificationManager.getNotificationChannel(CHANNEL_ACADEMIC_TASKS)?.apply { setSound(soundUri, audioAttrs) }
-        notificationManager.getNotificationChannel(CHANNEL_CLASSES)?.apply { setSound(soundUri, audioAttrs) }
-        notificationManager.getNotificationChannel(CHANNEL_CLASS_ALARMS)?.apply { setSound(soundUri, audioAttrs) }
+        val alarmAudioAttrs = android.media.AudioAttributes.Builder()
+            .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+        notificationManager.getNotificationChannel(CHANNEL_ACADEMIC_TASKS)?.apply { setSound(soundUri, notifAudioAttrs) }
+        notificationManager.getNotificationChannel(CHANNEL_CLASSES)?.apply { setSound(soundUri, notifAudioAttrs) }
+        notificationManager.getNotificationChannel(CHANNEL_DAILY_DIGEST)?.apply { setSound(soundUri, notifAudioAttrs) }
+        notificationManager.getNotificationChannel(CHANNEL_CLASS_ALARMS)?.apply { setSound(soundUri, alarmAudioAttrs) }
     }
 
     /**
@@ -106,7 +112,7 @@ object NotificationHelper {
                 lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
             }
 
-            // Channel 3: Class Alarms
+            // Channel 3: Class Alarms (Urgent Alarm Stream)
             val alarmChannel = NotificationChannel(
                 CHANNEL_CLASS_ALARMS,
                 "Class Alerts & Alarms",
@@ -117,11 +123,31 @@ object NotificationHelper {
                 lightColor = Color.parseColor("#EF4444")
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 500, 200, 500, 200, 500)
+                val alarmAttrs = android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+                val alarmSound = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM)
+                    ?: android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+                setSound(alarmSound, alarmAttrs)
                 setShowBadge(true)
                 lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
             }
 
-            notificationManager.createNotificationChannels(listOf(taskChannel, classChannel, alarmChannel))
+            // Channel 4: Daily Class Schedule Digest
+            val digestChannel = NotificationChannel(
+                CHANNEL_DAILY_DIGEST,
+                "Daily Schedule Digest",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Morning overview of your scheduled classes and venues for the day."
+                enableLights(true)
+                lightColor = Color.parseColor("#3B82F6")
+                setShowBadge(true)
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+            }
+
+            notificationManager.createNotificationChannels(listOf(taskChannel, classChannel, alarmChannel, digestChannel))
             Log.d(TAG, "Notification channels registered successfully")
         }
     }
@@ -321,6 +347,77 @@ object NotificationHelper {
             NotificationManagerCompat.from(context).notify(notificationId, builder.build())
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException while posting class alarm notification: ${e.message}")
+        }
+    }
+
+    /**
+     * Builds and displays a daily morning digest summarizing the student's scheduled lectures for today.
+     */
+    fun showDailyDigestNotification(
+        context: Context,
+        dayOfWeek: String,
+        classes: List<com.mustime.features.timetable.domain.TimetableEntry>
+    ) {
+        createNotificationChannels(context)
+
+        val notificationId = 88002
+
+        val openAppIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("EXTRA_NAV_TAB", 0) // Timetable tab
+        }
+        val contentPendingIntent = PendingIntent.getActivity(
+            context,
+            notificationId,
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val title = "Today's Schedule • $dayOfWeek"
+        val snippet: String
+        val bigText: String
+
+        if (classes.isEmpty()) {
+            snippet = "No lectures scheduled for today. Great day for coursework!"
+            bigText = buildString {
+                append("Good morning!\n\n")
+                append("You have no scheduled lectures or practical labs today ($dayOfWeek).\n\n")
+                append("Use this time to review lecture notes, work on assignments, or prepare ahead.")
+            }
+        } else {
+            val first = classes.first()
+            val venue = if (!first.room.isNullOrBlank()) " in ${first.room}" else ""
+            snippet = "${classes.size} class${if (classes.size > 1) "es" else ""} today. First: ${first.courseCode} at ${first.startTime}$venue"
+            bigText = buildString {
+                append("Good morning! You have ${classes.size} class${if (classes.size > 1) "es" else ""} scheduled for today:\n\n")
+                classes.forEachIndexed { index, entry ->
+                    val roomText = if (!entry.room.isNullOrBlank()) " @ ${entry.room}" else ""
+                    val timeRange = if (entry.endTime.isNotBlank()) "${entry.startTime} – ${entry.endTime}" else entry.startTime
+                    append("${index + 1}. ${entry.courseCode} ($timeRange)$roomText\n")
+                    if (entry.courseTitle.isNotBlank() && entry.courseTitle != entry.courseCode) {
+                        append("   ${entry.courseTitle}\n")
+                    }
+                }
+                append("\nHave a productive academic day!")
+            }
+        }
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_DAILY_DIGEST)
+            .setSmallIcon(R.drawable.ic_stat_notification)
+            .setContentTitle(title)
+            .setContentText(snippet)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_EVENT)
+            .setAutoCancel(true)
+            .setContentIntent(contentPendingIntent)
+            .setColor(Color.parseColor("#3B82F6"))
+
+        try {
+            NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+            Log.d(TAG, "Daily digest notification posted for $dayOfWeek with ${classes.size} classes")
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException while posting daily digest: ${e.message}")
         }
     }
 

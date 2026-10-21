@@ -20,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -267,7 +268,17 @@ fun VacantRoomsScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = surfaceColor)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = surfaceColor.copy(alpha = com.mustime.ui.Chrome.TopBarGlassAlpha)
+                ),
+                modifier = Modifier.drawBehind {
+                    drawLine(
+                        color = borderSubtle.copy(alpha = 0.25f),
+                        start = androidx.compose.ui.geometry.Offset(0f, size.height),
+                        end = androidx.compose.ui.geometry.Offset(size.width, size.height),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                }
             )
         }
     ) { padding ->

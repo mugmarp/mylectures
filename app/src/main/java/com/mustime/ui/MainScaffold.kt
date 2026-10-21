@@ -143,6 +143,7 @@ fun MainScaffold(
                     scope.launch {
                         repository.setProgrammePref(chosenGroup)
                         repository.setOnboardingCompleted(true)
+                        com.mustime.core.alarm.ReminderScheduler(context).scheduleDailyReminder()
                         navState = AppNavState.MainApp
                     }
                 },

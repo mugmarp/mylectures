@@ -6,6 +6,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.mustime.core.alarm.AlarmScheduler
+import com.mustime.core.alarm.ReminderScheduler
 import com.mustime.core.alarm.TaskAlarmScheduler
 import com.mustime.core.notification.NotificationHelper
 import com.mustime.features.timetable.data.DataLoader
@@ -49,7 +51,9 @@ class SettingsViewModel(
     private val dataLoader: DataLoader? = null,
     private val alarmScheduler: TaskAlarmScheduler? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val application: android.app.Application
+    private val application: android.app.Application,
+    private val classAlarmScheduler: AlarmScheduler? = null,
+    private val reminderScheduler: ReminderScheduler? = null
 ) : AndroidViewModel(application) {
 
     private val initialProg = repository.getInitialProgramme() ?: ""
@@ -205,6 +209,8 @@ class SettingsViewModel(
                 _uiState.value = _uiState.value.copy(notificationsEnabled = enabled)
 
                 val tasks = repository.getAssignments().firstOrNull() ?: emptyList()
+                val notesWithAlarms = repository.getNotesWithAlarms()
+
                 if (enabled) {
                     var count = 0
                     tasks.forEach { task ->
@@ -213,13 +219,32 @@ class SettingsViewModel(
                             if (ok) count++
                         }
                     }
+                    var classCount = 0
+                    notesWithAlarms.forEach { note ->
+                        val mins = note.alarmMinutes ?: return@forEach
+                        val entry = repository.getTimetableEntryByNaturalKey(note.naturalKey)
+                        val ok = if (entry != null) {
+                            classAlarmScheduler?.scheduleClassAlarm(entry, mins) == true
+                        } else {
+                            classAlarmScheduler?.scheduleClassAlarmFromNote(note, mins) == true
+                        }
+                        if (ok) classCount++
+                    }
+
+                    reminderScheduler?.scheduleDailyReminder()
+
                     _uiState.value = _uiState.value.copy(
-                        successMessage = "Reminders active. $count alarms scheduled."
+                        successMessage = "Reminders active. $count task alerts, $classCount class alarms, and daily digest enabled."
                     )
                 } else {
                     alarmScheduler?.cancelAllTaskReminders(tasks)
+                    notesWithAlarms.forEach { note ->
+                        classAlarmScheduler?.cancelClassAlarm(note.naturalKey)
+                    }
+                    reminderScheduler?.cancelDailyReminder()
+
                     _uiState.value = _uiState.value.copy(
-                        successMessage = "All deadline alarms paused."
+                        successMessage = "All alarms and reminders paused (quiet mode)."
                     )
                 }
             } catch (e: Exception) {
@@ -317,8 +342,24 @@ class SettingsViewModel(
                         if (ok) scheduledCount++
                     }
                 }
+
+                val notesWithAlarms = repository.getNotesWithAlarms()
+                var classCount = 0
+                notesWithAlarms.forEach { note ->
+                    val mins = note.alarmMinutes ?: return@forEach
+                    val entry = repository.getTimetableEntryByNaturalKey(note.naturalKey)
+                    val ok = if (entry != null) {
+                        classAlarmScheduler?.scheduleClassAlarm(entry, mins) == true
+                    } else {
+                        classAlarmScheduler?.scheduleClassAlarmFromNote(note, mins) == true
+                    }
+                    if (ok) classCount++
+                }
+
+                reminderScheduler?.scheduleDailyReminder()
+
                 _uiState.value = _uiState.value.copy(
-                    successMessage = "Refreshed and rescheduled $scheduledCount active alarms."
+                    successMessage = "Rescheduled $scheduledCount task alerts, $classCount class alarms, and morning digest."
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(errorMessage = "Failed to reschedule alarms: ${e.message}")
@@ -420,13 +461,23 @@ class SettingsViewModel(
             repository: TimetableRepository,
             dataLoader: DataLoader? = null,
             alarmScheduler: TaskAlarmScheduler? = null,
+            classAlarmScheduler: AlarmScheduler? = null,
+            reminderScheduler: ReminderScheduler? = null,
             ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
             application: Application
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return SettingsViewModel(repository, dataLoader, alarmScheduler, ioDispatcher, application) as T
+                    return SettingsViewModel(
+                        repository = repository,
+                        dataLoader = dataLoader,
+                        alarmScheduler = alarmScheduler,
+                        ioDispatcher = ioDispatcher,
+                        application = application,
+                        classAlarmScheduler = classAlarmScheduler,
+                        reminderScheduler = reminderScheduler
+                    ) as T
                 }
             }
     }

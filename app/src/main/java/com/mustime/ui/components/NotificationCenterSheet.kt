@@ -197,25 +197,42 @@ fun NotificationCenterSheet(
                                 color = textSub
                             )
                         }
-                        Button(
-                            onClick = {
-                                NotificationHelper.showClassReminderNotification(
-                                    context = context,
-                                    courseCode = "LEC-TEST",
-                                    courseTitle = "Alarm Verification Test",
-                                    room = "Main Hall",
-                                    startTime = "Now"
-                                )
-                                testFeedback = "Chimed test notification!"
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = PrimaryBlue,
-                                contentColor = Color.White
-                            ),
-                            shape = RoundedCornerShape(10.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            Text("Ring Now", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Button(
+                                onClick = {
+                                    NotificationHelper.showClassAlarmNotification(
+                                        context = context,
+                                        courseCode = "SWE2101",
+                                        courseTitle = "Object Oriented Programming",
+                                        room = "SFL01 (Computer Lab)",
+                                        startTime = "10:00 AM"
+                                    )
+                                    testFeedback = "Triggered test Class Alert!"
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFEF4444),
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                Text("Class Alert", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+
+                            Button(
+                                onClick = {
+                                    com.mustime.core.alarm.ReminderScheduler(context).triggerTestDailyDigest()
+                                    testFeedback = "Posted Daily Class Digest!"
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = PrimaryBlue,
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                Text("Daily Digest", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }

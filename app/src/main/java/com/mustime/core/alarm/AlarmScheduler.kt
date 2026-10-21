@@ -51,6 +51,8 @@ class AlarmScheduler(private val context: Context) {
 
         val triggerMillis = cal.timeInMillis
         val intent = Intent(context, ClassAlarmReceiver::class.java).apply {
+            putExtra("NATURAL_KEY", entry.naturalKey)
+            putExtra("DAY_OF_WEEK", entry.dayOfWeek)
             putExtra("COURSE_CODE", entry.courseCode)
             putExtra("COURSE_TITLE", entry.courseTitle)
             putExtra("ROOM", entry.room ?: "TBD")
@@ -58,6 +60,8 @@ class AlarmScheduler(private val context: Context) {
             putExtra("LECTURER", entry.lecturer ?: "")
             putExtra("MINUTES_BEFORE", minutesBefore)
             putExtra("IS_ALARM", true)
+            putExtra("IS_RECURRING", true)
+            putExtra("IS_TEST", false)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
@@ -105,10 +109,39 @@ class AlarmScheduler(private val context: Context) {
         }
     }
 
+    /**
+     * Schedules a class alarm directly from a saved LectureNote metadata.
+     */
+    fun scheduleClassAlarmFromNote(note: com.mustime.features.timetable.domain.LectureNote, minutesBefore: Int): Boolean {
+        val parts = note.naturalKey.split("|")
+        val code = parts.getOrNull(0)?.trim() ?: (note.title?.take(10) ?: "Lecture")
+        val title = note.title ?: parts.getOrNull(1)?.trim() ?: code
+        val day = parts.getOrNull(2)?.trim() ?: "Monday"
+        val time = parts.getOrNull(3)?.trim() ?: "09:00"
+        val room = parts.getOrNull(4)?.trim() ?: (note.attachedClass ?: "Lecture Room")
+
+        val syntheticEntry = TimetableEntry(
+            natural_key = note.naturalKey,
+            program_group = "",
+            day = day,
+            time_slot = time,
+            start_time = time,
+            end_time = null,
+            course_code = code,
+            course_title = title,
+            session_type = null,
+            lecturer = null,
+            room = room
+        )
+        return scheduleClassAlarm(syntheticEntry, minutesBefore)
+    }
+
     fun triggerTestAlarm(entry: TimetableEntry, delaySeconds: Int = 3): Boolean {
         if (alarmManager == null) return false
         val triggerMillis = System.currentTimeMillis() + (delaySeconds * 1000L)
         val intent = Intent(context, ClassAlarmReceiver::class.java).apply {
+            putExtra("NATURAL_KEY", entry.naturalKey)
+            putExtra("DAY_OF_WEEK", entry.dayOfWeek)
             putExtra("COURSE_CODE", entry.courseCode)
             putExtra("COURSE_TITLE", entry.courseTitle)
             putExtra("ROOM", entry.room ?: "TBD")
@@ -116,6 +149,8 @@ class AlarmScheduler(private val context: Context) {
             putExtra("LECTURER", entry.lecturer ?: "")
             putExtra("MINUTES_BEFORE", 0)
             putExtra("IS_ALARM", true)
+            putExtra("IS_RECURRING", false)
+            putExtra("IS_TEST", true)
         }
         val pendingIntent = PendingIntent.getBroadcast(
             context,

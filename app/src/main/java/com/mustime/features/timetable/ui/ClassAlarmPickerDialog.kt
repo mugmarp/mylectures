@@ -131,10 +131,10 @@ fun ClassAlarmPickerDialog(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(if (isSelected) primaryColor else (if (isDark) Color(0xFF334155) else Color(0xFFF1F5F9)))
+                                .background(if (isSelected) primaryColor else MaterialTheme.colorScheme.surfaceVariant)
                                 .border(
                                     1.dp,
-                                    if (isSelected) primaryColor else (if (isDark) Color(0xFF475569) else Color(0xFFE2E8F0)),
+                                    if (isSelected) primaryColor else MaterialTheme.colorScheme.outlineVariant,
                                     RoundedCornerShape(12.dp)
                                 )
                                 .clickable {
@@ -157,10 +157,10 @@ fun ClassAlarmPickerDialog(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
-                            .background(if (isCustomSelected) primaryColor else (if (isDark) Color(0xFF334155) else Color(0xFFF1F5F9)))
+                            .background(if (isCustomSelected) primaryColor else MaterialTheme.colorScheme.surfaceVariant)
                             .border(
                                 1.dp,
-                                if (isCustomSelected) primaryColor else (if (isDark) Color(0xFF475569) else Color(0xFFE2E8F0)),
+                                if (isCustomSelected) primaryColor else MaterialTheme.colorScheme.outlineVariant,
                                 RoundedCornerShape(12.dp)
                             )
                             .clickable {

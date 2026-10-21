@@ -32,19 +32,40 @@ class BootReceiver : BroadcastReceiver() {
 
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val allAssignments = repository.getAssignments().firstOrNull() ?: emptyList()
-                    val scheduler = TaskAlarmScheduler(context)
+                    val taskScheduler = TaskAlarmScheduler(context)
+                    val classScheduler = AlarmScheduler(context)
+                    val reminderScheduler = ReminderScheduler(context)
 
-                    var count = 0
+                    // 1. Re-arm Daily Digest
+                    reminderScheduler.scheduleDailyReminder()
+
+                    // 2. Re-arm Academic Task Reminders
+                    val allAssignments = repository.getAssignments().firstOrNull() ?: emptyList()
+                    var taskCount = 0
                     allAssignments.forEach { task ->
                         if (!task.completed && task.reminderMinutes != null) {
-                            val scheduled = scheduler.scheduleTaskReminder(task)
-                            if (scheduled) count++
+                            val scheduled = taskScheduler.scheduleTaskReminder(task)
+                            if (scheduled) taskCount++
                         }
                     }
-                    Log.d(TAG, "Rescheduled $count academic task reminder alarms after reboot.")
+
+                    // 3. Re-arm Custom Class Alarms
+                    val notesWithAlarms = repository.getNotesWithAlarms()
+                    var classCount = 0
+                    notesWithAlarms.forEach { note ->
+                        val mins = note.alarmMinutes ?: return@forEach
+                        val entry = repository.getTimetableEntryByNaturalKey(note.naturalKey)
+                        val ok = if (entry != null) {
+                            classScheduler.scheduleClassAlarm(entry, mins)
+                        } else {
+                            classScheduler.scheduleClassAlarmFromNote(note, mins)
+                        }
+                        if (ok) classCount++
+                    }
+
+                    Log.d(TAG, "Boot reschedule complete: $taskCount tasks, $classCount class alarms, and daily digest scheduled.")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error rescheduling task reminders on boot: ${e.message}")
+                    Log.e(TAG, "Error rescheduling alarms on boot: ${e.message}", e)
                 }
             }
         }

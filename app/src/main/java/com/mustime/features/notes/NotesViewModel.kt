@@ -3,6 +3,7 @@ package com.mustime.features.notes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.mustime.core.alarm.AlarmScheduler
 import com.mustime.features.timetable.data.TimetableRepository
 import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.domain.TimetableEntry
@@ -35,7 +36,8 @@ data class CourseOption(
 )
 
 class NotesViewModel(
-    private val repository: TimetableRepository
+    private val repository: TimetableRepository,
+    private val classAlarmScheduler: AlarmScheduler? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotesUiState(isLoading = true))
@@ -190,8 +192,28 @@ class NotesViewModel(
                     colourTag = courseColor,
                     isPinned = isPinned
                 )
+
+                if (alarmMinutes != null) {
+                    val entry = repository.getTimetableEntryByNaturalKey(key)
+                    if (entry != null) {
+                        classAlarmScheduler?.scheduleClassAlarm(entry, alarmMinutes)
+                    } else {
+                        val syntheticNote = LectureNote(
+                            naturalKey = key,
+                            content = content,
+                            updatedAt = System.currentTimeMillis(),
+                            alarmMinutes = alarmMinutes,
+                            title = title,
+                            attachedClass = attachedClass
+                        )
+                        classAlarmScheduler?.scheduleClassAlarmFromNote(syntheticNote, alarmMinutes)
+                    }
+                } else {
+                    classAlarmScheduler?.cancelClassAlarm(key)
+                }
+
                 _uiState.value = _uiState.value.copy(
-                    userMessage = "Note saved successfully",
+                    userMessage = if (alarmMinutes != null) "Note saved • Alarm set (${alarmMinutes}m before)" else "Note saved successfully",
                     errorMessage = null
                 )
             } catch (e: Exception) {
@@ -217,6 +239,7 @@ class NotesViewModel(
     fun deleteNote(naturalKey: String) {
         viewModelScope.launch {
             try {
+                classAlarmScheduler?.cancelClassAlarm(naturalKey)
                 repository.deleteNote(naturalKey)
                 _uiState.value = _uiState.value.copy(
                     userMessage = "Note deleted successfully",
@@ -235,11 +258,14 @@ class NotesViewModel(
     }
 
     companion object {
-        fun provideFactory(repository: TimetableRepository): ViewModelProvider.Factory =
+        fun provideFactory(
+            repository: TimetableRepository,
+            classAlarmScheduler: AlarmScheduler? = null
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return NotesViewModel(repository) as T
+                    return NotesViewModel(repository, classAlarmScheduler) as T
                 }
             }
     }

@@ -225,9 +225,7 @@ fun WelcomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(bgGradient)
-            .statusBarsPadding()
-            .navigationBarsPadding(),
+            .background(bgGradient),
         contentAlignment = Alignment.Center
     ) {
         val logoSize = if (windowInfo.isShort) 68.dp else 92.dp
@@ -236,6 +234,8 @@ fun WelcomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

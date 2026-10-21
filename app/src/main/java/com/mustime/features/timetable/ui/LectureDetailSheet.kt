@@ -69,8 +69,8 @@ fun LectureDetailSheet(
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .padding(horizontal = 24.dp)
-                .padding(bottom = 24.dp)
                 .verticalScroll(rememberScrollState())
+                .padding(bottom = 28.dp)
         ) {
             Text(
                 text = entry.courseTitle,

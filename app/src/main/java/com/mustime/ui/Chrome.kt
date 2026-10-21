@@ -28,6 +28,12 @@ object Chrome {
     val FabHeight: Dp = 56.dp
 
     /**
+     * Alpha transparency for glassy top bars.
+     * Distinctly more translucent/glassy than the bottom dock (which uses 0.96f).
+     */
+    const val TopBarGlassAlpha: Float = 0.78f
+
+    /**
      * Total bottom padding required for scrollable list content to clear both the floating dock
      * and the Floating Action Button (FAB) that sits above it.
      * Guarantees that the last item in lists across Timetable, Tasks, Notes, and Calendar

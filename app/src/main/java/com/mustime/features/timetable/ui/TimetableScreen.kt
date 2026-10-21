@@ -293,7 +293,6 @@ fun TimetableScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .pointerInput(selectedDay, daysList) {
                     detectHorizontalDragGestures(
                         onDragStart = { dragTotal = 0f },
@@ -323,7 +322,10 @@ fun TimetableScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = listBottomPadding)
+                contentPadding = PaddingValues(
+                    top = innerPadding.calculateTopPadding(),
+                    bottom = listBottomPadding
+                )
             ) {
                 // Prompt to select programme if not yet chosen
                 if (programme.isBlank()) {

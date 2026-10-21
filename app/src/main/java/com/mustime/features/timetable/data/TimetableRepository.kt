@@ -49,6 +49,8 @@ class TimetableRepository(
 
     fun getAllEntries(): Flow<List<TimetableEntry>> = dao.getAllEntries()
 
+    fun getScheduleForDay(day: String): Flow<List<TimetableEntry>> = dao.getScheduleForDay(day)
+
     fun getAllProgrammeGroups(): Flow<List<String>> = dao.getAllProgrammeGroups()
 
     fun getAllNotes(): Flow<List<LectureNote>> = dao.getAllNotes()
@@ -218,6 +220,14 @@ class TimetableRepository(
 
     suspend fun deleteNote(naturalKey: String) {
         dao.deleteNote(naturalKey)
+    }
+
+    suspend fun getTimetableEntryByNaturalKey(naturalKey: String): TimetableEntry? {
+        return dao.getEntryByNaturalKey(naturalKey)
+    }
+
+    suspend fun getNotesWithAlarms(): List<LectureNote> {
+        return dao.getNotesWithAlarms()
     }
 
     val timetableMetadata: Flow<com.mustime.features.timetable.domain.TimetableMetadata?> = dao.getTimetableMetadata()

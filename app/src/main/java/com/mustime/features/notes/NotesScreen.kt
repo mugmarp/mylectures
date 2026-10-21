@@ -64,8 +64,9 @@ fun NotesScreen(
     val isDark = LocalAppTheme.current.isDark
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val classAlarmScheduler = remember(context) { com.mustime.core.alarm.AlarmScheduler(context) }
     val viewModel: NotesViewModel = viewModel(
-        factory = NotesViewModel.provideFactory(repository)
+        factory = NotesViewModel.provideFactory(repository, classAlarmScheduler)
     )
 
     val uiState by viewModel.uiState.collectAsState()
@@ -133,8 +134,8 @@ fun NotesScreen(
                         noteToEdit = null
                         isEditing = true
                     },
-                    containerColor = Color(0xFF0052CC),
-                    contentColor = Color.White,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                     shape = RoundedCornerShape(16.dp),
                     elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
                     modifier = Modifier
@@ -151,8 +152,8 @@ fun NotesScreen(
                         noteToEdit = null
                         isEditing = true
                     },
-                    containerColor = Color(0xFF0052CC),
-                    contentColor = Color.White,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                     shape = RoundedCornerShape(16.dp),
                     elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
                     modifier = Modifier
@@ -164,90 +165,99 @@ fun NotesScreen(
                     Text("Add Note", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 }
             }
+        },
+        topBar = {
+            val barBg = (if (isDark) DarkSurfaceBase else Color(0xFFF8FAFC)).copy(alpha = com.mustime.ui.Chrome.TopBarGlassAlpha)
+            Surface(
+                color = barBg,
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp,
+                border = BorderStroke(1.dp, (if (isDark) DarkBorderSubtle else Color(0xFFE2E8F0)).copy(alpha = 0.25f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.School,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    "Academic Notes",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 20.sp,
+                                    color = if (isDark) Color.White else Color(0xFF0F172A)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (isDark) Color(0xFF1E3A8A) else Color(0xFFDBEAFE))
+                                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        "${uiState.filteredNotes.size} active",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isDark) Color(0xFF93C5FD) else Color(0xFF1D4ED8)
+                                    )
+                                }
+                            }
+                            if (uiState.userProgramme.isNotBlank()) {
+                                Text(
+                                    uiState.userProgramme,
+                                    fontSize = 12.sp,
+                                    color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+                                )
+                            }
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                            .clickable { showProfileSheet = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = "Account",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
         }
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(if (isDark) DarkSurfaceBase else Color(0xFFF8FAFC))
-                .padding(innerPadding)
-                .statusBarsPadding()
+                .padding(top = innerPadding.calculateTopPadding())
         ) {
-            // UNIFIED TOP APP BAR: Notes with active badge, programme tag, Filter, and Profile
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF2563EB)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.School,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                "Academic Notes",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp,
-                                color = if (isDark) Color.White else Color(0xFF0F172A)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(if (isDark) Color(0xFF1E3A8A) else Color(0xFFDBEAFE))
-                                    .padding(horizontal = 8.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    "${uiState.filteredNotes.size} active",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isDark) Color(0xFF93C5FD) else Color(0xFF1D4ED8)
-                                )
-                            }
-                        }
-                        if (uiState.userProgramme.isNotBlank()) {
-                            Text(
-                                uiState.userProgramme,
-                                fontSize = 12.sp,
-                                color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
-                            )
-                        }
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF0052CC))
-                        .clickable { showProfileSheet = true },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = "Account",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // SEARCH BAR
             Card(

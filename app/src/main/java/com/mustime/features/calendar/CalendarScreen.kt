@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mustime.TimetableApplication
 import com.mustime.core.alarm.AlarmScheduler
+import com.mustime.core.alarm.TaskAlarmScheduler
 import com.mustime.features.timetable.domain.ActivityCategory
 import com.mustime.features.timetable.domain.CustomEvent
 import com.mustime.features.timetable.domain.Assignment
@@ -80,8 +81,9 @@ fun CalendarScreen(
     }
 
     val classAlarmScheduler = remember(context) { AlarmScheduler(context) }
+    val taskAlarmScheduler = remember(context) { TaskAlarmScheduler(context) }
     val viewModel: CalendarViewModel = viewModel(
-        factory = CalendarViewModel.provideFactory(repository, classAlarmScheduler)
+        factory = CalendarViewModel.provideFactory(repository, classAlarmScheduler, taskAlarmScheduler)
     )
 
     val uiState by viewModel.uiState.collectAsState()
@@ -185,20 +187,19 @@ fun CalendarScreen(
                         .padding(bottom = Chrome.fabBottomPadding())
                 )
             }
-        }
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .statusBarsPadding(),
-            contentPadding = PaddingValues(bottom = listBottomPadding)
-        ) {
-            // Top Header
-            item {
+        },
+        topBar = {
+            Surface(
+                color = MaterialTheme.colorScheme.background.copy(alpha = com.mustime.ui.Chrome.TopBarGlassAlpha),
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .statusBarsPadding()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -262,7 +263,18 @@ fun CalendarScreen(
                         }
                     }
                 }
-
+            }
+        }
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                top = innerPadding.calculateTopPadding() + 8.dp,
+                bottom = listBottomPadding
+            )
+        ) {
+            // Calendar Title
+            item {
                 Text(
                     text = "Calendar",
                     fontSize = 32.sp,

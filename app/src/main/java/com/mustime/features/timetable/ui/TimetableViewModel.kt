@@ -170,12 +170,21 @@ class TimetableViewModel(
         _uiState.value = _uiState.value.copy(assignments = updated)
         viewModelScope.launch {
             repository.updateAssignmentCompletion(task.id, newCompleted)
+            if (newCompleted) {
+                alarmScheduler?.cancelTaskReminder(task.id)
+                _userMessage.value = "Task completed • Alarm cancelled"
+            } else if (task.reminderMinutes != null) {
+                alarmScheduler?.scheduleTaskReminder(task.copy(completed = false))
+                _userMessage.value = "Task reactivated • Alarm restored"
+            }
         }
     }
 
     fun deleteTask(id: Long) {
         viewModelScope.launch {
+            alarmScheduler?.cancelTaskReminder(id)
             repository.deleteAssignment(id)
+            _userMessage.value = "Task deleted • Alarm cancelled"
         }
     }
 

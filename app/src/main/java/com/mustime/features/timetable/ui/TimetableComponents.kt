@@ -132,20 +132,26 @@ fun TimetableTopAppBar(
     val iconTint = if (isDark) Color(0xFFCBD5E1) else TextSecondaryLight
 
     val barBg = if (isDark) {
-        DarkSurfaceBase.copy(alpha = 0.82f)
+        DarkSurfaceBase.copy(alpha = com.mustime.ui.Chrome.TopBarGlassAlpha)
     } else {
-        SurfaceBaseLight.copy(alpha = 0.85f)
+        SurfaceBaseLight.copy(alpha = com.mustime.ui.Chrome.TopBarGlassAlpha)
     }
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(barBg)
-            .statusBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        color = barBg,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        border = BorderStroke(1.dp, borderSubtle.copy(alpha = 0.25f)),
+        modifier = modifier.fillMaxWidth()
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
         // Left: Calendar Container & Title Block
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -260,6 +266,7 @@ fun TimetableTopAppBar(
             }
         }
     }
+}
 }
 
 /**

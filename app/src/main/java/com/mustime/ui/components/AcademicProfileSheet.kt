@@ -125,8 +125,8 @@ fun AcademicProfileSheet(
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .padding(horizontal = 24.dp)
-                .padding(bottom = 24.dp)
                 .verticalScroll(rememberScrollState())
+                .padding(bottom = 28.dp)
         ) {
             // Top Header: Avatar & University
             Row(

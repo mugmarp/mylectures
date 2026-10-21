@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.mustime.core.alarm.AlarmScheduler
+import com.mustime.core.alarm.TaskAlarmScheduler
 import com.mustime.core.alarm.TaskDateTimeParser
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -43,7 +44,8 @@ data class CalendarUiState(
 
 class CalendarViewModel(
     private val repository: TimetableRepository,
-    private val classAlarmScheduler: AlarmScheduler? = null
+    private val classAlarmScheduler: AlarmScheduler? = null,
+    private val taskAlarmScheduler: TaskAlarmScheduler? = null
 ) : ViewModel() {
 
     private val _userMessage = MutableStateFlow<String?>(null)
@@ -173,18 +175,33 @@ class CalendarViewModel(
         viewModelScope.launch {
             val updated = task.copy(completed = !task.completed)
             repository.saveAssignment(updated)
+            if (updated.completed) {
+                taskAlarmScheduler?.cancelTaskReminder(task.id)
+                _userMessage.value = "Task completed • Alarm cancelled"
+            } else if (task.reminderMinutes != null) {
+                taskAlarmScheduler?.scheduleTaskReminder(updated)
+                _userMessage.value = "Task reactivated • Alarm restored"
+            }
         }
     }
 
     fun deleteTask(task: Assignment) {
         viewModelScope.launch {
+            taskAlarmScheduler?.cancelTaskReminder(task.id)
             repository.deleteAssignment(task.id)
+            _userMessage.value = "Task deleted • Alarm cancelled"
         }
     }
 
     fun saveTask(task: Assignment) {
         viewModelScope.launch {
-            repository.saveAssignment(task)
+            val generatedId = repository.saveAssignment(task)
+            if (task.reminderMinutes != null && generatedId > 0) {
+                taskAlarmScheduler?.scheduleTaskReminder(task.copy(id = generatedId))
+                _userMessage.value = "Task saved • Alarm scheduled"
+            } else {
+                _userMessage.value = "Task saved"
+            }
         }
     }
 
@@ -266,12 +283,13 @@ class CalendarViewModel(
     companion object {
         fun provideFactory(
             repository: TimetableRepository,
-            classAlarmScheduler: AlarmScheduler? = null
+            classAlarmScheduler: AlarmScheduler? = null,
+            taskAlarmScheduler: TaskAlarmScheduler? = null
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return CalendarViewModel(repository, classAlarmScheduler) as T
+                    return CalendarViewModel(repository, classAlarmScheduler, taskAlarmScheduler) as T
                 }
             }
     }

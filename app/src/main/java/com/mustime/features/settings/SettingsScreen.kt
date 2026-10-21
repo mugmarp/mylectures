@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mustime.TimetableApplication
+import com.mustime.core.alarm.AlarmScheduler
+import com.mustime.core.alarm.ReminderScheduler
 import com.mustime.core.alarm.TaskAlarmScheduler
 import com.mustime.features.onboarding.FacultyCatalog
 import com.mustime.ui.AccentColorNames
@@ -51,6 +53,8 @@ fun SettingsScreen(
     val repository = app?.repository
     val dataLoader = app?.dataLoader
     val alarmScheduler = remember(context) { TaskAlarmScheduler(context) }
+    val classAlarmScheduler = remember(context) { AlarmScheduler(context) }
+    val reminderScheduler = remember(context) { ReminderScheduler(context) }
 
     if (repository == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -60,7 +64,15 @@ fun SettingsScreen(
     }
 
     val viewModel: SettingsViewModel = viewModel(
-        factory = SettingsViewModel.provideFactory(repository, dataLoader, alarmScheduler, Dispatchers.IO, context.applicationContext as android.app.Application)
+        factory = SettingsViewModel.provideFactory(
+            repository = repository,
+            dataLoader = dataLoader,
+            alarmScheduler = alarmScheduler,
+            classAlarmScheduler = classAlarmScheduler,
+            reminderScheduler = reminderScheduler,
+            ioDispatcher = Dispatchers.IO,
+            application = context.applicationContext as android.app.Application
+        )
     )
 
     val uiState by viewModel.uiState.collectAsState()
@@ -569,7 +581,41 @@ fun SettingsScreen(
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            if (onBack != null) {
+                Surface(
+                    color = MaterialTheme.colorScheme.background.copy(alpha = com.mustime.ui.Chrome.TopBarGlassAlpha),
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Settings",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                }
+            }
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -577,25 +623,18 @@ fun SettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            if (onBack != null) {
-                IconButton(onClick = onBack, modifier = Modifier.padding(start = 12.dp, top = 8.dp)) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-            } else {
+            if (onBack == null) {
                 Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = "Settings",
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
+            } else {
+                Spacer(modifier = Modifier.height(8.dp))
             }
-
-            Text(
-                text = "Settings",
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = 24.dp)
-            )
 
             // User Feedback: Error Message Banner
             AnimatedVisibility(
