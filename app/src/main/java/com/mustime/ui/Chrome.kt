@@ -28,10 +28,11 @@ object Chrome {
     val FabHeight: Dp = 56.dp
 
     /**
-     * Alpha transparency for glassy top bars.
-     * Distinctly more translucent/glassy than the bottom dock (which uses 0.96f).
+     * Alpha transparency for glassy top bars when scrolled.
+     * Matches the bottom dock (0.96f) for a unified premium feel.
      */
-    const val TopBarGlassAlpha: Float = 0.78f
+    const val TopBarGlassAlpha: Float = 0.96f
+    const val DockAlpha: Float = 0.96f
 
     /**
      * Total bottom padding required for scrollable list content to clear both the floating dock

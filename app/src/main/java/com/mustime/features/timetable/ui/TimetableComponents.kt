@@ -118,6 +118,7 @@ fun TimetableTopAppBar(
     program: String,
     subtitle: String = TimeUtil.currentSemesterWeekLabel(),
     hasUnreadNotifications: Boolean = false,
+    isScrolled: Boolean = false,
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
@@ -131,23 +132,13 @@ fun TimetableTopAppBar(
     val borderSubtle = if (isDark) DarkBorderSubtle else BorderSubtleLight
     val iconTint = if (isDark) Color(0xFFCBD5E1) else TextSecondaryLight
 
-    val barBg = if (isDark) {
-        DarkSurfaceBase.copy(alpha = com.mustime.ui.Chrome.TopBarGlassAlpha)
-    } else {
-        SurfaceBaseLight.copy(alpha = com.mustime.ui.Chrome.TopBarGlassAlpha)
-    }
-
-    Surface(
-        color = barBg,
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
-        border = BorderStroke(1.dp, borderSubtle.copy(alpha = 0.25f)),
-        modifier = modifier.fillMaxWidth()
+    com.mustime.ui.components.SeamlessEditorialTopBar(
+        isScrolled = isScrolled,
+        modifier = modifier
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically

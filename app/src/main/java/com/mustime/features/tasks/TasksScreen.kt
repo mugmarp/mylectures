@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.mustime.ui.components.SeamlessEditorialTopBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Assignment
@@ -224,6 +226,11 @@ fun TasksScreen(
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
 
+    val listState = rememberLazyListState()
+    val isScrolled by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 8 }
+    }
+
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = bg,
@@ -279,77 +286,74 @@ fun TasksScreen(
             }
         },
         topBar = {
-            val barBg = bg.copy(alpha = com.mustime.ui.Chrome.TopBarGlassAlpha)
-            Surface(
-                color = barBg,
-                tonalElevation = 0.dp,
-                shadowElevation = 0.dp,
-                border = BorderStroke(1.dp, (if (isDark) DarkBorderSubtle else Color(0xFFE2E8F0)).copy(alpha = 0.25f)),
-                modifier = Modifier.fillMaxWidth()
+            SeamlessEditorialTopBar(
+                isScrolled = isScrolled
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (onBack != null) {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = textPrimary
-                            )
-                        }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(CircleShape)
-                                .background(primaryColor.copy(alpha = 0.12f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.TaskAlt,
-                                contentDescription = null,
-                                tint = primaryColor,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            "Tasks & Deadlines",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = textPrimary
-                        )
-                        Text(
-                            "Reminders & Deadlines",
-                            fontSize = 11.sp,
-                            color = textSecondary
-                        )
-                    }
-
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(if (isDark) DarkSurfaceCard else Color(0xFFEFF6FF))
-                                .clickable { showProfileSheet = true },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = "Academic Info",
-                                tint = primaryColor,
-                                modifier = Modifier.size(20.dp)
+                        if (onBack != null) {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = textPrimary
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(primaryColor),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.TaskAlt,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                        }
+
+                        Column {
+                            Text(
+                                "Tasks & Deadlines",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = textPrimary
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                "${assignments.count { !it.completed }} pending tasks",
+                                fontSize = 12.sp,
+                                color = textSecondary
                             )
                         }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(primaryColor.copy(alpha = 0.12f))
+                            .clickable { showProfileSheet = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = "Academic Info",
+                            tint = primaryColor,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
             }
@@ -451,6 +455,7 @@ fun TasksScreen(
             }
         } else {
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 20.dp),
