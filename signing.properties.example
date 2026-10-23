@@ -1,0 +1,22 @@
+# ==============================================================================
+# Local Release Signing Configuration Template
+# ==============================================================================
+# To sign release APKs / AABs locally:
+# 1. Generate your production release keystore (e.g. using keytool):
+#    keytool -genkey -v -keystore my-upload-key.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
+#
+# 2. Place `my-upload-key.jks` in the project root directory OR export KEYSTORE_PATH
+#
+# 3. Export the following environment variables (e.g. in your shell or .env):
+#    export KEYSTORE_PATH="/path/to/my-upload-key.jks"
+#    export STORE_PASSWORD="your-keystore-password"
+#    export KEY_PASSWORD="your-key-password"
+#
+# Note: If no release keystore is provided, the build system automatically falls back
+# to debug.keystore so local developer release builds compile without errors.
+# ==============================================================================
+
+KEYSTORE_PATH=my-upload-key.jks
+KEY_ALIAS=upload
+STORE_PASSWORD=your_keystore_password_here
+KEY_PASSWORD=your_key_password_here
