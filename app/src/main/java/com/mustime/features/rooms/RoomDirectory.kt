@@ -1790,13 +1790,31 @@ object UniversityDirectory {
         val scoped = if (!buildingFilter.isNullOrBlank()) roomsForBuilding(buildingFilter)
                      else roomsForCampus(campusFilter)
 
-        return scoped
-            .filter { includePermanentlyVacant || !it.isPermanentlyVacant }
-            .map { room ->
-            val roomDayEntries = combinedEntries.filter { entry ->
-                entry.dayOfWeek.equals(dayOfWeek, ignoreCase = true) &&
-                        room.matchesRoomString(entry.room)
-            }.sortedBy { TimeUtil.toMinutes(it.startTime) }
+        val targetRooms = scoped.filter { includePermanentlyVacant || !it.isPermanentlyVacant }
+
+        // Day-scoped pre-filtering & single sort to avoid repeated sorting per room
+        val dayEntries = combinedEntries
+            .filter { it.dayOfWeek.equals(dayOfWeek, ignoreCase = true) }
+            .sortedBy { TimeUtil.toMinutes(it.startTime) }
+
+        // Cache room matching for each distinct entry location string to eliminate O(rooms * sessions)
+        val roomStringCache = HashMap<String, List<RoomItem>>()
+        val entriesByRoom = HashMap<RoomItem, MutableList<TimetableEntry>>(targetRooms.size)
+
+        for (entry in dayEntries) {
+            val loc = entry.room
+            if (!loc.isNullOrBlank()) {
+                val matched = roomStringCache.getOrPut(loc) {
+                    targetRooms.filter { it.matchesRoomString(loc) }
+                }
+                for (room in matched) {
+                    entriesByRoom.getOrPut(room) { mutableListOf() }.add(entry)
+                }
+            }
+        }
+
+        return targetRooms.map { room ->
+            val roomDayEntries = entriesByRoom[room] ?: emptyList()
 
             val activeSession = roomDayEntries.firstOrNull { entry ->
                 val startM = TimeUtil.toMinutes(entry.startTime)
