@@ -9,7 +9,37 @@ import com.mustime.features.timetable.domain.TimetableEntry
 
 class ClassAlarmReceiver : BroadcastReceiver() {
 
+    companion object {
+        const val ACTION_DISMISS_CLASS_ALARM = "com.mustime.ACTION_DISMISS_CLASS_ALARM"
+        const val ACTION_SNOOZE_CLASS_ALARM = "com.mustime.ACTION_SNOOZE_CLASS_ALARM"
+        const val EXTRA_NOTIFICATION_ID = "EXTRA_NOTIFICATION_ID"
+    }
+
     override fun onReceive(context: Context, intent: Intent) {
+        val action = intent.action
+        if (action == ACTION_DISMISS_CLASS_ALARM) {
+            val notifId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1)
+            if (notifId != -1) {
+                androidx.core.app.NotificationManagerCompat.from(context).cancel(notifId)
+                Log.d("ClassAlarmReceiver", "Dismissed notification $notifId via action button")
+            }
+            return
+        }
+
+        if (action == ACTION_SNOOZE_CLASS_ALARM) {
+            val notifId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1)
+            if (notifId != -1) {
+                androidx.core.app.NotificationManagerCompat.from(context).cancel(notifId)
+            }
+            val courseCode = intent.getStringExtra("COURSE_CODE") ?: "Lecture"
+            val courseTitle = intent.getStringExtra("COURSE_TITLE") ?: "Class"
+            val room = intent.getStringExtra("ROOM") ?: "Classroom"
+            val startTime = intent.getStringExtra("START_TIME") ?: "Soon"
+            AlarmScheduler(context).scheduleSnoozeAlarm(courseCode, courseTitle, room, startTime, snoozeMinutes = 10)
+            Log.d("ClassAlarmReceiver", "Snoozed alarm for $courseCode for 10 minutes")
+            return
+        }
+
         val courseCode = intent.getStringExtra("COURSE_CODE") ?: "Lecture"
         val courseTitle = intent.getStringExtra("COURSE_TITLE") ?: "Class"
         val room = intent.getStringExtra("ROOM") ?: "Classroom"

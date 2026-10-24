@@ -207,4 +207,44 @@ class AlarmScheduler(private val context: Context) {
         pendingIntent.cancel()
         Log.d(TAG, "Cancelled class alarm for $naturalKey")
     }
+
+    fun cancelNoteAlarm(naturalKey: String) {
+        cancelClassAlarm(naturalKey)
+    }
+
+    fun scheduleSnoozeAlarm(
+        courseCode: String,
+        courseTitle: String,
+        room: String,
+        startTime: String,
+        snoozeMinutes: Int = 10
+    ) {
+        if (alarmManager == null) return
+        val triggerMillis = System.currentTimeMillis() + (snoozeMinutes * 60 * 1000L)
+        val intent = Intent(context, ClassAlarmReceiver::class.java).apply {
+            putExtra("COURSE_CODE", courseCode)
+            putExtra("COURSE_TITLE", courseTitle)
+            putExtra("ROOM", room)
+            putExtra("START_TIME", startTime)
+            putExtra("IS_ALARM", true)
+            putExtra("IS_RECURRING", false)
+            putExtra("IS_TEST", false)
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            ("snooze_$courseCode$startTime").hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerMillis, pendingIntent)
+            } else {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerMillis, pendingIntent)
+            }
+            Log.d(TAG, "Scheduled snooze alarm for $courseCode in $snoozeMinutes minutes")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to schedule snooze alarm: ${e.message}")
+        }
+    }
 }

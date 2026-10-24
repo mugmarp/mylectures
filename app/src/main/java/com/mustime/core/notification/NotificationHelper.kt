@@ -204,6 +204,18 @@ object NotificationHelper {
             append("Be sure to review and submit your coursework on time!")
         }
 
+        // Dismiss action
+        val dismissIntent = Intent(context, com.mustime.core.alarm.ClassAlarmReceiver::class.java).apply {
+            action = com.mustime.core.alarm.ClassAlarmReceiver.ACTION_DISMISS_CLASS_ALARM
+            putExtra(com.mustime.core.alarm.ClassAlarmReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+        }
+        val dismissPendingIntent = PendingIntent.getBroadcast(
+            context,
+            notificationId + 10,
+            dismissIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val builder = NotificationCompat.Builder(context, CHANNEL_ACADEMIC_TASKS)
             .setSmallIcon(R.drawable.ic_stat_notification)
             .setContentTitle(notificationTitle)
@@ -215,11 +227,19 @@ object NotificationHelper {
             .setContentIntent(contentPendingIntent)
             .setColor(Color.parseColor("#2563EB"))
             .addAction(R.drawable.ic_stat_notification, "Mark Done", markDonePendingIntent)
+            .addAction(R.drawable.ic_stat_notification, "Dismiss", dismissPendingIntent)
             .addAction(R.drawable.ic_stat_notification, "View Tasks", contentPendingIntent)
 
         try {
             NotificationManagerCompat.from(context).notify(notificationId, builder.build())
             Log.d(TAG, "Notification posted for task $taskId: $title")
+            InAppNotificationStore.getInstance(context).recordNotification(
+                type = NotificationItemType.TASK_REMINDER,
+                title = "Due Soon: $title",
+                message = "$courseCode • Due: $dueDate ($priorityText Priority)",
+                relatedKey = taskId.toString(),
+                navTab = 3
+            )
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException while posting notification (POST_NOTIFICATIONS missing): ${e.message}")
         }
@@ -256,6 +276,17 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val dismissIntent = Intent(context, com.mustime.core.alarm.ClassAlarmReceiver::class.java).apply {
+            action = com.mustime.core.alarm.ClassAlarmReceiver.ACTION_DISMISS_CLASS_ALARM
+            putExtra(com.mustime.core.alarm.ClassAlarmReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+        }
+        val dismissPendingIntent = PendingIntent.getBroadcast(
+            context,
+            notificationId + 10,
+            dismissIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val title = "Upcoming class"
         val headerSubject = if (courseTitle.isNotBlank() && courseTitle != courseCode) {
             "$courseTitle - $courseCode"
@@ -281,9 +312,18 @@ object NotificationHelper {
             .setAutoCancel(true)
             .setContentIntent(contentPendingIntent)
             .setColor(Color.parseColor("#10B981"))
+            .addAction(R.drawable.ic_stat_notification, "Dismiss", dismissPendingIntent)
+            .addAction(R.drawable.ic_stat_notification, "View Class", contentPendingIntent)
 
         try {
             NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+            InAppNotificationStore.getInstance(context).recordNotification(
+                type = NotificationItemType.CLASS_REMINDER,
+                title = "Upcoming class: $headerSubject",
+                message = subtitle,
+                relatedKey = courseCode,
+                navTab = 0
+            )
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException while posting class notification: ${e.message}")
         }
@@ -319,6 +359,32 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val dismissIntent = Intent(context, com.mustime.core.alarm.ClassAlarmReceiver::class.java).apply {
+            action = com.mustime.core.alarm.ClassAlarmReceiver.ACTION_DISMISS_CLASS_ALARM
+            putExtra(com.mustime.core.alarm.ClassAlarmReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+        }
+        val dismissPendingIntent = PendingIntent.getBroadcast(
+            context,
+            notificationId + 10,
+            dismissIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val snoozeIntent = Intent(context, com.mustime.core.alarm.ClassAlarmReceiver::class.java).apply {
+            action = com.mustime.core.alarm.ClassAlarmReceiver.ACTION_SNOOZE_CLASS_ALARM
+            putExtra(com.mustime.core.alarm.ClassAlarmReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+            putExtra("COURSE_CODE", courseCode)
+            putExtra("COURSE_TITLE", courseTitle)
+            putExtra("ROOM", room)
+            putExtra("START_TIME", startTime)
+        }
+        val snoozePendingIntent = PendingIntent.getBroadcast(
+            context,
+            notificationId + 20,
+            snoozeIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val title = "Class Alert"
         val headerSubject = if (courseTitle.isNotBlank() && courseTitle != courseCode) {
             "$courseTitle - $courseCode"
@@ -342,9 +408,18 @@ object NotificationHelper {
             .setAutoCancel(true)
             .setContentIntent(contentPendingIntent)
             .setColor(Color.parseColor("#EF4444"))
+            .addAction(R.drawable.ic_stat_notification, "Dismiss", dismissPendingIntent)
+            .addAction(R.drawable.ic_stat_notification, "Snooze 10m", snoozePendingIntent)
 
         try {
             NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+            InAppNotificationStore.getInstance(context).recordNotification(
+                type = NotificationItemType.CLASS_ALARM,
+                title = "Class Alert: $headerSubject",
+                message = "$startsAtText $venueText".trim(),
+                relatedKey = courseCode,
+                navTab = 0
+            )
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException while posting class alarm notification: ${e.message}")
         }
@@ -416,6 +491,12 @@ object NotificationHelper {
         try {
             NotificationManagerCompat.from(context).notify(notificationId, builder.build())
             Log.d(TAG, "Daily digest notification posted for $dayOfWeek with ${classes.size} classes")
+            InAppNotificationStore.getInstance(context).recordNotification(
+                type = NotificationItemType.DAILY_DIGEST,
+                title = title,
+                message = snippet,
+                navTab = 0
+            )
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException while posting daily digest: ${e.message}")
         }
