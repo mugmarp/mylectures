@@ -99,6 +99,9 @@ class TimetableApplication : Application() {
             feedbackManager.flushPendingSubmissions()
             val prog = etagStore.getSavedProgramme() ?: ""
             analyticsManager.recordAppLaunch(prog, this)
+            if (etagStore.isOnboardingCompleted()) {
+                com.mustime.core.alarm.ReminderScheduler(this@TimetableApplication).scheduleDailyReminder()
+            }
         }
     }
 }

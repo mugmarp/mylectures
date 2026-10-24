@@ -177,10 +177,4 @@ class TaskAlarmScheduler(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
-
-    companion object {
-        fun cancelTaskReminder(context: Context, taskId: Long) {
-            TaskAlarmScheduler(context).cancelTaskReminder(taskId)
-        }
-    }
 }

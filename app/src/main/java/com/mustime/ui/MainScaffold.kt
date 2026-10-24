@@ -7,8 +7,17 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.zIndex
+import com.mustime.core.notification.InAppNotificationItem
+import com.mustime.core.notification.InAppNotificationStore
+import com.mustime.core.notification.NotificationItemType
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Settings
@@ -81,12 +90,26 @@ fun MainScaffold(
     }
     var selectedTab by remember { mutableIntStateOf(initialTab) }
     var isNotesEditing by remember { mutableStateOf(false) }
+    var pendingHighlightTaskId by remember { mutableStateOf<Long?>(null) }
+    var activeForegroundAlert by remember { mutableStateOf<InAppNotificationItem?>(null) }
 
     // Handle notification deep-link intents.
     LaunchedEffect(notificationIntentFlow) {
-        notificationIntentFlow?.collect { (tab, _) ->
+        notificationIntentFlow?.collect { (tab, taskId) ->
             if (navState is AppNavState.MainApp) {
                 selectedTab = tab
+                pendingHighlightTaskId = taskId
+            }
+        }
+    }
+
+    // Real-time foreground in-app alert banner
+    LaunchedEffect(Unit) {
+        InAppNotificationStore.foregroundAlertFlow.collect { alert ->
+            activeForegroundAlert = alert
+            kotlinx.coroutines.delay(6500)
+            if (activeForegroundAlert?.id == alert.id) {
+                activeForegroundAlert = null
             }
         }
     }
@@ -249,8 +272,91 @@ fun MainScaffold(
                             onReconfigureAcademicProfile = {
                                 isSettingsOpen = false
                                 navState = AppNavState.FacultySelection
-                            }
+                            },
+                            highlightTaskId = pendingHighlightTaskId
                         )
+                    }
+
+                    // Floating In-App Foreground Alert Banner
+                    AnimatedVisibility(
+                        visible = activeForegroundAlert != null,
+                        enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+                        exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .statusBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .zIndex(100f)
+                    ) {
+                        activeForegroundAlert?.let { alert ->
+                            Surface(
+                                shape = RoundedCornerShape(18.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                tonalElevation = 8.dp,
+                                shadowElevation = 8.dp,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .widthIn(max = 440.dp)
+                                    .clickable {
+                                        alert.navTab?.let { selectedTab = it }
+                                        activeForegroundAlert = null
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(38.dp)
+                                            .background(
+                                                when (alert.type) {
+                                                    NotificationItemType.CLASS_ALARM -> Color(0xFFEF4444)
+                                                    NotificationItemType.TASK_REMINDER -> Color(0xFF2563EB)
+                                                    else -> MaterialTheme.colorScheme.primary
+                                                },
+                                                CircleShape
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.NotificationsActive,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = alert.title,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = alert.message,
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { activeForegroundAlert = null },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Dismiss",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     val windowInfo = rememberLecturesWindow()
