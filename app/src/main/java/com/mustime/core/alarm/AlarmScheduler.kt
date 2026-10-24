@@ -208,16 +208,16 @@ class AlarmScheduler(private val context: Context) {
         Log.d(TAG, "Cancelled class alarm for $naturalKey")
     }
 
-    fun cancelNoteAlarm(naturalKey: String) {
-        cancelClassAlarm(naturalKey)
-    }
-
     fun scheduleSnoozeAlarm(
         courseCode: String,
         courseTitle: String,
         room: String,
         startTime: String,
-        snoozeMinutes: Int = 10
+        snoozeMinutes: Int = 10,
+        minutesBefore: Int = 30,
+        lecturer: String = "",
+        naturalKey: String? = null,
+        dayOfWeek: String? = null
     ) {
         if (alarmManager == null) return
         val triggerMillis = System.currentTimeMillis() + (snoozeMinutes * 60 * 1000L)
@@ -226,6 +226,10 @@ class AlarmScheduler(private val context: Context) {
             putExtra("COURSE_TITLE", courseTitle)
             putExtra("ROOM", room)
             putExtra("START_TIME", startTime)
+            putExtra("MINUTES_BEFORE", minutesBefore)
+            putExtra("LECTURER", lecturer)
+            naturalKey?.let { putExtra("NATURAL_KEY", it) }
+            dayOfWeek?.let { putExtra("DAY_OF_WEEK", it) }
             putExtra("IS_ALARM", true)
             putExtra("IS_RECURRING", false)
             putExtra("IS_TEST", false)
@@ -242,7 +246,7 @@ class AlarmScheduler(private val context: Context) {
             } else {
                 alarmManager.set(AlarmManager.RTC_WAKEUP, triggerMillis, pendingIntent)
             }
-            Log.d(TAG, "Scheduled snooze alarm for $courseCode in $snoozeMinutes minutes")
+            Log.d(TAG, "Scheduled snooze alarm for $courseCode in $snoozeMinutes minutes (preserving lead time $minutesBefore min)")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to schedule snooze alarm: ${e.message}")
         }

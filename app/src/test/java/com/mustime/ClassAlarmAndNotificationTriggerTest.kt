@@ -162,4 +162,81 @@ class ClassAlarmAndNotificationTriggerTest {
         assertNotNull("Academic task reminder notification channel must exist", taskChannel)
         assertEquals(NotificationManager.IMPORTANCE_HIGH, taskChannel.importance)
     }
+
+    @Test
+    fun testClassAlarmDismissActionRemovesNotification() {
+        val receiver = ClassAlarmReceiver()
+        val notifId = 44556
+
+        val builder = android.app.Notification.Builder(context, NotificationHelper.CHANNEL_CLASS_ALARMS)
+            .setContentTitle("Test Alarm")
+            .setContentText("Dismiss me")
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+        notificationManager.notify(notifId, builder.build())
+        assertFalse("Notification should exist before dismiss", shadowNotificationManager.allNotifications.isEmpty())
+
+        val dismissIntent = Intent(context, ClassAlarmReceiver::class.java).apply {
+            action = ClassAlarmReceiver.ACTION_DISMISS_CLASS_ALARM
+            putExtra(ClassAlarmReceiver.EXTRA_NOTIFICATION_ID, notifId)
+        }
+        receiver.onReceive(context, dismissIntent)
+
+        assertTrue("Notification should be cancelled after dismiss action", shadowNotificationManager.allNotifications.isEmpty())
+    }
+
+    @Test
+    fun testClassAlarmSnoozeActionSchedulesTenMinutesAndPreservesMetadata() {
+        val receiver = ClassAlarmReceiver()
+        val notifId = 99881
+
+        val builder = android.app.Notification.Builder(context, NotificationHelper.CHANNEL_CLASS_ALARMS)
+            .setContentTitle("Class Alert")
+            .setContentText("Snooze me")
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+        notificationManager.notify(notifId, builder.build())
+
+        val snoozeIntent = Intent(context, ClassAlarmReceiver::class.java).apply {
+            action = ClassAlarmReceiver.ACTION_SNOOZE_CLASS_ALARM
+            putExtra(ClassAlarmReceiver.EXTRA_NOTIFICATION_ID, notifId)
+            putExtra("COURSE_CODE", "SWE2101")
+            putExtra("COURSE_TITLE", "Object Oriented Programming")
+            putExtra("ROOM", "SFL01")
+            putExtra("START_TIME", "10:00 AM")
+            putExtra("MINUTES_BEFORE", 15) // Custom user lead time
+            putExtra("LECTURER", "Dr. Andrew")
+            putExtra("NATURAL_KEY", "SWE2101|OOP|Monday|10:00|SFL01")
+            putExtra("DAY_OF_WEEK", "Monday")
+        }
+
+        receiver.onReceive(context, snoozeIntent)
+
+        // 1. Notification was dismissed
+        assertTrue("Original notification should be dismissed upon snooze", shadowNotificationManager.allNotifications.isEmpty())
+
+        // 2. Alarm was scheduled in AlarmManager
+        val scheduledAlarms = shadowAlarmManager.scheduledAlarms
+        assertFalse("A snooze alarm must be scheduled in AlarmManager", scheduledAlarms.isEmpty())
+
+        val snoozeAlarm = scheduledAlarms.last()
+        val expectedMinTime = System.currentTimeMillis() + (9 * 60 * 1000L)
+        val expectedMaxTime = System.currentTimeMillis() + (11 * 60 * 1000L)
+        assertTrue("Snooze trigger should be ~10 minutes in future", snoozeAlarm.triggerAtTime in expectedMinTime..expectedMaxTime)
+
+        // 3. Metadata preserved in pending intent
+        val pendingIntent = snoozeAlarm.operation
+        val shadowPendingIntent = shadowOf(pendingIntent)
+        val scheduledIntent = shadowPendingIntent.savedIntent
+
+        assertNotNull("Snooze intent must exist", scheduledIntent)
+        assertEquals("SWE2101", scheduledIntent.getStringExtra("COURSE_CODE"))
+        assertEquals("Object Oriented Programming", scheduledIntent.getStringExtra("COURSE_TITLE"))
+        assertEquals("SFL01", scheduledIntent.getStringExtra("ROOM"))
+        assertEquals("10:00 AM", scheduledIntent.getStringExtra("START_TIME"))
+        assertEquals(15, scheduledIntent.getIntExtra("MINUTES_BEFORE", -1))
+        assertEquals("Dr. Andrew", scheduledIntent.getStringExtra("LECTURER"))
+        assertEquals("SWE2101|OOP|Monday|10:00|SFL01", scheduledIntent.getStringExtra("NATURAL_KEY"))
+        assertEquals("Monday", scheduledIntent.getStringExtra("DAY_OF_WEEK"))
+        assertFalse("Snooze alarm must not be recurring", scheduledIntent.getBooleanExtra("IS_RECURRING", true))
+        assertTrue("Snooze alarm must remain an alarm", scheduledIntent.getBooleanExtra("IS_ALARM", false))
+    }
 }

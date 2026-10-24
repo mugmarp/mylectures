@@ -11,9 +11,11 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.mustime.ui.components.FloatingIslandTopBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -33,12 +35,15 @@ import com.mustime.core.storage.AttachmentStore
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mustime.TimetableApplication
+import com.mustime.core.notification.InAppNotificationStore
 import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.ui.*
 import com.mustime.ui.Chrome
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.rememberLecturesWindow
 import com.mustime.ui.components.AcademicProfileSheet
+import com.mustime.ui.components.NotificationCenterSheet
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -76,6 +81,15 @@ fun NotesScreen(
     var noteToEdit by remember { mutableStateOf<LectureNote?>(null) }
     var noteToDelete by remember { mutableStateOf<LectureNote?>(null) }
     var showProfileSheet by remember { mutableStateOf(false) }
+    var showNotificationCenterSheet by remember { mutableStateOf(false) }
+
+    val coroutineScope = rememberCoroutineScope()
+    val notificationStore = remember(context) { InAppNotificationStore.getInstance(context) }
+    val unreadNotificationsCount by notificationStore.unreadCount.collectAsState(initial = 0)
+    val activeNotesWithAlarms = remember(uiState.notes) {
+        uiState.notes.filter { (it.alarmMinutes ?: 0) > 0 }
+    }
+    val hasUnreadNotifications = unreadNotificationsCount > 0 || activeNotesWithAlarms.isNotEmpty()
 
     LaunchedEffect(isEditing) {
         onEditingChanged(isEditing)
@@ -122,6 +136,7 @@ fun NotesScreen(
     val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
+    val listState = rememberLazyListState()
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -167,19 +182,11 @@ fun NotesScreen(
             }
         },
         topBar = {
-            val barBg = (if (isDark) DarkSurfaceBase else Color(0xFFF8FAFC)).copy(alpha = com.mustime.ui.Chrome.TopBarGlassAlpha)
-            Surface(
-                color = barBg,
-                tonalElevation = 0.dp,
-                shadowElevation = 0.dp,
-                border = BorderStroke(1.dp, (if (isDark) DarkBorderSubtle else Color(0xFFE2E8F0)).copy(alpha = 0.25f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            FloatingIslandTopBar {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -187,7 +194,7 @@ fun NotesScreen(
                         Box(
                             modifier = Modifier
                                 .size(38.dp)
-                                .clip(CircleShape)
+                                .clip(RoundedCornerShape(10.dp))
                                 .background(MaterialTheme.colorScheme.primary),
                             contentAlignment = Alignment.Center
                         ) {
@@ -198,31 +205,32 @@ fun NotesScreen(
                                 modifier = Modifier.size(20.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     "Academic Notes",
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp,
+                                    fontSize = 17.sp,
                                     color = if (isDark) Color.White else Color(0xFF0F172A)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Box(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(if (isDark) Color(0xFF1E3A8A) else Color(0xFFDBEAFE))
-                                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
                                 ) {
                                     Text(
                                         "${uiState.filteredNotes.size} active",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isDark) Color(0xFF93C5FD) else Color(0xFF1D4ED8)
+                                        color = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             }
                             if (uiState.userProgramme.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     uiState.userProgramme,
                                     fontSize = 12.sp,
@@ -232,20 +240,48 @@ fun NotesScreen(
                         }
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary)
-                            .clickable { showProfileSheet = true },
-                        contentAlignment = Alignment.Center
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = "Account",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        IconButton(
+                            onClick = { showNotificationCenterSheet = true },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            BadgedBox(
+                                badge = {
+                                    if (hasUnreadNotifications) {
+                                        Badge(
+                                            containerColor = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(8.dp)
+                                        )
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Notifications,
+                                    contentDescription = "Notifications & Alarms",
+                                    tint = if (isDark) Color(0xFFCBD5E1) else Color(0xFF475569),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                .clickable { showProfileSheet = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = "Account",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -429,6 +465,7 @@ fun NotesScreen(
                 }
             } else {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = listBottomPadding),
                     verticalArrangement = Arrangement.spacedBy(18.dp)
@@ -541,6 +578,23 @@ fun NotesScreen(
             },
             onOpenSettings = {
                 showProfileSheet = false
+                onSettingsClick()
+            }
+        )
+    }
+
+    if (showNotificationCenterSheet) {
+        NotificationCenterSheet(
+            activeNotesWithAlarms = activeNotesWithAlarms,
+            onCancelNoteAlarm = { note ->
+                classAlarmScheduler.cancelClassAlarm(note.naturalKey)
+                coroutineScope.launch {
+                    repository.upsertNote(note.copy(alarmMinutes = 0))
+                }
+            },
+            onDismiss = { showNotificationCenterSheet = false },
+            onOpenSettings = {
+                showNotificationCenterSheet = false
                 onSettingsClick()
             }
         )

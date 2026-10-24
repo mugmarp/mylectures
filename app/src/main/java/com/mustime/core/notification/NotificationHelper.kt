@@ -342,7 +342,11 @@ object NotificationHelper {
         courseCode: String,
         courseTitle: String,
         room: String,
-        startTime: String
+        startTime: String,
+        minutesBefore: Int = 30,
+        lecturer: String = "",
+        naturalKey: String? = null,
+        dayOfWeek: String? = null
     ) {
         createNotificationChannels(context)
 
@@ -377,6 +381,10 @@ object NotificationHelper {
             putExtra("COURSE_TITLE", courseTitle)
             putExtra("ROOM", room)
             putExtra("START_TIME", startTime)
+            putExtra("MINUTES_BEFORE", minutesBefore)
+            putExtra("LECTURER", lecturer)
+            naturalKey?.let { putExtra("NATURAL_KEY", it) }
+            dayOfWeek?.let { putExtra("DAY_OF_WEEK", it) }
         }
         val snoozePendingIntent = PendingIntent.getBroadcast(
             context,
@@ -394,7 +402,8 @@ object NotificationHelper {
 
         val startsAtText = "Starts at $startTime"
         val venueText = if (room.isNotBlank()) "In $room" else ""
-        val detailedText = "$headerSubject\n$startsAtText\n$venueText".trimEnd()
+        val lecturerText = if (lecturer.isNotBlank()) "\nLecturer: $lecturer" else ""
+        val detailedText = "$headerSubject\n$startsAtText\n$venueText$lecturerText".trimEnd()
 
         val builder = NotificationCompat.Builder(context, CHANNEL_CLASS_ALARMS)
             .setSmallIcon(R.drawable.ic_stat_notification)
