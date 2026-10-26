@@ -35,8 +35,22 @@ class ClassAlarmReceiver : BroadcastReceiver() {
             val courseTitle = intent.getStringExtra("COURSE_TITLE") ?: "Class"
             val room = intent.getStringExtra("ROOM") ?: "Classroom"
             val startTime = intent.getStringExtra("START_TIME") ?: "Soon"
-            AlarmScheduler(context).scheduleSnoozeAlarm(courseCode, courseTitle, room, startTime, snoozeMinutes = 10)
-            Log.d("ClassAlarmReceiver", "Snoozed alarm for $courseCode for 10 minutes")
+            val minutesBefore = intent.getIntExtra("MINUTES_BEFORE", 30)
+            val lecturer = intent.getStringExtra("LECTURER") ?: ""
+            val naturalKey = intent.getStringExtra("NATURAL_KEY")
+            val dayOfWeek = intent.getStringExtra("DAY_OF_WEEK")
+            AlarmScheduler(context).scheduleSnoozeAlarm(
+                courseCode = courseCode,
+                courseTitle = courseTitle,
+                room = room,
+                startTime = startTime,
+                snoozeMinutes = 10,
+                minutesBefore = minutesBefore,
+                lecturer = lecturer,
+                naturalKey = naturalKey,
+                dayOfWeek = dayOfWeek
+            )
+            Log.d("ClassAlarmReceiver", "Snoozed alarm for $courseCode for 10 minutes (lead=$minutesBefore min, lecturer=$lecturer)")
             return
         }
 
@@ -60,7 +74,11 @@ class ClassAlarmReceiver : BroadcastReceiver() {
                 courseCode = courseCode,
                 courseTitle = courseTitle,
                 room = room,
-                startTime = startTime
+                startTime = startTime,
+                minutesBefore = minutesBefore,
+                lecturer = lecturer,
+                naturalKey = naturalKey,
+                dayOfWeek = dayOfWeek
             )
         } else {
             NotificationHelper.showClassReminderNotification(

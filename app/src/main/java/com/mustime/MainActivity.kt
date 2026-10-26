@@ -20,7 +20,11 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
     // Notification taps emit (navTab, taskId) pairs that MainScaffold consumes.
-    private val notificationIntentFlow = MutableSharedFlow<Pair<Int, Long?>>(extraBufferCapacity = 1)
+    // replay = 1 ensures cold-start intent events are retained until MainScaffold subscribes.
+    private val notificationIntentFlow = MutableSharedFlow<Pair<Int, Long?>>(
+        replay = 1,
+        onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

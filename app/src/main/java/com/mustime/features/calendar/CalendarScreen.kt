@@ -1,6 +1,7 @@
 package com.mustime.features.calendar
 
 import android.widget.Toast
+import java.util.Locale
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -13,8 +14,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.mustime.ui.components.FloatingIslandTopBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -26,6 +29,7 @@ import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,6 +100,7 @@ fun CalendarScreen(
         }
     }
 
+    val coroutineScope = rememberCoroutineScope()
     var showAddActivitySheet by remember { mutableStateOf(false) }
     var activityToEdit by remember { mutableStateOf<CustomEvent?>(null) }
     var showProfileSheet by remember { mutableStateOf(false) }
@@ -157,6 +162,12 @@ fun CalendarScreen(
     val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
+    val listState = rememberLazyListState()
+
+    var showNotificationCenterSheet by remember { mutableStateOf(false) }
+    val notifStore = remember(context) { com.mustime.core.notification.InAppNotificationStore.getInstance(context) }
+    val unreadNotifCount by notifStore.unreadCount.collectAsState(initial = 0)
+    val hasAlarms = unreadNotifCount > 0
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -189,43 +200,56 @@ fun CalendarScreen(
             }
         },
         topBar = {
-            Surface(
-                color = MaterialTheme.colorScheme.background.copy(alpha = com.mustime.ui.Chrome.TopBarGlassAlpha),
-                tonalElevation = 0.dp,
-                shadowElevation = 0.dp,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            FloatingIslandTopBar {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (onBack != null) {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (onBack != null) {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.primary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Event,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
                         }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Outlined.Event,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                        Column {
+                            Text(
+                                "Academic Calendar",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 17.sp,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
+                            if (uiState.yearMonthText.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    uiState.yearMonthText,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
 
@@ -246,18 +270,47 @@ fun CalendarScreen(
                             shape = RoundedCornerShape(12.dp)
                         )
 
+                        BadgedBox(
+                            badge = {
+                                if (hasAlarms) {
+                                    Badge(
+                                        containerColor = Color(0xFFEF4444),
+                                        contentColor = Color.White
+                                    ) {
+                                        Box(modifier = Modifier.size(6.dp))
+                                    }
+                                }
+                            }
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                    .clickable { showNotificationCenterSheet = true },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (hasAlarms) Icons.Filled.Notifications else Icons.Outlined.Notifications,
+                                    contentDescription = "Notifications & Alarms",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(19.dp)
+                                )
+                            }
+                        }
+
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
                                 .clickable { showProfileSheet = true },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Default.Person,
                                 contentDescription = "Academic Info",
-                                tint = Color.White,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -267,6 +320,7 @@ fun CalendarScreen(
         }
     ) { innerPadding ->
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 top = innerPadding.calculateTopPadding() + 8.dp,
@@ -355,6 +409,25 @@ fun CalendarScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
+                // Pre-index days with pending tasks and scheduled classes for O(1) grid dot lookup
+                val taskDaysWithDue = remember(uiState.assignments, uiState.currentMonth, uiState.currentYear) {
+                    val days = mutableSetOf<Int>()
+                    for (day in 1..uiState.daysInMonth) {
+                        if (uiState.assignments.any { !it.completed && viewModel.isTaskDueOnDay(it, day) }) {
+                            days.add(day)
+                        }
+                    }
+                    days
+                }
+
+                val classDaysWithSchedule = remember(uiState.entries) {
+                    uiState.entries.map { it.dayOfWeek.lowercase(Locale.ROOT) }.toSet()
+                }
+
+                val activityDaysWithSchedule = remember(uiState.customEvents) {
+                    uiState.customEvents.map { it.dayOfWeek.lowercase(Locale.ROOT) }.toSet()
+                }
+
                 // Calendar Grid with distinguished color indicators
                 Column(
                     modifier = Modifier
@@ -384,16 +457,13 @@ fun CalendarScreen(
                                     val isSelected = dayNum == uiState.selectedDay
                                     val isToday = viewModel.isToday(dayNum)
                                     val cellDayName = viewModel.getDayOfWeekNameForDay(dayNum)
+                                    val cellDayLower = cellDayName.lowercase(Locale.ROOT)
 
-                                    val hasClassesThisDay = uiState.entries.any {
-                                        it.dayOfWeek.equals(cellDayName, ignoreCase = true)
-                                    }
-                                    val activitiesThisDay = uiState.customEvents.filter {
-                                        it.dayOfWeek.equals(cellDayName, ignoreCase = true)
-                                    }
-                                    val hasTasksThisDay = uiState.assignments.any {
-                                        !it.completed && viewModel.isTaskDueOnDay(it, dayNum)
-                                    }
+                                    val hasClassesThisDay = cellDayLower in classDaysWithSchedule
+                                    val activitiesThisDay = if (cellDayLower in activityDaysWithSchedule) {
+                                        uiState.customEvents.filter { it.dayOfWeek.equals(cellDayName, ignoreCase = true) }
+                                    } else emptyList()
+                                    val hasTasksThisDay = dayNum in taskDaysWithDue
 
                                     Box(
                                         modifier = Modifier
@@ -791,6 +861,24 @@ fun CalendarScreen(
                 showProfileSheet = false
                 onSettingsClick()
             }
+        )
+    }
+
+    if (showNotificationCenterSheet) {
+        val app = context.applicationContext as? com.mustime.TimetableApplication
+        val activeTasks = uiState.assignments.filter { !it.completed && (it.reminderMinutes ?: 0) > 0 }
+        com.mustime.ui.components.NotificationCenterSheet(
+            activeTasksWithAlarms = activeTasks,
+            onCancelTaskAlarm = { task ->
+                app?.repository?.let { repo ->
+                    coroutineScope.launch {
+                        repo.saveAssignment(task.copy(reminderMinutes = null))
+                        com.mustime.core.alarm.TaskAlarmScheduler(context).cancelTaskReminder(task.id)
+                    }
+                }
+            },
+            onDismiss = { showNotificationCenterSheet = false },
+            onOpenSettings = onSettingsClick
         )
     }
 

@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -118,7 +119,6 @@ fun TimetableTopAppBar(
     program: String,
     subtitle: String = TimeUtil.currentSemesterWeekLabel(),
     hasUnreadNotifications: Boolean = false,
-    isScrolled: Boolean = false,
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
@@ -132,14 +132,13 @@ fun TimetableTopAppBar(
     val borderSubtle = if (isDark) DarkBorderSubtle else BorderSubtleLight
     val iconTint = if (isDark) Color(0xFFCBD5E1) else TextSecondaryLight
 
-    com.mustime.ui.components.SeamlessEditorialTopBar(
-        isScrolled = isScrolled,
+    com.mustime.ui.components.FloatingIslandTopBar(
         modifier = modifier
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 10.dp),
+                .padding(horizontal = 14.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -231,6 +230,40 @@ fun TimetableTopAppBar(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = PrimaryBlue
+                        )
+                    }
+                }
+            }
+
+            // Notifications & Alarms Bell Button
+            BadgedBox(
+                badge = {
+                    if (hasUnreadNotifications) {
+                        Badge(
+                            containerColor = Color(0xFFEF4444),
+                            contentColor = Color.White
+                        ) {
+                            Box(modifier = Modifier.size(6.dp))
+                        }
+                    }
+                }
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = capsuleBg,
+                    border = BorderStroke(1.dp, borderSubtle),
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .clickable { onNotificationClick() }
+                        .testTag("topbar_notifications_btn")
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = if (hasUnreadNotifications) Icons.Filled.NotificationsActive else Icons.Outlined.Notifications,
+                            contentDescription = "Notifications & Alarms",
+                            tint = if (hasUnreadNotifications) PrimaryBlue else iconTint,
+                            modifier = Modifier.size(19.dp)
                         )
                     }
                 }

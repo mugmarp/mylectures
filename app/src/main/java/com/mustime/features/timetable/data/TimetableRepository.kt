@@ -190,6 +190,10 @@ class TimetableRepository(
         dao.upsertNote(note)
     }
 
+    suspend fun upsertNote(note: LectureNote) {
+        dao.upsertNote(note)
+    }
+
     suspend fun togglePinNote(naturalKey: String) {
         val existing = dao.getNoteDirect(naturalKey)
         if (existing != null) {

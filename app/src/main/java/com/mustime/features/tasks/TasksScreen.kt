@@ -19,7 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import com.mustime.ui.components.SeamlessEditorialTopBar
+import com.mustime.ui.components.FloatingIslandTopBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Assignment
@@ -52,6 +52,8 @@ import com.mustime.features.timetable.domain.TaskCategory
 import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import com.mustime.core.notification.InAppNotificationStore
 import com.mustime.features.timetable.domain.Assignment
 import androidx.compose.foundation.layout.WindowInsets
 import com.mustime.features.timetable.ui.*
@@ -115,7 +117,8 @@ fun resolveTaskCategoryAndTitle(title: String): Pair<TaskCategory, String> {
 fun TasksScreen(
     onBack: (() -> Unit)? = null,
     onSettingsClick: () -> Unit = {},
-    onReconfigureAcademicProfile: () -> Unit = {}
+    onReconfigureAcademicProfile: () -> Unit = {},
+    highlightTaskId: Long? = null
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as? TimetableApplication
@@ -161,9 +164,18 @@ fun TasksScreen(
     val uiState by viewModel.uiState.collectAsState()
     val assignments = uiState.assignments
 
+    val coroutineScope = rememberCoroutineScope()
     var showAddDialog by remember { mutableStateOf(false) }
     var taskToEdit by remember { mutableStateOf<Assignment?>(null) }
     var showProfileSheet by remember { mutableStateOf(false) }
+    var showNotificationCenterSheet by remember { mutableStateOf(false) }
+
+    val notificationStore = remember(context) { InAppNotificationStore.getInstance(context) }
+    val unreadNotificationsCount by notificationStore.unreadCount.collectAsState(initial = 0)
+    val activeTasksWithAlarms = remember(assignments) {
+        assignments.filter { !it.completed && (it.reminderMinutes ?: 0) > 0 }
+    }
+    val hasUnreadNotifications = unreadNotificationsCount > 0 || activeTasksWithAlarms.isNotEmpty()
 
     var hasNotificationPermission by remember {
         mutableStateOf(
@@ -225,10 +237,15 @@ fun TasksScreen(
     val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
-
     val listState = rememberLazyListState()
-    val isScrolled by remember {
-        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 8 }
+
+    // Auto-scroll to target task when launched from notification deep link
+    LaunchedEffect(highlightTaskId, filteredTasks) {
+        val targetId = highlightTaskId ?: return@LaunchedEffect
+        val index = filteredTasks.indexOfFirst { it.id == targetId }
+        if (index != -1) {
+            listState.animateScrollToItem((index + 3).coerceAtLeast(0))
+        }
     }
 
     Scaffold(
@@ -286,13 +303,11 @@ fun TasksScreen(
             }
         },
         topBar = {
-            SeamlessEditorialTopBar(
-                isScrolled = isScrolled
-            ) {
+            FloatingIslandTopBar {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 10.dp),
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -340,20 +355,48 @@ fun TasksScreen(
                         }
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(primaryColor.copy(alpha = 0.12f))
-                            .clickable { showProfileSheet = true },
-                        contentAlignment = Alignment.Center
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = "Academic Info",
-                            tint = primaryColor,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        IconButton(
+                            onClick = { showNotificationCenterSheet = true },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            BadgedBox(
+                                badge = {
+                                    if (hasUnreadNotifications) {
+                                        Badge(
+                                            containerColor = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(8.dp)
+                                        )
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Notifications,
+                                    contentDescription = "Notifications & Alarms",
+                                    tint = textSecondary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(primaryColor.copy(alpha = 0.12f))
+                                .clickable { showProfileSheet = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = "Academic Info",
+                                tint = primaryColor,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -605,6 +648,7 @@ fun TasksScreen(
                         TaskCard(
                             task = task,
                             isDark = isDark,
+                            isHighlighted = task.id == highlightTaskId,
                             onToggleComplete = { viewModel.toggleComplete(task) },
                             onEdit = {
                                 taskToEdit = task
@@ -717,12 +761,30 @@ fun TasksScreen(
             }
         )
     }
+
+    if (showNotificationCenterSheet) {
+        NotificationCenterSheet(
+            activeTasksWithAlarms = activeTasksWithAlarms,
+            onCancelTaskAlarm = { task ->
+                alarmScheduler.cancelTaskReminder(task.id)
+                coroutineScope.launch {
+                    repository.saveAssignment(task.copy(reminderMinutes = null))
+                }
+            },
+            onDismiss = { showNotificationCenterSheet = false },
+            onOpenSettings = {
+                showNotificationCenterSheet = false
+                onSettingsClick()
+            }
+        )
+    }
 }
 
 @Composable
 fun TaskCard(
     task: Assignment,
     isDark: Boolean,
+    isHighlighted: Boolean = false,
     onToggleComplete: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -739,15 +801,16 @@ fun TaskCard(
     Card(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = cardBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isHighlighted) 6.dp else 1.dp),
         border = CardDefaults.outlinedCardBorder().copy(
+            width = if (isHighlighted) 2.dp else 1.dp,
             brush = androidx.compose.ui.graphics.SolidColor(
-                if (isDark) {
-                    if (!task.completed && dueStatus == TaskDueStatus.OVERDUE) Color(0xFF991B1B)
-                    else DarkBorderSubtle
-                } else {
-                    if (!task.completed && dueStatus == TaskDueStatus.OVERDUE) Color(0xFFFCA5A5)
-                    else Color(0xFFE2E8F0)
+                when {
+                    isHighlighted -> primaryColor
+                    isDark && !task.completed && dueStatus == TaskDueStatus.OVERDUE -> Color(0xFF991B1B)
+                    isDark -> DarkBorderSubtle
+                    !task.completed && dueStatus == TaskDueStatus.OVERDUE -> Color(0xFFFCA5A5)
+                    else -> Color(0xFFE2E8F0)
                 }
             )
         ),
