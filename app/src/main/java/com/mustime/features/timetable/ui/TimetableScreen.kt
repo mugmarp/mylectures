@@ -42,6 +42,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mustime.core.util.SessionProgress
 import com.mustime.core.util.TimeUtil
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.lifecycleScope
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import com.mustime.features.timetable.domain.Assignment
 import com.mustime.features.timetable.domain.CustomEvent
 import com.mustime.features.timetable.domain.LectureNote
@@ -117,8 +123,44 @@ fun TimetableScreen(
     }
 
     // Dynamic current real-time day and calendar
-    val todayName = remember { TimeUtil.todayName() }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val todayName = remember { mutableStateOf(TimeUtil.todayName()) }
     val daysList = remember { TimeUtil.DAYS }
+
+    // Update todayName on lifecycle resume (app foreground) and at midnight via 15s pulse
+    val clock = remember {
+        androidx.compose.runtime.mutableStateOf(0)
+    }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(1000L)
+        while (true) {
+            clock.value = (clock.value + 1) % 900 // 15 min cycle marker
+            kotlinx.coroutines.delay(15_000L)
+        }
+    }
+    // midnight/day-change detection via clock pulse
+    LaunchedEffect(clock.value) {
+        val newToday = TimeUtil.todayName()
+        if (todayName.value != newToday) {
+            todayName.value = newToday
+        }
+    }
+    // lifecycle resume pulse - re-evaluate immediately when app returns to foreground
+    val lifecycleObserver = remember {
+        object : DefaultLifecycleObserver {
+            override fun onResume(owner: LifecycleOwner) {
+                val newToday = TimeUtil.todayName()
+                if (todayName.value != newToday) {
+                    todayName.value = newToday
+                }
+            }
+        }
+    }
+    // Register the observer properly
+    DisposableEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(lifecycleObserver) }
+    }
 
     // Dialog & BottomSheet state
     var selectedEntryForDetail by remember { mutableStateOf<TimetableEntry?>(null) }
@@ -130,7 +172,7 @@ fun TimetableScreen(
     var selectedFilter by remember { mutableStateOf("All") }
 
     // 1. Compute day dates for the current week (Monday through Sunday)
-    val dayInfoList = remember {
+    val dayInfoList = remember(todayName) {
         val now = Calendar.getInstance()
         val currentDayOfWeek = now.get(Calendar.DAY_OF_WEEK) // Sunday=1, Monday=2
         val daysFromMonday = when (currentDayOfWeek) {
@@ -159,8 +201,8 @@ fun TimetableScreen(
     // Real-time clock pulse to re-evaluate next-up, countdowns, and progress bars periodically.
     // Kept in the smallest possible composable so only that strip recomposes every 15s,
     // not the entire TimetableScreen.
-    var globalNextUp by remember(entries, todayName) {
-        mutableStateOf(findActualNextUp(entries, todayName))
+    var globalNextUp by remember(entries, todayName.value) {
+        mutableStateOf(findActualNextUp(entries, todayName.value))
     }
 
     // 3. Filter sessions for the selected day from the real Room database
@@ -211,25 +253,18 @@ fun TimetableScreen(
     NextUpTicker(
         entries = entries,
         todayEntries = todayEntries,
-        todayName = todayName,
+        currentDayName = todayName,
+        onDayChanged = { todayName = it },
         onCompletedChanged = { allTodayClassesCompleted = it },
         onNextUpChanged = { globalNextUp = it }
     )
 
     // Horizontal drag gesture tracking for swiping between days
     var dragTotal by remember { mutableFloatStateOf(0f) }
-    var showNotificationCenterSheet by remember { mutableStateOf(false) }
-
     val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
     val listState = rememberLazyListState()
-
-    val notifStore = remember { com.mustime.core.notification.InAppNotificationStore(context) }
-    val unreadNotifCount by notifStore.unreadCount.collectAsState(initial = 0)
-    val activeNotes = remember(notes) { notes.values.filter { it.alarmMinutes != null } }
-    val activeTasks = remember(assignments) { assignments.filter { !it.completed && it.reminderMinutes != null } }
-    val hasAlarmsOrUnread = unreadNotifCount > 0 || activeNotes.isNotEmpty() || activeTasks.isNotEmpty()
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -239,11 +274,6 @@ fun TimetableScreen(
             TimetableTopAppBar(
                 program = programme,
                 subtitle = if (programme.isNotBlank()) semesterWeekLabel else "Select Programme",
-                hasUnreadNotifications = hasAlarmsOrUnread,
-                onNotificationClick = {
-                    showNotificationCenterSheet = true
-                    onNotificationClick()
-                },
                 onProfileClick = {
                     showAcademicProfileSheet = true
                 },
@@ -850,44 +880,6 @@ fun TimetableScreen(
         )
     }
 
-    if (showNotificationCenterSheet) {
-        val app = context.applicationContext as? TimetableApplication
-        NotificationCenterSheet(
-            activeNotesWithAlarms = activeNotes,
-            activeTasksWithAlarms = activeTasks,
-            onCancelNoteAlarm = { note ->
-                val entry = entries.firstOrNull { it.naturalKey == note.naturalKey }
-                if (entry != null) {
-                    onSaveNote(entry, note.content, null)
-                } else {
-                    app?.repository?.let { repo ->
-                        coroutineScope.launch {
-                            repo.saveNote(note.naturalKey, note.content, null)
-                            com.mustime.core.alarm.AlarmScheduler(context).cancelClassAlarm(note.naturalKey)
-                        }
-                    }
-                }
-            },
-            onCancelTaskAlarm = { task ->
-                app?.repository?.let { repo ->
-                    coroutineScope.launch {
-                        repo.saveAssignment(task.copy(reminderMinutes = null))
-                        com.mustime.core.alarm.TaskAlarmScheduler(context).cancelTaskReminder(task.id)
-                    }
-                }
-            },
-            onNavigateToTab = { tab ->
-                showNotificationCenterSheet = false
-                when (tab) {
-                    1 -> onNavigateToCalendar()
-                    2 -> onNavigateToNotes()
-                    3 -> onNavigateToTasks()
-                }
-            },
-            onDismiss = { showNotificationCenterSheet = false },
-            onOpenSettings = onSettingsClick
-        )
-    }
 
     if (showAcademicProfileSheet) {
         AcademicProfileSheet(
@@ -1231,11 +1223,27 @@ private fun GlobalNextUpHeroCard(
 private fun NextUpTicker(
     entries: List<TimetableEntry>,
     todayEntries: List<TimetableEntry>,
-    todayName: String,
+    currentDayName: String,
+    onDayChanged: (String) -> Unit,
     onCompletedChanged: (Boolean) -> Unit,
     onNextUpChanged: (GlobalNextUp?) -> Unit
 ) {
     var timeTick by remember { mutableLongStateOf(System.currentTimeMillis()) }
+
+    // Immediate pulse on returning to foreground / resuming app
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                timeTick = System.currentTimeMillis()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     LaunchedEffect(Unit) {
         while (true) {
             delay(15_000L)
@@ -1243,7 +1251,12 @@ private fun NextUpTicker(
         }
     }
 
-    LaunchedEffect(todayEntries, entries, todayName, timeTick) {
+    LaunchedEffect(todayEntries, entries, currentDayName, timeTick) {
+        val realToday = TimeUtil.todayName()
+        if (!realToday.equals(currentDayName, ignoreCase = true)) {
+            onDayChanged(realToday)
+        }
+
         val completed = if (todayEntries.isEmpty()) {
             false
         } else {
@@ -1255,7 +1268,7 @@ private fun NextUpTicker(
             }
         }
         onCompletedChanged(completed)
-        onNextUpChanged(findActualNextUp(entries, todayName))
+        onNextUpChanged(findActualNextUp(entries, realToday))
     }
 }
 
