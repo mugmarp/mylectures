@@ -22,6 +22,10 @@ object TimetableMatcher {
         "BSE", "BBA", "BSAF", "ECO", "BPSM", "BSAL", "BGWH", "BPCD"
     )
 
+    @Deprecated(
+        message = "Precomputed static counts are retained strictly as a startup fallback. Query live cohort counts dynamically via TimetableDao.getCohortCounts() or pass entries to getGroupCount.",
+        replaceWith = ReplaceWith("dao.getCohortCounts(programmeCode)")
+    )
     val PRECOMPUTED_GROUP_COUNTS: Map<String, Int> = mapOf(
         "MBR I" to 17, "MBR II" to 12, "MBR III" to 11, "MBR IV" to 19, "MBR V" to 11,
         "PHA I" to 16, "PHA II" to 14, "PHA III" to 16, "PHA IV" to 14,
@@ -56,14 +60,21 @@ object TimetableMatcher {
     /**
      * Returns the number of distinct deduplicated timetable entries for [group].
      *
-     * IMPORTANT: [entries] should always be supplied from the live [TimetableRepository]
+     * IMPORTANT: [entries] or [cohortCounts] should always be supplied from the live [TimetableRepository]
      * to avoid silent data drift across academic semester updates.
      * When [entries] is null or empty (e.g. before initial asset hydration completes),
      * [PRECOMPUTED_GROUP_COUNTS] serves as a temporary startup fallback.
      */
-    fun getGroupCount(group: String, entries: List<TimetableEntry>? = null): Int {
+    fun getGroupCount(
+        group: String,
+        entries: List<TimetableEntry>? = null,
+        cohortCounts: Map<String, Int>? = null
+    ): Int {
         if (!entries.isNullOrEmpty()) {
             return filterTimetable(entries, group).size
+        }
+        if (cohortCounts != null && cohortCounts.containsKey(group)) {
+            return cohortCounts[group] ?: 0
         }
         val pre = PRECOMPUTED_GROUP_COUNTS[group]
         if (pre != null) return pre

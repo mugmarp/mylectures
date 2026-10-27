@@ -33,6 +33,7 @@ class TaskActionReceiver : BroadcastReceiver() {
                 val app = context.applicationContext as? TimetableApplication
                 val repository = app?.repository
                 if (repository != null) {
+                    val pendingResult = goAsync()
                     CoroutineScope(Dispatchers.IO).launch {
                         try {
                             repository.updateAssignmentCompletion(taskId, true)
@@ -40,6 +41,8 @@ class TaskActionReceiver : BroadcastReceiver() {
                             Log.d(TAG, "Task #$taskId marked completed and alarms cancelled")
                         } catch (e: Exception) {
                             Log.e(TAG, "Error updating task completion: ${e.message}")
+                        } finally {
+                            pendingResult.finish()
                         }
                     }
                 }

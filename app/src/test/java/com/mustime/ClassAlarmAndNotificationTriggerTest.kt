@@ -239,4 +239,76 @@ class ClassAlarmAndNotificationTriggerTest {
         assertFalse("Snooze alarm must not be recurring", scheduledIntent.getBooleanExtra("IS_RECURRING", true))
         assertTrue("Snooze alarm must remain an alarm", scheduledIntent.getBooleanExtra("IS_ALARM", false))
     }
+
+    @Test
+    fun testTimetableUpdatedNotificationPostsOnDedicatedChannel() {
+        NotificationHelper.showTimetableUpdatedNotification(
+            context = context,
+            versionLabel = "Draft 4",
+            releaseNotes = "Laboratory rooms relocated to SFL02"
+        )
+
+        val notifications = shadowNotificationManager.allNotifications
+        assertFalse("Notification must be posted when timetable is updated", notifications.isEmpty())
+
+        val notif = notifications.last()
+        assertEquals(NotificationHelper.CHANNEL_TIMETABLE_UPDATES, notif.channelId)
+
+        val shadow = shadowOf(notif)
+        assertEquals("Timetable Updated", shadow.contentTitle.toString())
+        assertTrue(shadow.contentText.toString().contains("Draft 4"))
+
+        val inApp = com.mustime.core.notification.InAppNotificationStore.getInstance(context).notifications.value
+        val record = inApp.firstOrNull { it.relatedKey == "Draft 4" }
+        assertNotNull("In-app notification must be recorded for timetable update", record)
+        assertEquals(com.mustime.core.notification.NotificationItemType.SYSTEM, record?.type)
+    }
+
+    @Test
+    fun testSnoozedClassAlarmDisplaysSnoozedAlertTitle() {
+        NotificationHelper.showClassAlarmNotification(
+            context = context,
+            courseCode = "SWE2101",
+            courseTitle = "Software Engineering",
+            room = "Lab 1",
+            startTime = "10:00",
+            isSnoozed = true
+        )
+
+        val notifications = shadowNotificationManager.allNotifications
+        assertFalse(notifications.isEmpty())
+        val notif = notifications.last()
+        val shadow = shadowOf(notif)
+        assertEquals("Snoozed Class Alert", shadow.contentTitle.toString())
+
+        val inApp = com.mustime.core.notification.InAppNotificationStore.getInstance(context).notifications.value
+        val record = inApp.firstOrNull { it.relatedKey == "SWE2101" }
+        assertNotNull(record)
+        assertTrue(record!!.title.startsWith("Snoozed Class Alert"))
+    }
+
+    @Test
+    fun testInAppNotificationStoreDeduplicatesRapidRepeats() {
+        val store = com.mustime.core.notification.InAppNotificationStore.getInstance(context)
+        store.clearAll()
+
+        store.recordNotification(
+            type = com.mustime.core.notification.NotificationItemType.CLASS_ALARM,
+            title = "Class Alert: CSC1201",
+            message = "Starts at 09:00",
+            relatedKey = "CSC1201"
+        )
+        assertEquals(1, store.notifications.value.size)
+
+        // Rapid repeat with same type and relatedKey
+        store.recordNotification(
+            type = com.mustime.core.notification.NotificationItemType.CLASS_ALARM,
+            title = "Snoozed Class Alert: CSC1201",
+            message = "Starts at 09:10",
+            relatedKey = "CSC1201"
+        )
+        // Must update existing record rather than grow list
+        assertEquals(1, store.notifications.value.size)
+        assertEquals("Snoozed Class Alert: CSC1201", store.notifications.value.first().title)
+    }
 }

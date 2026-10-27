@@ -92,6 +92,8 @@ class TimetableApplication : Application() {
         feedbackManager = com.mustime.features.feedback.FeedbackManager(this, etagStore)
         analyticsManager = com.mustime.core.analytics.AnalyticsManager(this)
         
+        schedulePeriodicTimetableSync()
+
         // Initial load, sync, and telemetry heartbeat
         applicationScope.launch {
             dataLoader.loadInitialDataIfNeeded()
@@ -102,6 +104,29 @@ class TimetableApplication : Application() {
             if (etagStore.isOnboardingCompleted()) {
                 com.mustime.core.alarm.ReminderScheduler(this@TimetableApplication).scheduleDailyReminder()
             }
+        }
+    }
+
+    private fun schedulePeriodicTimetableSync() {
+        try {
+            val constraints = androidx.work.Constraints.Builder()
+                .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                .build()
+
+            val syncRequest = androidx.work.PeriodicWorkRequestBuilder<com.mustime.core.sync.TimetableSyncWorker>(
+                12, java.util.concurrent.TimeUnit.HOURS
+            )
+                .setConstraints(constraints)
+                .build()
+
+            androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                com.mustime.core.sync.TimetableSyncWorker.WORK_NAME,
+                androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+                syncRequest
+            )
+            android.util.Log.d("TimetableApplication", "Periodic timetable sync worker enqueued (12h interval)")
+        } catch (e: Exception) {
+            android.util.Log.e("TimetableApplication", "Failed to schedule TimetableSyncWorker: ${e.message}")
         }
     }
 }

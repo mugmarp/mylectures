@@ -160,4 +160,24 @@ class TimetableMatcherTest {
         val bgwhGroups = bgwh.allGroups
         assertEquals(listOf("BGWH III"), bgwhGroups)
     }
+
+    @Test
+    fun testDynamicCohortCountsResolution() {
+        val dynamicCounts = mapOf(
+            "BGWH III" to 12,
+            "BCS I" to 15,
+            "BCS II" to 10
+        )
+
+        // Dynamic counts take precedence over static precomputed fallback
+        val countBgwh = TimetableMatcher.getGroupCount("BGWH III", cohortCounts = dynamicCounts)
+        assertEquals(12, countBgwh)
+
+        val countBcsI = TimetableMatcher.getGroupCount("BCS I", cohortCounts = dynamicCounts)
+        assertEquals(15, countBcsI)
+
+        // Unscheduled cohort returns 0
+        val countEmpty = TimetableMatcher.getGroupCount("BGWH I", cohortCounts = dynamicCounts)
+        assertEquals(0, countEmpty)
+    }
 }

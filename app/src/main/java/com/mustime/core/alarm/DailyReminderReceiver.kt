@@ -34,6 +34,7 @@ class DailyReminderReceiver : BroadcastReceiver() {
         val repository = app.repository
         val etagStore = app.etagStore
 
+        val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val notificationsEnabled = etagStore.notificationsEnabledPref.firstOrNull() ?: true
@@ -63,6 +64,8 @@ class DailyReminderReceiver : BroadcastReceiver() {
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "Error generating daily schedule digest: ${e.message}", e)
+            } finally {
+                pendingResult.finish()
             }
         }
     }

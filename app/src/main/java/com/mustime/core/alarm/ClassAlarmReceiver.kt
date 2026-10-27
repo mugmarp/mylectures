@@ -63,10 +63,11 @@ class ClassAlarmReceiver : BroadcastReceiver() {
         val minutesBefore = intent.getIntExtra("MINUTES_BEFORE", 30)
         val isRecurring = intent.getBooleanExtra("IS_RECURRING", true)
         val isTest = intent.getBooleanExtra("IS_TEST", false)
+        val isSnoozed = intent.getBooleanExtra("IS_SNOOZED", false)
         val naturalKey = intent.getStringExtra("NATURAL_KEY")
         val dayOfWeek = intent.getStringExtra("DAY_OF_WEEK")
 
-        Log.d("ClassAlarmReceiver", "Class alert fired (isAlarm=$isAlarm, isRecurring=$isRecurring) for $courseCode in $room at $startTime")
+        Log.d("ClassAlarmReceiver", "Class alert fired (isAlarm=$isAlarm, isRecurring=$isRecurring, isSnoozed=$isSnoozed) for $courseCode in $room at $startTime")
 
         if (isAlarm) {
             NotificationHelper.showClassAlarmNotification(
@@ -78,7 +79,8 @@ class ClassAlarmReceiver : BroadcastReceiver() {
                 minutesBefore = minutesBefore,
                 lecturer = lecturer,
                 naturalKey = naturalKey,
-                dayOfWeek = dayOfWeek
+                dayOfWeek = dayOfWeek,
+                isSnoozed = isSnoozed
             )
         } else {
             NotificationHelper.showClassReminderNotification(

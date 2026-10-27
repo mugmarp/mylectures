@@ -27,12 +27,20 @@ class AlarmScheduler(private val context: Context) {
             "fri" -> Calendar.FRIDAY
             "sat" -> Calendar.SATURDAY
             "sun" -> Calendar.SUNDAY
-            else -> Calendar.MONDAY
+            else -> null
+        }
+        if (targetDow == null) {
+            Log.e(TAG, "Cannot schedule alarm: unrecognized dayOfWeek '${entry.dayOfWeek}' for ${entry.courseCode}")
+            return false
         }
 
         val timeParts = entry.startTime.split(":")
-        val hour = timeParts.getOrNull(0)?.trim()?.toIntOrNull() ?: 8
-        val minute = timeParts.getOrNull(1)?.trim()?.toIntOrNull() ?: 0
+        val hour = timeParts.getOrNull(0)?.trim()?.toIntOrNull()
+        val minute = timeParts.getOrNull(1)?.trim()?.toIntOrNull()
+        if (hour == null || minute == null || hour !in 0..23 || minute !in 0..59) {
+            Log.e(TAG, "Cannot schedule alarm: invalid startTime '${entry.startTime}' for ${entry.courseCode}")
+            return false
+        }
 
         val cal = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, hour)
@@ -233,20 +241,38 @@ class AlarmScheduler(private val context: Context) {
             putExtra("IS_ALARM", true)
             putExtra("IS_RECURRING", false)
             putExtra("IS_TEST", false)
+            putExtra("IS_SNOOZED", true)
         }
+        val requestCode = ("snooze_" + (naturalKey ?: "$courseCode$room$startTime$dayOfWeek")).hashCode()
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            ("snooze_$courseCode$startTime").hashCode(),
+            requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerMillis, pendingIntent)
+                    Log.d(TAG, "Scheduled EXACT snooze alarm for $courseCode in $snoozeMinutes minutes")
+                } else {
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerMillis, pendingIntent)
+                    Log.d(TAG, "Scheduled INEXACT snooze alarm for $courseCode in $snoozeMinutes minutes (exact permission missing)")
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerMillis, pendingIntent)
             } else {
                 alarmManager.set(AlarmManager.RTC_WAKEUP, triggerMillis, pendingIntent)
             }
-            Log.d(TAG, "Scheduled snooze alarm for $courseCode in $snoozeMinutes minutes (preserving lead time $minutesBefore min)")
+        } catch (e: SecurityException) {
+            Log.w(TAG, "SecurityException scheduling exact snooze alarm, falling back to setAndAllowWhileIdle: ${e.message}")
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerMillis, pendingIntent)
+                }
+            } catch (fallbackEx: Exception) {
+                Log.e(TAG, "Fallback snooze alarm failed: ${fallbackEx.message}")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to schedule snooze alarm: ${e.message}")
         }

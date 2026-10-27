@@ -92,7 +92,9 @@ class InAppNotificationStore(private val context: Context) {
                 jsonArray.put(obj)
             }
             prefs.edit().putString(KEY_NOTIFICATIONS, jsonArray.toString()).apply()
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            android.util.Log.e("InAppNotificationStore", "Failed to persist in-app notifications: ${e.message}", e)
+        }
     }
 
     fun recordNotification(
@@ -102,16 +104,39 @@ class InAppNotificationStore(private val context: Context) {
         relatedKey: String? = null,
         navTab: Int? = null
     ): InAppNotificationItem {
+        val now = System.currentTimeMillis()
+        val current = _notifications.value.toMutableList()
+
+        // Deduplicate rapid repeat notifications (same type & non-null relatedKey within 2 minutes)
+        if (!relatedKey.isNullOrBlank()) {
+            val existingIndex = current.indexOfFirst {
+                it.type == type && it.relatedKey == relatedKey && (now - it.timestamp) < 120_000L
+            }
+            if (existingIndex >= 0) {
+                val updatedItem = current[existingIndex].copy(
+                    title = title,
+                    message = message,
+                    timestamp = now,
+                    isRead = false,
+                    navTab = navTab ?: current[existingIndex].navTab
+                )
+                current.removeAt(existingIndex)
+                current.add(0, updatedItem)
+                persist(current)
+                _foregroundAlertFlow.tryEmit(updatedItem)
+                return updatedItem
+            }
+        }
+
         val item = InAppNotificationItem(
             type = type,
             title = title,
             message = message,
-            timestamp = System.currentTimeMillis(),
+            timestamp = now,
             isRead = false,
             relatedKey = relatedKey,
             navTab = navTab
         )
-        val current = _notifications.value.toMutableList()
         current.add(0, item)
         persist(current)
 

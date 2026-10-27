@@ -30,6 +30,7 @@ class BootReceiver : BroadcastReceiver() {
             val app = context.applicationContext as? TimetableApplication ?: return
             val repository = app.repository
 
+            val pendingResult = goAsync()
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val taskScheduler = TaskAlarmScheduler(context)
@@ -66,6 +67,8 @@ class BootReceiver : BroadcastReceiver() {
                     Log.d(TAG, "Boot reschedule complete: $taskCount tasks, $classCount class alarms, and daily digest scheduled.")
                 } catch (e: Exception) {
                     Log.e(TAG, "Error rescheduling alarms on boot: ${e.message}", e)
+                } finally {
+                    pendingResult.finish()
                 }
             }
         }

@@ -53,6 +53,18 @@ class TimetableRepository(
 
     fun getAllProgrammeGroups(): Flow<List<String>> = dao.getAllProgrammeGroups()
 
+    fun getAvailableCohortsForProgramme(programmeCode: String): Flow<List<String>> =
+        dao.getAvailableCohortsForProgramme(programmeCode)
+
+    suspend fun getAvailableCohortsForProgrammeSync(programmeCode: String): List<String> =
+        dao.getAvailableCohortsForProgrammeSync(programmeCode)
+
+    fun getCohortCounts(programmeCode: String): Flow<Map<String, Int>> =
+        dao.getCohortCounts(programmeCode).map { list -> list.associate { it.cohort to it.count } }
+
+    suspend fun getCohortCountsSync(programmeCode: String): Map<String, Int> =
+        dao.getCohortCountsSync(programmeCode).associate { it.cohort to it.count }
+
     fun getAllNotes(): Flow<List<LectureNote>> = dao.getAllNotes()
 
     fun getNote(naturalKey: String): Flow<LectureNote?> = dao.getNoteForKey(naturalKey)

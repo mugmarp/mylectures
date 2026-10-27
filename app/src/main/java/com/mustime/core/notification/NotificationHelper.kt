@@ -20,6 +20,7 @@ object NotificationHelper {
     const val CHANNEL_CLASSES = "class_reminders"
     const val CHANNEL_CLASS_ALARMS = "class_alarms"
     const val CHANNEL_DAILY_DIGEST = "daily_class_digest"
+    const val CHANNEL_TIMETABLE_UPDATES = "timetable_updates"
 
     private const val TAG = "NotificationHelper"
 
@@ -147,7 +148,20 @@ object NotificationHelper {
                 lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
             }
 
-            notificationManager.createNotificationChannels(listOf(taskChannel, classChannel, alarmChannel, digestChannel))
+            // Channel 5: Timetable Updates & Publishing Announcements
+            val updatesChannel = NotificationChannel(
+                CHANNEL_TIMETABLE_UPDATES,
+                "Timetable Updates",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notifications when a new timetable version or schedule revision is published."
+                enableLights(true)
+                lightColor = Color.parseColor("#4F46E5")
+                setShowBadge(true)
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+            }
+
+            notificationManager.createNotificationChannels(listOf(taskChannel, classChannel, alarmChannel, digestChannel, updatesChannel))
             Log.d(TAG, "Notification channels registered successfully")
         }
     }
@@ -346,7 +360,8 @@ object NotificationHelper {
         minutesBefore: Int = 30,
         lecturer: String = "",
         naturalKey: String? = null,
-        dayOfWeek: String? = null
+        dayOfWeek: String? = null,
+        isSnoozed: Boolean = false
     ) {
         createNotificationChannels(context)
 
@@ -393,7 +408,7 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val title = "Class Alert"
+        val title = if (isSnoozed) "Snoozed Class Alert" else "Class Alert"
         val headerSubject = if (courseTitle.isNotBlank() && courseTitle != courseCode) {
             "$courseTitle - $courseCode"
         } else {
@@ -422,9 +437,10 @@ object NotificationHelper {
 
         try {
             NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+            val inAppTitle = if (isSnoozed) "Snoozed Class Alert: $headerSubject" else "Class Alert: $headerSubject"
             InAppNotificationStore.getInstance(context).recordNotification(
                 type = NotificationItemType.CLASS_ALARM,
-                title = "Class Alert: $headerSubject",
+                title = inAppTitle,
                 message = "$startsAtText $venueText".trim(),
                 relatedKey = courseCode,
                 navTab = 0
@@ -508,6 +524,64 @@ object NotificationHelper {
             )
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException while posting daily digest: ${e.message}")
+        }
+    }
+
+    /**
+     * Builds and displays a notification when a new version of the timetable is published.
+     */
+    fun showTimetableUpdatedNotification(
+        context: Context,
+        versionLabel: String,
+        releaseNotes: String? = null
+    ) {
+        createNotificationChannels(context)
+
+        val notificationId = 998877
+
+        val openAppIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("EXTRA_NAV_TAB", 0) // Timetable tab
+        }
+        val contentPendingIntent = PendingIntent.getActivity(
+            context,
+            notificationId,
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val title = "Timetable Updated"
+        val content = "New version published: $versionLabel"
+        val detailedText = if (!releaseNotes.isNullOrBlank()) {
+            "New version published: $versionLabel\n$releaseNotes"
+        } else {
+            "New version published: $versionLabel. Your class schedules and venues have been synchronized."
+        }
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_TIMETABLE_UPDATES)
+            .setSmallIcon(R.drawable.ic_stat_notification)
+            .setContentTitle(title)
+            .setContentText(content)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(detailedText))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setAutoCancel(true)
+            .setContentIntent(contentPendingIntent)
+            .setColor(Color.parseColor("#4F46E5"))
+            .addAction(R.drawable.ic_stat_notification, "View Schedule", contentPendingIntent)
+
+        try {
+            NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+            Log.d(TAG, "Timetable update notification posted: $versionLabel")
+            InAppNotificationStore.getInstance(context).recordNotification(
+                type = NotificationItemType.SYSTEM,
+                title = "Timetable Updated: $versionLabel",
+                message = releaseNotes ?: "New timetable version published. Class schedules synchronized.",
+                relatedKey = versionLabel,
+                navTab = 0
+            )
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException while posting timetable update notification: ${e.message}")
         }
     }
 

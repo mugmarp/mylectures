@@ -10,6 +10,11 @@ import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.domain.TimetableEntry
 import kotlinx.coroutines.flow.Flow
 
+data class CohortCount(
+    val cohort: String,
+    val count: Int
+)
+
 @Dao
 interface TimetableDao {
     @Query("SELECT * FROM timetable ORDER BY start_time ASC")
@@ -39,6 +44,18 @@ interface TimetableDao {
 
     @Query("SELECT DISTINCT program_group FROM timetable")
     fun getAllProgrammeGroups(): Flow<List<String>>
+
+    @Query("SELECT DISTINCT program_group FROM timetable WHERE program_group LIKE :programmeCode || '%' ORDER BY program_group ASC")
+    fun getAvailableCohortsForProgramme(programmeCode: String): Flow<List<String>>
+
+    @Query("SELECT DISTINCT program_group FROM timetable WHERE program_group LIKE :programmeCode || '%' ORDER BY program_group ASC")
+    suspend fun getAvailableCohortsForProgrammeSync(programmeCode: String): List<String>
+
+    @Query("SELECT program_group AS cohort, COUNT(*) AS count FROM timetable WHERE program_group LIKE :programmeCode || '%' GROUP BY program_group")
+    fun getCohortCounts(programmeCode: String): Flow<List<CohortCount>>
+
+    @Query("SELECT program_group AS cohort, COUNT(*) AS count FROM timetable WHERE program_group LIKE :programmeCode || '%' GROUP BY program_group")
+    suspend fun getCohortCountsSync(programmeCode: String): List<CohortCount>
 
     @Upsert
     suspend fun upsertEntries(entries: List<TimetableEntry>)
