@@ -235,16 +235,16 @@ fun TimetableScreen(
     }
 
     // Selected day info
-    val isViewingToday = selectedDay.equals(todayName, ignoreCase = true)
+    val isViewingToday = selectedDay.equals(todayName.value, ignoreCase = true)
     val selectedDayInfo = dayInfoList.firstOrNull { it.first.equals(selectedDay, ignoreCase = true) }
     val formattedSelectedDate = selectedDayInfo?.third ?: selectedDay
 
-    val todayEntries = remember(entries, todayName) {
-        entries.filter { it.dayOfWeek.equals(todayName, ignoreCase = true) }
+    val todayEntries = remember(entries, todayName.value) {
+        entries.filter { it.dayOfWeek.equals(todayName.value, ignoreCase = true) }
             .sortedBy { TimeUtil.toMinutes(it.startTime) }
     }
-    val todayDateFormatted = remember(dayInfoList, todayName) {
-        dayInfoList.firstOrNull { it.first.equals(todayName, ignoreCase = true) }?.third
+    val todayDateFormatted = remember(dayInfoList, todayName.value) {
+        dayInfoList.firstOrNull { it.first.equals(todayName.value, ignoreCase = true) }?.third
             ?: SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date())
     }
 
@@ -253,8 +253,8 @@ fun TimetableScreen(
     NextUpTicker(
         entries = entries,
         todayEntries = todayEntries,
-        currentDayName = todayName,
-        onDayChanged = { todayName = it },
+        currentDayName = todayName.value,
+        onDayChanged = { todayName.value = it },
         onCompletedChanged = { allTodayClassesCompleted = it },
         onNextUpChanged = { globalNextUp = it }
     )
@@ -589,11 +589,11 @@ fun TimetableScreen(
 
                 // SECTION 3: 7-DAY CAPSULE SELECTOR (MON - SUN) (PLACED DIRECTLY BELOW TODAY'S SCHEDULE & CARD)
                 item(key = "day_capsules") {
-                    val specDays = remember(daysList, selectedDay, todayName) {
+                    val specDays = remember(daysList, selectedDay, todayName.value) {
                         daysList.map { dayName ->
                             SpecDayItem(
                                 name = dayName,
-                                isToday = dayName.equals(todayName, ignoreCase = true),
+                                isToday = dayName.equals(todayName.value, ignoreCase = true),
                                 isSelected = dayName.equals(selectedDay, ignoreCase = true)
                             )
                         }
