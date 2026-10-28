@@ -142,6 +142,12 @@ fun VacantRoomsScreen(
         }
     }
 
+    LaunchedEffect(selectedCampus, selectedBuilding) {
+        if (selectedCampus == defaultScope.campus && selectedBuilding == defaultScope.buildingCode) {
+            isDefaultResetDismissed = false
+        }
+    }
+
     val campusBuildings = remember(selectedCampus) {
         UniversityDirectory.buildingsForCampus(selectedCampus)
     }
@@ -185,7 +191,13 @@ fun VacantRoomsScreen(
             val matchesSearch = searchQuery.isBlank() ||
                     status.room.name.contains(searchQuery, ignoreCase = true) ||
                     status.room.code.contains(searchQuery, ignoreCase = true) ||
-                    status.room.aliases.any { it.contains(searchQuery, ignoreCase = true) }
+                    status.room.aliases.any { it.contains(searchQuery, ignoreCase = true) } ||
+                    (status.currentSession?.courseCode?.contains(searchQuery, ignoreCase = true) == true) ||
+                    (status.currentSession?.courseTitle?.contains(searchQuery, ignoreCase = true) == true) ||
+                    (status.currentSession?.programmeGroup?.contains(searchQuery, ignoreCase = true) == true) ||
+                    (status.nextSession?.courseCode?.contains(searchQuery, ignoreCase = true) == true) ||
+                    (status.nextSession?.courseTitle?.contains(searchQuery, ignoreCase = true) == true) ||
+                    (status.nextSession?.programmeGroup?.contains(searchQuery, ignoreCase = true) == true)
 
             val matchesCategory = when (selectedCategory) {
                 "Room" -> status.room.type == RoomType.CLASSROOM
@@ -268,15 +280,15 @@ fun VacantRoomsScreen(
                             }
                         }
                         Spacer(modifier = Modifier.height(2.dp))
-                        // Prominent Day & Time / Live Now Pill in place of the redundant campus-building indicator
+                        // Prominent Day & Time / Live Now Pill - routes directly to Filter & Schedule Options
                         Surface(
                             shape = RoundedCornerShape(6.dp),
                             color = if (isLiveNow) StatusGreenLive.copy(alpha = 0.12f) else PrimaryBlue.copy(alpha = 0.12f),
-                            modifier = Modifier.clickable { showDayPicker = true }
+                            modifier = Modifier.clickable { showFilterSheet = true }
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -293,29 +305,31 @@ fun VacantRoomsScreen(
                                 Spacer(modifier = Modifier.width(3.dp))
                                 Icon(
                                     imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Switch Day",
+                                    contentDescription = "Open Filter and Schedule Options",
                                     tint = if (isLiveNow) (if (isDark) Color(0xFF86EFAC) else Color(0xFF15803D)) else PrimaryBlue,
-                                    modifier = Modifier.size(14.dp)
+                                    modifier = Modifier.size(15.dp)
                                 )
-                                if (!isLiveNow) {
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Icon(
-                                        imageVector = Icons.Outlined.RestartAlt,
-                                        contentDescription = "Reset to live",
-                                        tint = PrimaryBlue,
-                                        modifier = Modifier
-                                            .size(12.dp)
-                                            .clickable {
-                                                val nowCal = Calendar.getInstance()
-                                                queryDay = TimeUtil.todayName()
-                                                val h = nowCal.get(Calendar.HOUR_OF_DAY)
-                                                val m = nowCal.get(Calendar.MINUTE)
-                                                queryTime = "%02d:%02d".format(h, m)
-                                                isLiveNow = true
-                                            }
-                                    )
-                                }
                             }
+                        }
+                    }
+                    if (!isLiveNow) {
+                        IconButton(
+                            onClick = {
+                                val nowCal = Calendar.getInstance()
+                                queryDay = TimeUtil.todayName()
+                                val h = nowCal.get(Calendar.HOUR_OF_DAY)
+                                val m = nowCal.get(Calendar.MINUTE)
+                                queryTime = "%02d:%02d".format(h, m)
+                                isLiveNow = true
+                            },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.RestartAlt,
+                                contentDescription = "Reset to current live time",
+                                tint = PrimaryBlue,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
                     }
                     IconButton(onClick = { showFilterSheet = true }) {
@@ -328,7 +342,7 @@ fun VacantRoomsScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Tune,
-                                contentDescription = "Advanced Filter & Time Options",
+                                contentDescription = "Filter & Schedule Options",
                                 tint = if (!isLiveNow || minGapMinutes != 30 || selectedLevel != null || freeOnly) PrimaryBlue else textPrimary
                             )
                         }
@@ -909,13 +923,14 @@ fun VacantRoomsScreen(
                             showPermanentlyVacant = true
                             hideLibrary = false
                             freeOnly = false
+                            selectedCategory = "All"
                         }
                     ) {
                         Text("Reset All", color = PrimaryBlue, fontSize = 13.sp)
                     }
                 }
 
-                // Query Time & Day Section
+                // Schedule Day & Time Section
                 Column {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -923,7 +938,7 @@ fun VacantRoomsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Query Time",
+                            text = "Schedule Day & Time",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = textPrimary
@@ -976,6 +991,33 @@ fun VacantRoomsScreen(
                             Icon(Icons.Outlined.Schedule, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(queryTime, fontSize = 13.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Quick academic time presets
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        val presets = listOf(
+                            "08:00" to "Morning (08:00)",
+                            "11:00" to "Midday (11:00)",
+                            "14:00" to "Afternoon (14:00)",
+                            "17:00" to "Evening (17:00)"
+                        )
+                        items(presets) { (presetTime, presetLabel) ->
+                            val isSelected = !isLiveNow && queryTime == presetTime
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    queryTime = presetTime
+                                    isLiveNow = false
+                                },
+                                label = { Text(presetLabel, fontSize = 11.sp) },
+                                shape = RoundedCornerShape(8.dp)
+                            )
                         }
                     }
                 }
