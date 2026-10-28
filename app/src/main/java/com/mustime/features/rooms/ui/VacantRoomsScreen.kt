@@ -44,6 +44,7 @@ import com.mustime.ui.rememberLecturesWindow
 import com.mustime.ui.components.FloorIndicatorBadge
 import com.mustime.ui.components.DedicatedDayPickerDialog
 import com.mustime.ui.components.DedicatedTimePickerDialog
+import com.mustime.ui.components.FloatingIslandTopBar
 import java.util.Calendar
 
 /**
@@ -115,6 +116,8 @@ fun VacantRoomsScreen(
     var hideLibrary by remember { mutableStateOf(false) }  // libraries rank last (known baseline)
     var searchQuery by remember { mutableStateOf("") }
     var freeOnly by remember { mutableStateOf(false) }
+    var selectedCategory by remember { mutableStateOf("All") } // "All", "Room", "Lab", "Library"
+    var isDefaultResetDismissed by remember(defaultScope) { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         app?.analyticsManager?.trackFeature("vacant_rooms_search")
@@ -157,9 +160,24 @@ fun VacantRoomsScreen(
         )
     }
 
+    // Category chips availability: Library is conditionally included ONLY if present in building scope
+    val hasLibraryInScope = remember(vacancyStatuses) {
+        vacancyStatuses.any { it.room.type == RoomType.LIBRARY || it.room.suggestionValue == SuggestionValue.LIBRARY }
+    }
+    val categories = remember(hasLibraryInScope) {
+        if (hasLibraryInScope) listOf("All", "Room", "Lab", "Library") else listOf("All", "Room", "Lab")
+    }
+
+    // If active category is Library but current building has no library, fallback to All
+    LaunchedEffect(hasLibraryInScope) {
+        if (!hasLibraryInScope && selectedCategory == "Library") {
+            selectedCategory = "All"
+        }
+    }
+
     // Filter results
     val filteredRooms = remember(vacancyStatuses, selectedLevel, studyFriendlyOnly, minGapMinutes,
-                                 searchQuery, showPermanentlyVacant, hideLibrary, freeOnly) {
+                                 searchQuery, showPermanentlyVacant, hideLibrary, freeOnly, selectedCategory) {
         val base = vacancyStatuses.filter { status ->
             val matchesFree = !freeOnly || (!status.isOccupied && (status.gapMinutes >= minGapMinutes || status.freeUntil == "Rest of day"))
             val matchesLevel = selectedLevel == null || status.room.level == selectedLevel
@@ -169,6 +187,13 @@ fun VacantRoomsScreen(
                     status.room.code.contains(searchQuery, ignoreCase = true) ||
                     status.room.aliases.any { it.contains(searchQuery, ignoreCase = true) }
 
+            val matchesCategory = when (selectedCategory) {
+                "Room" -> status.room.type == RoomType.CLASSROOM
+                "Lab" -> status.room.type == RoomType.COMPUTER_LAB || status.room.type == RoomType.SCIENCE_LAB
+                "Library" -> status.room.type == RoomType.LIBRARY || status.room.suggestionValue == SuggestionValue.LIBRARY
+                else -> true
+            }
+
             val matchesVacantFlag = showPermanentlyVacant || !status.room.isPermanentlyVacant
 
             // When studyFriendlyOnly and free, apply the minimum gap requirement
@@ -176,7 +201,7 @@ fun VacantRoomsScreen(
                 status.gapMinutes >= minGapMinutes || status.freeUntil == "Rest of day"
             } else true
 
-            matchesFree && matchesLevel && matchesStudy && matchesSearch && matchesGap && matchesVacantFlag
+            matchesFree && matchesLevel && matchesStudy && matchesSearch && matchesCategory && matchesGap && matchesVacantFlag
         }
         // Sort strictly by availability:
         // 1. Free rooms first (occupied rooms last)
@@ -205,14 +230,27 @@ fun VacantRoomsScreen(
     Scaffold(
         containerColor = bgColor,
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
+            FloatingIslandTopBar {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = textPrimary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = "Vacant Room Finder",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
+                                fontSize = 17.sp,
                                 color = textPrimary
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -229,29 +267,57 @@ fun VacantRoomsScreen(
                                 )
                             }
                         }
-                        Text(
-                            text = buildString {
-                                append(selectedCampus?.let { Campus.entries.firstOrNull { c -> c.displayName == it }?.shortName } ?: "All Campuses")
-                                if (selectedBuilding != null) {
-                                    val b = UniversityDirectory.BUILDINGS.firstOrNull { it.code == selectedBuilding }
-                                    if (b != null) append(" · ${b.name}")
+                        Spacer(modifier = Modifier.height(2.dp))
+                        // Prominent Day & Time / Live Now Pill in place of the redundant campus-building indicator
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = if (isLiveNow) StatusGreenLive.copy(alpha = 0.12f) else PrimaryBlue.copy(alpha = 0.12f),
+                            modifier = Modifier.clickable { showDayPicker = true }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .background(if (isLiveNow) StatusGreenLive else PrimaryBlue, CircleShape)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = if (isLiveNow) "Live Now · $queryDay $queryTime" else "$queryDay · $queryTime",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isLiveNow) (if (isDark) Color(0xFF86EFAC) else Color(0xFF15803D)) else PrimaryBlue
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Switch Day",
+                                    tint = if (isLiveNow) (if (isDark) Color(0xFF86EFAC) else Color(0xFF15803D)) else PrimaryBlue,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                if (!isLiveNow) {
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = Icons.Outlined.RestartAlt,
+                                        contentDescription = "Reset to live",
+                                        tint = PrimaryBlue,
+                                        modifier = Modifier
+                                            .size(12.dp)
+                                            .clickable {
+                                                val nowCal = Calendar.getInstance()
+                                                queryDay = TimeUtil.todayName()
+                                                val h = nowCal.get(Calendar.HOUR_OF_DAY)
+                                                val m = nowCal.get(Calendar.MINUTE)
+                                                queryTime = "%02d:%02d".format(h, m)
+                                                isLiveNow = true
+                                            }
+                                    )
                                 }
-                            },
-                            fontSize = 12.sp,
-                            color = textMuted
-                        )
+                            }
+                        }
                     }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = textPrimary
-                        )
-                    }
-                },
-                actions = {
                     IconButton(onClick = { showFilterSheet = true }) {
                         BadgedBox(
                             badge = {
@@ -267,19 +333,8 @@ fun VacantRoomsScreen(
                             )
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = surfaceColor.copy(alpha = com.mustime.ui.Chrome.TopBarGlassAlpha)
-                ),
-                modifier = Modifier.drawBehind {
-                    drawLine(
-                        color = borderSubtle.copy(alpha = 0.25f),
-                        start = androidx.compose.ui.geometry.Offset(0f, size.height),
-                        end = androidx.compose.ui.geometry.Offset(size.width, size.height),
-                        strokeWidth = 1.dp.toPx()
-                    )
                 }
-            )
+            }
         }
     ) { padding ->
         LazyColumn(
@@ -287,10 +342,10 @@ fun VacantRoomsScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
             contentPadding = PaddingValues(
-                top = padding.calculateTopPadding() + 2.dp,
+                top = padding.calculateTopPadding() + 4.dp,
                 bottom = padding.calculateBottomPadding() + 16.dp
             ),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             item(key = "header_spacer") { Spacer(modifier = Modifier.height(2.dp)) }
 
@@ -531,52 +586,106 @@ fun VacantRoomsScreen(
                         }
                     }
 
-                    // Reset to Faculty Default indicator bar (if overridden)
-                    val isAwayFromDefaults = defaultScope.campus != selectedCampus ||
-                            (defaultScope.buildingCode != null && selectedBuilding != defaultScope.buildingCode)
+                    // Reset to Faculty Default indicator bar (dismissible)
+                    val isAwayFromDefaults = !isDefaultResetDismissed && (defaultScope.campus != selectedCampus ||
+                            (defaultScope.buildingCode != null && selectedBuilding != defaultScope.buildingCode))
                     if (isAwayFromDefaults) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
                             color = PrimaryBlue.copy(alpha = if (isDark) 0.18f else 0.08f),
                             border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.25f)),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    selectedCampus = defaultScope.campus
-                                    selectedBuilding = defaultScope.buildingCode
-                                }
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                                modifier = Modifier.padding(start = 12.dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.RestartAlt,
-                                    contentDescription = null,
-                                    tint = PrimaryBlue,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Reset to faculty default: ",
-                                    fontSize = 11.5.sp,
-                                    color = textPrimary
-                                )
-                                Text(
-                                    text = "${defaultScope.buildingName} (${if (defaultScope.campus.contains("Kihumuro", ignoreCase = true)) "Kihumuro" else "Town"})",
-                                    fontSize = 11.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = PrimaryBlue
-                                )
+                                Row(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable {
+                                            selectedCampus = defaultScope.campus
+                                            selectedBuilding = defaultScope.buildingCode
+                                        },
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.RestartAlt,
+                                        contentDescription = null,
+                                        tint = PrimaryBlue,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Reset to default: ",
+                                        fontSize = 11.5.sp,
+                                        color = textPrimary
+                                    )
+                                    Text(
+                                        text = "${defaultScope.buildingName} (${if (defaultScope.campus.contains("Kihumuro", ignoreCase = true)) "Kihumuro" else "Town"})",
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = PrimaryBlue,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { isDefaultResetDismissed = true },
+                                    modifier = Modifier.size(30.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Dismiss reset banner",
+                                        tint = textMuted,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // SECTION 2: SEARCH BAR & QUICK STATUS
-            item(key = "room_search_and_status") {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            // SECTION 2: CATEGORY FILTER CHIPS & SEARCH BAR
+            item(key = "room_categories_and_search") {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Category filter chips above the search bar
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(categories) { cat ->
+                            val isSelected = selectedCategory == cat
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { selectedCategory = cat },
+                                label = {
+                                    Text(
+                                        text = when (cat) {
+                                            "Room" -> "Lecture Room"
+                                            "Lab" -> "Lab"
+                                            "Library" -> "Library"
+                                            else -> "All Spaces"
+                                        },
+                                        fontSize = 11.5.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = PrimaryBlue.copy(alpha = 0.15f),
+                                    selectedLabelColor = PrimaryBlue
+                                ),
+                                border = FilterChipDefaults.filterChipBorder(
+                                    enabled = true,
+                                    selected = isSelected,
+                                    borderColor = if (isSelected) PrimaryBlue else borderSubtle
+                                )
+                            )
+                        }
+                    }
+
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
@@ -592,7 +701,7 @@ fun VacantRoomsScreen(
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = surfaceColor,
@@ -614,7 +723,7 @@ fun VacantRoomsScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(8.dp)
+                                    .size(7.dp)
                                     .background(if (isLiveNow) StatusGreenLive else Color(0xFFF59E0B), CircleShape)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -634,8 +743,6 @@ fun VacantRoomsScreen(
                                 )
                             }
                         }
-
-                        Spacer(modifier = Modifier.width(8.dp))
 
                         FilterChip(
                             selected = freeOnly,
@@ -723,6 +830,7 @@ fun VacantRoomsScreen(
                         status = status,
                         isDark = isDark,
                         showCampus = selectedCampus == null,
+                        selectedBuilding = selectedBuilding,
                         onClick = { selectedRoomForSchedule = status }
                     )
                 }
@@ -1109,18 +1217,18 @@ fun LocationDropdownSelector(
 
     Box(modifier = modifier) {
         Surface(
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(12.dp),
             color = surfaceColor,
             border = BorderStroke(1.2.dp, if (expanded) PrimaryBlue else borderSubtle),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(62.dp)
+                .height(52.dp)
                 .clickable { onExpandedChange(!expanded) }
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
@@ -1222,6 +1330,7 @@ fun RoomVacancyCard(
     status: RoomVacancyStatus,
     isDark: Boolean,
     showCampus: Boolean = false,
+    selectedBuilding: String? = null,
     onClick: () -> Unit
 ) {
     val room = status.room
@@ -1249,7 +1358,7 @@ fun RoomVacancyCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 16.dp, vertical = 13.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -1299,17 +1408,20 @@ fun RoomVacancyCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(3.dp))
+                // Omit redundant building name when a building is already selected at the top
+                if (selectedBuilding == null) {
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = if (showCampus) "${room.buildingName} · ${room.campus}" else room.buildingName,
+                        fontSize = 13.sp,
+                        color = textMuted,
+                        maxLines = 1
+                    )
+                }
 
-                Text(
-                    text = if (showCampus) "${room.buildingName} · ${room.campus}" else room.buildingName,
-                    fontSize = 13.sp,
-                    color = textMuted,
-                    maxLines = 1
-                )
+                Spacer(modifier = Modifier.height(if (selectedBuilding == null) 7.dp else 5.dp))
 
-                Spacer(modifier = Modifier.height(8.dp))
-
+                // Clean status dot & time countdown indicator (no progress bars)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
@@ -1325,21 +1437,28 @@ fun RoomVacancyCard(
                     )
                 }
 
+                // Upfront cohort priority (starts at / ends at time)
                 if (!status.isOccupied && status.nextSession != null) {
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(3.dp))
+                    val cohort = status.nextSession.programmeGroup.ifBlank { "Students" }
+                    val timeStr = status.nextSession.startTime
                     Text(
-                        text = "Next: ${status.nextSession.courseCode} · ${status.nextSession.courseTitle}",
+                        text = "Next: $cohort (starts at $timeStr)",
                         fontSize = 11.sp,
                         color = textMuted,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 } else if (status.isOccupied && status.currentSession != null) {
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(3.dp))
+                    val cohort = status.currentSession.programmeGroup.ifBlank { "Students" }
+                    val endStr = status.currentSession.endTime
                     Text(
-                        text = "In session: ${status.currentSession.courseCode} (${status.currentSession.programmeGroup})",
+                        text = "Current: $cohort (ends at $endStr)",
                         fontSize = 11.sp,
                         color = textMuted,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
