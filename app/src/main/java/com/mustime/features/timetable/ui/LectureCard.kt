@@ -191,25 +191,44 @@ fun LectureCard(entry: TimetableEntry, onClick: () -> Unit) {
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                             )
                             
-                            if (entry.sharedWithRaw.isNotBlank()) {
-                                val count = entry.sharedWithRaw.split(",").size
+                            val isAssoc = entry.courseCode.contains("MUCOSA", ignoreCase = true) ||
+                                entry.courseTitle.contains("MUCOSA", ignoreCase = true)
+                            val allAttending = if (isAssoc) emptyList() else (listOf(entry.programmeGroup) + entry.shared_with)
+                                .map { it.trim() }
+                                .filter { it.isNotBlank() }
+                                .distinct()
+                            if (allAttending.size > 1) {
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("+$count", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                Text(
+                                    "• ${allAttending.joinToString(", ")}",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
                             }
                         }
-                    } else if (entry.sharedWithRaw.isNotBlank()) {
-                        val count = entry.sharedWithRaw.split(",").size
-                        Text(
-                            "Shared with $count groups",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.weight(1f, fill = false),
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                        )
                     } else {
-                        Spacer(modifier = Modifier.width(1.dp))
+                        val isAssoc = entry.courseCode.contains("MUCOSA", ignoreCase = true) ||
+                            entry.courseTitle.contains("MUCOSA", ignoreCase = true)
+                        val allAttending = if (isAssoc) emptyList() else (listOf(entry.programmeGroup) + entry.shared_with)
+                            .map { it.trim() }
+                            .filter { it.isNotBlank() }
+                            .distinct()
+                        if (allAttending.size > 1) {
+                            Text(
+                                allAttending.joinToString(", "),
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.weight(1f, fill = false),
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.width(1.dp))
+                        }
                     }
                     
                     Box(

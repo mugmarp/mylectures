@@ -30,6 +30,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import com.mustime.TimetableApplication
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.os.Build
@@ -42,12 +43,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mustime.core.util.SessionProgress
 import com.mustime.core.util.TimeUtil
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LifecycleRegistry
-import androidx.lifecycle.lifecycleScope
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import com.mustime.features.timetable.domain.Assignment
 import com.mustime.features.timetable.domain.CustomEvent
 import com.mustime.features.timetable.domain.LectureNote
@@ -77,6 +72,8 @@ data class GlobalNextUp(
 @Composable
 fun TimetableScreen(
     programme: String,
+    enrolledProgramme: String = "",
+    isPeeking: Boolean = false,
     entries: List<TimetableEntry>,
     customEvents: List<CustomEvent> = emptyList(),
     assignments: List<Assignment> = emptyList(),
@@ -90,6 +87,9 @@ fun TimetableScreen(
     onAddTask: (title: String, courseCode: String, dueDate: String, priority: String, reminderMinutes: Int?, notes: String) -> Unit = { _, _, _, _, _, _ -> },
     onToggleTaskComplete: (Assignment) -> Unit = {},
     onDeleteTask: (Long) -> Unit = {},
+    onPeekProgramme: (String) -> Unit = {},
+    onResetToEnrolled: () -> Unit = {},
+    onSetOfficialProgramme: (String) -> Unit = {},
     onNotificationClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onReconfigureAcademicProfile: () -> Unit = {},
@@ -123,44 +123,8 @@ fun TimetableScreen(
     }
 
     // Dynamic current real-time day and calendar
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val todayName = remember { mutableStateOf(TimeUtil.todayName()) }
+    var todayName by remember { mutableStateOf(TimeUtil.todayName()) }
     val daysList = remember { TimeUtil.DAYS }
-
-    // Update todayName on lifecycle resume (app foreground) and at midnight via 15s pulse
-    val clock = remember {
-        androidx.compose.runtime.mutableStateOf(0)
-    }
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(1000L)
-        while (true) {
-            clock.value = (clock.value + 1) % 900 // 15 min cycle marker
-            kotlinx.coroutines.delay(15_000L)
-        }
-    }
-    // midnight/day-change detection via clock pulse
-    LaunchedEffect(clock.value) {
-        val newToday = TimeUtil.todayName()
-        if (todayName.value != newToday) {
-            todayName.value = newToday
-        }
-    }
-    // lifecycle resume pulse - re-evaluate immediately when app returns to foreground
-    val lifecycleObserver = remember {
-        object : DefaultLifecycleObserver {
-            override fun onResume(owner: LifecycleOwner) {
-                val newToday = TimeUtil.todayName()
-                if (todayName.value != newToday) {
-                    todayName.value = newToday
-                }
-            }
-        }
-    }
-    // Register the observer properly
-    DisposableEffect(lifecycleOwner) {
-        lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(lifecycleObserver) }
-    }
 
     // Dialog & BottomSheet state
     var selectedEntryForDetail by remember { mutableStateOf<TimetableEntry?>(null) }
@@ -201,8 +165,8 @@ fun TimetableScreen(
     // Real-time clock pulse to re-evaluate next-up, countdowns, and progress bars periodically.
     // Kept in the smallest possible composable so only that strip recomposes every 15s,
     // not the entire TimetableScreen.
-    var globalNextUp by remember(entries, todayName.value) {
-        mutableStateOf(findActualNextUp(entries, todayName.value))
+    var globalNextUp by remember(entries, todayName) {
+        mutableStateOf(findActualNextUp(entries, todayName))
     }
 
     // 3. Filter sessions for the selected day from the real Room database
@@ -235,16 +199,16 @@ fun TimetableScreen(
     }
 
     // Selected day info
-    val isViewingToday = selectedDay.equals(todayName.value, ignoreCase = true)
+    val isViewingToday = selectedDay.equals(todayName, ignoreCase = true)
     val selectedDayInfo = dayInfoList.firstOrNull { it.first.equals(selectedDay, ignoreCase = true) }
     val formattedSelectedDate = selectedDayInfo?.third ?: selectedDay
 
-    val todayEntries = remember(entries, todayName.value) {
-        entries.filter { it.dayOfWeek.equals(todayName.value, ignoreCase = true) }
+    val todayEntries = remember(entries, todayName) {
+        entries.filter { it.dayOfWeek.equals(todayName, ignoreCase = true) }
             .sortedBy { TimeUtil.toMinutes(it.startTime) }
     }
-    val todayDateFormatted = remember(dayInfoList, todayName.value) {
-        dayInfoList.firstOrNull { it.first.equals(todayName.value, ignoreCase = true) }?.third
+    val todayDateFormatted = remember(dayInfoList, todayName) {
+        dayInfoList.firstOrNull { it.first.equals(todayName, ignoreCase = true) }?.third
             ?: SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date())
     }
 
@@ -253,8 +217,8 @@ fun TimetableScreen(
     NextUpTicker(
         entries = entries,
         todayEntries = todayEntries,
-        currentDayName = todayName.value,
-        onDayChanged = { todayName.value = it },
+        currentDayName = todayName,
+        onDayChanged = { todayName = it },
         onCompletedChanged = { allTodayClassesCompleted = it },
         onNextUpChanged = { globalNextUp = it }
     )
@@ -266,6 +230,12 @@ fun TimetableScreen(
     val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
     val listState = rememberLazyListState()
 
+    if (isPeeking) {
+        BackHandler(enabled = true) {
+            onResetToEnrolled()
+        }
+    }
+
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = if (isDark) DarkSurfaceBase else SurfaceBaseLight,
@@ -274,6 +244,7 @@ fun TimetableScreen(
             TimetableTopAppBar(
                 program = programme,
                 subtitle = if (programme.isNotBlank()) semesterWeekLabel else "Select Programme",
+                isPeeking = isPeeking,
                 onProfileClick = {
                     showAcademicProfileSheet = true
                 },
@@ -365,6 +336,69 @@ fun TimetableScreen(
                     bottom = listBottomPadding
                 )
             ) {
+                // PEEK MODE BANNER: Shown when temporarily browsing another program or friend's schedule
+                if (isPeeking) {
+                    item(key = "peek_mode_banner") {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (isDark) Color(0xFF291B00) else Color(0xFFFEF3C7),
+                            border = BorderStroke(1.dp, if (isDark) Color(0xFFB45309) else Color(0xFFF59E0B)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .background(
+                                            if (isDark) Color(0xFF78350F) else Color(0xFFFDE68A),
+                                            CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Visibility,
+                                        contentDescription = "Peek Mode",
+                                        tint = if (isDark) Color(0xFFFBBF24) else Color(0xFFB45309),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Previewing $programme",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E)
+                                    )
+                                    Text(
+                                        text = "Viewing temporarily. Your alarms remain set for $enrolledProgramme.",
+                                        fontSize = 11.sp,
+                                        color = if (isDark) Color(0xFFFCD34D) else Color(0xFFB45309),
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Button(
+                                    onClick = onResetToEnrolled,
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isDark) Color(0xFFB45309) else Color(0xFFD97706),
+                                        contentColor = Color.White
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text("Exit Preview", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Prompt to select programme if not yet chosen
                 if (programme.isBlank()) {
                     item(key = "no_prog_prompt") {
@@ -497,6 +531,7 @@ fun TimetableScreen(
 
                         if (currentNextUp.isLive) {
                             val session = entry.toSpecClassSession(
+                                currentProgramme = programme,
                                 note = note,
                                 isLive = true,
                                 progress = currentNextUp.progress
@@ -526,6 +561,7 @@ fun TimetableScreen(
                             }
 
                             val session = entry.toSpecClassSession(
+                                currentProgramme = programme,
                                 note = note,
                                 isLive = false,
                                 startsInText = countdownText
@@ -589,11 +625,11 @@ fun TimetableScreen(
 
                 // SECTION 3: 7-DAY CAPSULE SELECTOR (MON - SUN) (PLACED DIRECTLY BELOW TODAY'S SCHEDULE & CARD)
                 item(key = "day_capsules") {
-                    val specDays = remember(daysList, selectedDay, todayName.value) {
+                    val specDays = remember(daysList, selectedDay, todayName) {
                         daysList.map { dayName ->
                             SpecDayItem(
                                 name = dayName,
-                                isToday = dayName.equals(todayName.value, ignoreCase = true),
+                                isToday = dayName.equals(todayName, ignoreCase = true),
                                 isSelected = dayName.equals(selectedDay, ignoreCase = true)
                             )
                         }
@@ -703,6 +739,7 @@ fun TimetableScreen(
                         val hasConflict = com.mustime.features.timetable.domain.TimetableConflictDetector
                             .hasConflict(entry, dayEntries)
                         val specSession = entry.toSpecClassSession(
+                            currentProgramme = programme,
                             hasConflict = hasConflict,
                             note = entryNote,
                             startsInText = if (isViewingToday) {
@@ -884,7 +921,12 @@ fun TimetableScreen(
     if (showAcademicProfileSheet) {
         AcademicProfileSheet(
             programme = programme,
+            enrolledProgramme = enrolledProgramme,
+            isPeeking = isPeeking,
             onDismiss = { showAcademicProfileSheet = false },
+            onPeekProgramme = onPeekProgramme,
+            onResetToEnrolled = onResetToEnrolled,
+            onSetOfficialProgramme = onSetOfficialProgramme,
             onReconfigureProfile = {
                 showAcademicProfileSheet = false
                 onReconfigureAcademicProfile()
@@ -921,6 +963,7 @@ private fun PaddingBox(
  * Converts a TimetableEntry into a SpecClassSession for high-fidelity specification UI rendering.
  */
 private fun TimetableEntry.toSpecClassSession(
+    currentProgramme: String = "",
     note: LectureNote? = null,
     isLive: Boolean = false,
     progress: SessionProgress? = null,
@@ -962,11 +1005,32 @@ private fun TimetableEntry.toSpecClassSession(
     }
     val cleanNotePreview = note?.content?.trim()?.takeIf { it.isNotBlank() }?.take(40)
 
+    val isAssociation = specType == SpecSessionType.ASSOCIATION ||
+        codeUpper.contains("MUCOSA") || titleUpper.contains("MUCOSA") ||
+        titleUpper.contains("ASSOCIATION") || titleUpper.contains("GUILD")
+
+    val cohortsText = if (isAssociation) {
+        ""
+    } else {
+        val allCohorts = (listOf(programmeGroup) + shared_with)
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+        allCohorts.joinToString(", ")
+    }
+
+    val allCohortsList = (listOf(programmeGroup) + shared_with)
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+    val otherCohorts = allCohortsList.filter { !it.equals(currentProgramme.trim(), ignoreCase = true) }
+    val effectiveShared = if (isAssociation) emptyList() else if (otherCohorts.isNotEmpty()) otherCohorts else shared_with.filter { it.isNotBlank() }
+
     return SpecClassSession(
         id = naturalKey,
         courseCode = courseCode,
         courseName = courseTitle,
-        department = programmeGroup,
+        department = cohortsText,
         topicDescription = null,
         startTime = startTime,
         endTime = endTime,
@@ -983,7 +1047,8 @@ private fun TimetableEntry.toSpecClassSession(
         hasConflict = hasConflict,
         progress = progress?.progress ?: 0.5f,
         elapsedText = elapsedStr,
-        remainingText = remStr
+        remainingText = remStr,
+        sharedWith = effectiveShared
     )
 }
 

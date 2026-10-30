@@ -1,5 +1,6 @@
 package com.mustime.features.timetable.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.outlined.MeetingRoom
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Schedule
@@ -132,6 +134,46 @@ fun LectureDetailSheet(
                 Spacer(modifier = Modifier.height(12.dp))
             }
             DetailRow(icon = Icons.Outlined.Schedule, label = "Time", value = "${entry.startTime} – ${entry.endTime}", isDark = isDark)
+            
+            val isAssociation = entry.courseCode.contains("MUCOSA", ignoreCase = true) ||
+                entry.courseTitle.contains("MUCOSA", ignoreCase = true) ||
+                entry.courseTitle.contains("ASSOCIATION", ignoreCase = true)
+            
+            val allAttendingCohorts = if (isAssociation) emptyList() else (listOf(entry.program_group) + entry.shared_with)
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinct()
+            if (allAttendingCohorts.size > 1) {
+                Spacer(modifier = Modifier.height(12.dp))
+                DetailRow(
+                    icon = Icons.Default.School,
+                    label = "Attending Classes",
+                    value = allAttendingCohorts.joinToString(", "),
+                    isDark = isDark
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                androidx.compose.foundation.layout.FlowRow(
+                    modifier = Modifier.fillMaxWidth().padding(start = 30.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    allAttendingCohorts.forEach { cohort ->
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9),
+                            border = BorderStroke(1.dp, if (isDark) Color(0xFF334155) else Color(0xFFCBD5E1))
+                        ) {
+                            Text(
+                                text = cohort,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isDark) Color(0xFFCBD5E1) else Color(0xFF334155),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 

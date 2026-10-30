@@ -97,6 +97,7 @@ fun NextUpCard(entry: TimetableEntry, minutesUntil: Int, onClick: () -> Unit) {
                 ) {
                     Text(resolveSessionTypeLabel(entry), color = Color.White, fontSize = 12.sp)
                 }
+
             }
             
             Spacer(modifier = Modifier.height(4.dp))

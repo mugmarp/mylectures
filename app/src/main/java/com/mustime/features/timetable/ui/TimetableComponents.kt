@@ -1447,12 +1447,32 @@ fun TimelineClassCard(
                     color = textPrimary
                 )
 
-                // Subtitle: Code · Department
-                Text(
-                    text = "${session.courseCode} · ${session.department}",
-                    fontSize = 12.sp,
-                    color = textSecondary
-                )
+                // Subtitle: Code · Cohorts (e.g. DVS2105 · BSE II, BCS II)
+                // For Association / MUCOSA: remove class groups entirely
+                val isAssoc = session.type == SpecSessionType.ASSOCIATION ||
+                    session.courseCode.contains("MUCOSA", ignoreCase = true) ||
+                    session.courseName.contains("MUCOSA", ignoreCase = true)
+
+                if (isAssoc) {
+                    if (!session.courseCode.equals(session.courseName, ignoreCase = true) && session.courseCode.isNotBlank()) {
+                        Text(
+                            text = session.courseCode,
+                            fontSize = 12.sp,
+                            color = textSecondary
+                        )
+                    }
+                } else {
+                    val subtitleText = if (session.department.isNotBlank()) {
+                        "${session.courseCode} · ${session.department}"
+                    } else {
+                        session.courseCode
+                    }
+                    Text(
+                        text = subtitleText,
+                        fontSize = 12.sp,
+                        color = textSecondary
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
