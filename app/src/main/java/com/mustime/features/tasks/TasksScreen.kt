@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material3.*
@@ -52,6 +53,8 @@ import com.mustime.features.timetable.domain.TaskCategory
 import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import com.mustime.core.notification.InAppNotificationStore
 import com.mustime.features.timetable.domain.Assignment
 import androidx.compose.foundation.layout.WindowInsets
 import com.mustime.features.timetable.ui.*
@@ -115,7 +118,8 @@ fun resolveTaskCategoryAndTitle(title: String): Pair<TaskCategory, String> {
 fun TasksScreen(
     onBack: (() -> Unit)? = null,
     onSettingsClick: () -> Unit = {},
-    onReconfigureAcademicProfile: () -> Unit = {}
+    onReconfigureAcademicProfile: () -> Unit = {},
+    highlightTaskId: Long? = null
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as? TimetableApplication
@@ -161,6 +165,7 @@ fun TasksScreen(
     val uiState by viewModel.uiState.collectAsState()
     val assignments = uiState.assignments
 
+    val coroutineScope = rememberCoroutineScope()
     var showAddDialog by remember { mutableStateOf(false) }
     var taskToEdit by remember { mutableStateOf<Assignment?>(null) }
     var showProfileSheet by remember { mutableStateOf(false) }
@@ -182,18 +187,6 @@ fun TasksScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasNotificationPermission = isGranted
-    }
-
-    var permissionRequested by rememberSaveable { mutableStateOf(false) }
-
-    // Check notification permission once on initial launch for Android 13+
-    LaunchedEffect(Unit) {
-        if (!permissionRequested) {
-            permissionRequested = true
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
-                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
     }
 
     var taskToDelete by remember { mutableStateOf<Assignment?>(null) }
@@ -226,6 +219,15 @@ fun TasksScreen(
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
     val listState = rememberLazyListState()
+
+    // Auto-scroll to target task when launched from notification deep link
+    LaunchedEffect(highlightTaskId, filteredTasks) {
+        val targetId = highlightTaskId ?: return@LaunchedEffect
+        val index = filteredTasks.indexOfFirst { it.id == targetId }
+        if (index != -1) {
+            listState.animateScrollToItem((index + 3).coerceAtLeast(0))
+        }
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -334,19 +336,15 @@ fun TasksScreen(
                         }
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(primaryColor.copy(alpha = 0.12f))
-                            .clickable { showProfileSheet = true },
-                        contentAlignment = Alignment.Center
+                    IconButton(
+                        onClick = { showProfileSheet = true },
+                        modifier = Modifier.testTag("topbar_academic_info_btn")
                     ) {
                         Icon(
-                            Icons.Default.Person,
+                            imageVector = Icons.Outlined.Menu,
                             contentDescription = "Academic Info",
-                            tint = primaryColor,
-                            modifier = Modifier.size(20.dp)
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
@@ -599,6 +597,7 @@ fun TasksScreen(
                         TaskCard(
                             task = task,
                             isDark = isDark,
+                            isHighlighted = task.id == highlightTaskId,
                             onToggleComplete = { viewModel.toggleComplete(task) },
                             onEdit = {
                                 taskToEdit = task
@@ -717,6 +716,7 @@ fun TasksScreen(
 fun TaskCard(
     task: Assignment,
     isDark: Boolean,
+    isHighlighted: Boolean = false,
     onToggleComplete: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -733,15 +733,16 @@ fun TaskCard(
     Card(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = cardBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isHighlighted) 6.dp else 1.dp),
         border = CardDefaults.outlinedCardBorder().copy(
+            width = if (isHighlighted) 2.dp else 1.dp,
             brush = androidx.compose.ui.graphics.SolidColor(
-                if (isDark) {
-                    if (!task.completed && dueStatus == TaskDueStatus.OVERDUE) Color(0xFF991B1B)
-                    else DarkBorderSubtle
-                } else {
-                    if (!task.completed && dueStatus == TaskDueStatus.OVERDUE) Color(0xFFFCA5A5)
-                    else Color(0xFFE2E8F0)
+                when {
+                    isHighlighted -> primaryColor
+                    isDark && !task.completed && dueStatus == TaskDueStatus.OVERDUE -> Color(0xFF991B1B)
+                    isDark -> DarkBorderSubtle
+                    !task.completed && dueStatus == TaskDueStatus.OVERDUE -> Color(0xFFFCA5A5)
+                    else -> Color(0xFFE2E8F0)
                 }
             )
         ),

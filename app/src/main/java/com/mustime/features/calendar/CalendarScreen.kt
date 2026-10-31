@@ -26,9 +26,12 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
+import androidx.compose.ui.platform.testTag
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -99,6 +102,7 @@ fun CalendarScreen(
         }
     }
 
+    val coroutineScope = rememberCoroutineScope()
     var showAddActivitySheet by remember { mutableStateOf(false) }
     var activityToEdit by remember { mutableStateOf<CustomEvent?>(null) }
     var showProfileSheet by remember { mutableStateOf(false) }
@@ -263,19 +267,15 @@ fun CalendarScreen(
                             shape = RoundedCornerShape(12.dp)
                         )
 
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                                .clickable { showProfileSheet = true },
-                            contentAlignment = Alignment.Center
+                        IconButton(
+                            onClick = { showProfileSheet = true },
+                            modifier = Modifier.testTag("topbar_academic_info_btn")
                         ) {
                             Icon(
-                                Icons.Default.Person,
+                                imageVector = Icons.Outlined.Menu,
                                 contentDescription = "Academic Info",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }
@@ -827,6 +827,7 @@ fun CalendarScreen(
             }
         )
     }
+
 
     // Delete Confirmation Dialog for Activity
     eventToDelete?.let { event ->

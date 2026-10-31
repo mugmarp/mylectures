@@ -39,8 +39,8 @@ fun FloatingIslandTopBar(
             bottomEnd = 22.dp
         ),
         color = navBg.copy(alpha = 0.96f),
-        tonalElevation = 4.dp,
-        shadowElevation = 4.dp,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
         border = BorderStroke(1.dp, navBorder),
         modifier = modifier.fillMaxWidth()
     ) {

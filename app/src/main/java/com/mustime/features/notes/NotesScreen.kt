@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -35,12 +36,15 @@ import com.mustime.core.storage.AttachmentStore
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mustime.TimetableApplication
+import com.mustime.core.notification.InAppNotificationStore
 import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.ui.*
 import com.mustime.ui.Chrome
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.rememberLecturesWindow
 import com.mustime.ui.components.AcademicProfileSheet
+import com.mustime.ui.components.NotificationCenterSheet
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -78,6 +82,8 @@ fun NotesScreen(
     var noteToEdit by remember { mutableStateOf<LectureNote?>(null) }
     var noteToDelete by remember { mutableStateOf<LectureNote?>(null) }
     var showProfileSheet by remember { mutableStateOf(false) }
+
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(isEditing) {
         onEditingChanged(isEditing)
@@ -228,19 +234,15 @@ fun NotesScreen(
                         }
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                            .clickable { showProfileSheet = true },
-                        contentAlignment = Alignment.Center
+                    IconButton(
+                        onClick = { showProfileSheet = true },
+                        modifier = Modifier.testTag("topbar_academic_info_btn")
                     ) {
                         Icon(
-                            Icons.Default.Person,
-                            contentDescription = "Account",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+                            imageVector = Icons.Outlined.Menu,
+                            contentDescription = "Academic Info",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
