@@ -108,6 +108,7 @@ data class SpecClassSession(
     val progress: Float = 0.70f,
     val elapsedText: String = "1h 45m elapsed",
     val remainingText: String = "35 mins left · Ends 11:00"
+    val sharedWith: List<String> = emptyList()
 )
 
 /**

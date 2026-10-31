@@ -74,7 +74,7 @@ data class GlobalNextUp(
 fun TimetableScreen(
     programme: String,
     enrolledProgramme: String = "",
-    isPeeking: Boolean = false,
+    isPreviewing: Boolean = false,
     entries: List<TimetableEntry>,
     customEvents: List<CustomEvent> = emptyList(),
     assignments: List<Assignment> = emptyList(),
@@ -231,7 +231,7 @@ fun TimetableScreen(
     val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
     val listState = rememberLazyListState()
 
-    if (isPeeking) {
+    if (isPreviewing) {
         BackHandler(enabled = true) {
             onResetToEnrolled()
         }
@@ -245,7 +245,7 @@ fun TimetableScreen(
             TimetableTopAppBar(
                 program = programme,
                 subtitle = if (programme.isNotBlank()) semesterWeekLabel else "Select Programme",
-                isPeeking = isPeeking,
+                isPreviewing = isPreviewing,
                 onProfileClick = {
                     showAcademicProfileSheet = true
                 },
@@ -338,7 +338,7 @@ fun TimetableScreen(
                 )
             ) {
                 // PEEK MODE BANNER: Shown when temporarily browsing another program or friend's schedule
-                if (isPeeking) {
+                if (isPreviewing) {
                     item(key = "peek_mode_banner") {
                         Surface(
                             shape = RoundedCornerShape(16.dp),
@@ -923,7 +923,7 @@ fun TimetableScreen(
         AcademicProfileSheet(
             programme = programme,
             enrolledProgramme = enrolledProgramme,
-            isPeeking = isPeeking,
+            isPreviewing = isPreviewing,
             onDismiss = { showAcademicProfileSheet = false },
             onPeekProgramme = onPeekProgramme,
             onResetToEnrolled = onResetToEnrolled,
