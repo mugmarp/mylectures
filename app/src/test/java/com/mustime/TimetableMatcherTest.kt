@@ -133,7 +133,7 @@ class TimetableMatcherTest {
         assertEquals(17, TimetableMatcher.PRECOMPUTED_GROUP_COUNTS["MBR I"])
         assertEquals(12, TimetableMatcher.PRECOMPUTED_GROUP_COUNTS["BGWH III"])
         assertEquals(13, TimetableMatcher.PRECOMPUTED_GROUP_COUNTS["BS BIOLOGICAL III"])
-        assertEquals(18, TimetableMatcher.PRECOMPUTED_GROUP_COUNTS["DLT II"])
+        assertEquals(11, TimetableMatcher.PRECOMPUTED_GROUP_COUNTS["DLT I"])
         assertEquals(17, TimetableMatcher.PRECOMPUTED_GROUP_COUNTS["BBA II"])
 
         // Verify BBA TAXATION II was removed
