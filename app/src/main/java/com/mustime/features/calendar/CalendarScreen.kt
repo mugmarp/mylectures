@@ -26,9 +26,11 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
+import androidx.compose.ui.platform.testTag
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -164,11 +166,6 @@ fun CalendarScreen(
     val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
     val listState = rememberLazyListState()
 
-    var showNotificationCenterSheet by remember { mutableStateOf(false) }
-    val notifStore = remember(context) { com.mustime.core.notification.InAppNotificationStore.getInstance(context) }
-    val unreadNotifCount by notifStore.unreadCount.collectAsState(initial = 0)
-    val hasAlarms = unreadNotifCount > 0
-
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = MaterialTheme.colorScheme.background,
@@ -270,48 +267,15 @@ fun CalendarScreen(
                             shape = RoundedCornerShape(12.dp)
                         )
 
-                        BadgedBox(
-                            badge = {
-                                if (hasAlarms) {
-                                    Badge(
-                                        containerColor = Color(0xFFEF4444),
-                                        contentColor = Color.White
-                                    ) {
-                                        Box(modifier = Modifier.size(6.dp))
-                                    }
-                                }
-                            }
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                                    .clickable { showNotificationCenterSheet = true },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = if (hasAlarms) Icons.Filled.Notifications else Icons.Outlined.Notifications,
-                                    contentDescription = "Notifications & Alarms",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(19.dp)
-                                )
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                                .clickable { showProfileSheet = true },
-                            contentAlignment = Alignment.Center
+                        IconButton(
+                            onClick = { showProfileSheet = true },
+                            modifier = Modifier.testTag("topbar_academic_info_btn")
                         ) {
                             Icon(
-                                Icons.Default.Person,
+                                imageVector = Icons.Outlined.Menu,
                                 contentDescription = "Academic Info",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }
@@ -729,8 +693,7 @@ fun CalendarScreen(
                                     isDark = isDark,
                                     onToggleComplete = { viewModel.toggleTaskComplete(item.assignment) },
                                     onEdit = { },
-                                    onDelete = { taskToDelete = item.assignment },
-                                    onTestAlarm = { }
+                                    onDelete = { taskToDelete = item.assignment }
                                 )
                             }
                         }
@@ -864,23 +827,6 @@ fun CalendarScreen(
         )
     }
 
-    if (showNotificationCenterSheet) {
-        val app = context.applicationContext as? com.mustime.TimetableApplication
-        val activeTasks = uiState.assignments.filter { !it.completed && (it.reminderMinutes ?: 0) > 0 }
-        com.mustime.ui.components.NotificationCenterSheet(
-            activeTasksWithAlarms = activeTasks,
-            onCancelTaskAlarm = { task ->
-                app?.repository?.let { repo ->
-                    coroutineScope.launch {
-                        repo.saveAssignment(task.copy(reminderMinutes = null))
-                        com.mustime.core.alarm.TaskAlarmScheduler(context).cancelTaskReminder(task.id)
-                    }
-                }
-            },
-            onDismiss = { showNotificationCenterSheet = false },
-            onOpenSettings = onSettingsClick
-        )
-    }
 
     // Delete Confirmation Dialog for Activity
     eventToDelete?.let { event ->

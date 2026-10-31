@@ -577,11 +577,18 @@ fun NoteEditorScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Column(
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surface)
-                    .statusBarsPadding()
+            Surface(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = com.mustime.ui.Chrome.TopBarGlassAlpha),
+                tonalElevation = 2.dp,
+                shadowElevation = 2.dp,
+                border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                modifier = Modifier.fillMaxWidth()
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                ) {
                 // Unified Header: Back, Title, Mode Selector, Save Button
                 Row(
                     modifier = Modifier
@@ -714,7 +721,8 @@ fun NoteEditorScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), thickness = 1.dp)
             }
         }
-    ) { innerPadding ->
+    }
+) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

@@ -47,6 +47,7 @@ import com.mustime.features.timetable.domain.Assignment
 import com.mustime.features.timetable.domain.CustomEvent
 import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.domain.TimetableEntry
+import com.mustime.features.timetable.domain.TimetableMatcher
 import com.mustime.ui.Chrome
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.rememberLecturesWindow
@@ -1009,22 +1010,32 @@ private fun TimetableEntry.toSpecClassSession(
         codeUpper.contains("MUCOSA") || titleUpper.contains("MUCOSA") ||
         titleUpper.contains("ASSOCIATION") || titleUpper.contains("GUILD")
 
-    val cohortsText = if (isAssociation) {
-        ""
-    } else {
-        val allCohorts = (listOf(programmeGroup) + shared_with)
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-            .distinct()
-        allCohorts.joinToString(", ")
-    }
+    val userParsed = TimetableMatcher.parseGroupParts(currentProgramme)
+    val userCanon = TimetableMatcher.canonicalCohort(currentProgramme)
 
-    val allCohortsList = (listOf(programmeGroup) + shared_with)
-        .map { it.trim() }
+    val allCohorts = (listOf(programmeGroup) + shared_with)
+        .map { TimetableMatcher.canonicalCohort(it.trim()) }
         .filter { it.isNotBlank() }
         .distinct()
-    val otherCohorts = allCohortsList.filter { !it.equals(currentProgramme.trim(), ignoreCase = true) }
-    val effectiveShared = if (isAssociation) emptyList() else if (otherCohorts.isNotEmpty()) otherCohorts else shared_with.filter { it.isNotBlank() }
+
+    val otherCohorts = if (isAssociation) emptyList() else allCohorts.filter { cohort ->
+        if (cohort.equals(currentProgramme.trim(), ignoreCase = true)) return@filter false
+        if (userCanon.isNotBlank() && cohort.equals(userCanon, ignoreCase = true)) return@filter false
+        if (userParsed != null) {
+            val cParsed = TimetableMatcher.parseGroupParts(cohort)
+            if (cParsed != null && cParsed.code == userParsed.code && cParsed.year == userParsed.year) {
+                if (userParsed.subject.isEmpty() || cParsed.subject.isEmpty() ||
+                    cParsed.subject.equals(userParsed.subject, ignoreCase = true) ||
+                    (userParsed.subject.startsWith("BIOLOG") && cParsed.subject.startsWith("BIOLOG"))) {
+                    return@filter false
+                }
+            }
+        }
+        true
+    }
+
+    val cohortsText = if (isAssociation) "" else otherCohorts.joinToString(", ")
+    val effectiveShared = if (isAssociation) emptyList() else otherCohorts
 
     return SpecClassSession(
         id = naturalKey,

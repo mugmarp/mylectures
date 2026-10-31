@@ -1,8 +1,12 @@
 package com.mustime.features.tasks
 
 import android.Manifest
+import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -25,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material3.*
@@ -40,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mustime.TimetableApplication
@@ -168,14 +174,8 @@ fun TasksScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var taskToEdit by remember { mutableStateOf<Assignment?>(null) }
     var showProfileSheet by remember { mutableStateOf(false) }
-    var showNotificationCenterSheet by remember { mutableStateOf(false) }
 
-    val notificationStore = remember(context) { InAppNotificationStore.getInstance(context) }
-    val unreadNotificationsCount by notificationStore.unreadCount.collectAsState(initial = 0)
-    val activeTasksWithAlarms = remember(assignments) {
-        assignments.filter { !it.completed && (it.reminderMinutes ?: 0) > 0 }
-    }
-    val hasUnreadNotifications = unreadNotificationsCount > 0 || activeTasksWithAlarms.isNotEmpty()
+    var isNotificationBannerDismissed by rememberSaveable { mutableStateOf(false) }
 
     var hasNotificationPermission by remember {
         mutableStateOf(
@@ -194,16 +194,19 @@ fun TasksScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasNotificationPermission = isGranted
-    }
-
-    var permissionRequested by rememberSaveable { mutableStateOf(false) }
-
-    // Check notification permission once on initial launch for Android 13+
-    LaunchedEffect(Unit) {
-        if (!permissionRequested) {
-            permissionRequested = true
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
-                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        if (!isGranted) {
+            try {
+                val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            } catch (_: Exception) {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", context.packageName, null)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
             }
         }
     }
@@ -355,48 +358,16 @@ fun TasksScreen(
                         }
                     }
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    IconButton(
+                        onClick = { showProfileSheet = true },
+                        modifier = Modifier.testTag("topbar_academic_info_btn")
                     ) {
-                        IconButton(
-                            onClick = { showNotificationCenterSheet = true },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            BadgedBox(
-                                badge = {
-                                    if (hasUnreadNotifications) {
-                                        Badge(
-                                            containerColor = MaterialTheme.colorScheme.error,
-                                            modifier = Modifier.size(8.dp)
-                                        )
-                                    }
-                                }
-                            ) {
-                                Icon(
-                                    Icons.Outlined.Notifications,
-                                    contentDescription = "Notifications & Alarms",
-                                    tint = textSecondary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(primaryColor.copy(alpha = 0.12f))
-                                .clickable { showProfileSheet = true },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = "Academic Info",
-                                tint = primaryColor,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Outlined.Menu,
+                            contentDescription = "Academic Info",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 }
             }
@@ -410,7 +381,7 @@ fun TasksScreen(
         ) {
 
         // Notification Permission Prompt (if revoked on Android 13+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission && !isNotificationBannerDismissed) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -421,7 +392,7 @@ fun TasksScreen(
                 )
             ) {
                 Row(
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -429,21 +400,60 @@ fun TasksScreen(
                         Icon(
                             Icons.Default.NotificationsActive,
                             contentDescription = null,
-                            tint = if (isDark) Color(0xFFFCD34D) else Color(0xFFD97706)
+                            tint = if (isDark) Color(0xFFFCD34D) else Color(0xFFD97706),
+                            modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             "Enable notifications to receive deadline alarms.",
                             fontSize = 12.sp,
-                            color = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E)
+                            color = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E),
+                            lineHeight = 16.sp
                         )
                     }
-                    TextButton(onClick = { permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }) {
-                        Text(
-                            "Allow",
-                            fontWeight = FontWeight.Bold,
-                            color = if (isDark) Color(0xFFFBBF24) else Color(0xFFB45309)
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(
+                            onClick = {
+                                val activity = context as? Activity
+                                val shouldShowRationale = if (activity != null) {
+                                    ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.POST_NOTIFICATIONS)
+                                } else false
+                                if (!shouldShowRationale) {
+                                    try {
+                                        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (_: Exception) {
+                                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                            data = Uri.fromParts("package", context.packageName, null)
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        context.startActivity(intent)
+                                    }
+                                } else {
+                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            }
+                        ) {
+                            Text(
+                                "Allow",
+                                fontWeight = FontWeight.Bold,
+                                color = if (isDark) Color(0xFFFBBF24) else Color(0xFFB45309)
+                            )
+                        }
+                        IconButton(
+                            onClick = { isNotificationBannerDismissed = true },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Dismiss",
+                                tint = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -503,7 +513,7 @@ fun TasksScreen(
                     .fillMaxSize()
                     .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(top = 4.dp, bottom = listBottomPadding)
+                contentPadding = PaddingValues(top = 4.dp, bottom = listBottomPadding + 96.dp)
             ) {
                 // 1. Visual Progress Dashboard for Total Tasks Completed vs Pending
                 item(key = "task_progress_dashboard_item") {
@@ -654,9 +664,11 @@ fun TasksScreen(
                                 taskToEdit = task
                                 showAddDialog = true
                             },
-                            onDelete = { taskToDelete = task },
-                            onTestAlarm = { viewModel.triggerTestReminder(task, delaySeconds = 3) }
+                            onDelete = { taskToDelete = task }
                         )
+                    }
+                    item(key = "tasks_bottom_clearance_spacer") {
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
             }
@@ -761,23 +773,6 @@ fun TasksScreen(
             }
         )
     }
-
-    if (showNotificationCenterSheet) {
-        NotificationCenterSheet(
-            activeTasksWithAlarms = activeTasksWithAlarms,
-            onCancelTaskAlarm = { task ->
-                alarmScheduler.cancelTaskReminder(task.id)
-                coroutineScope.launch {
-                    repository.saveAssignment(task.copy(reminderMinutes = null))
-                }
-            },
-            onDismiss = { showNotificationCenterSheet = false },
-            onOpenSettings = {
-                showNotificationCenterSheet = false
-                onSettingsClick()
-            }
-        )
-    }
 }
 
 @Composable
@@ -787,8 +782,7 @@ fun TaskCard(
     isHighlighted: Boolean = false,
     onToggleComplete: () -> Unit,
     onEdit: () -> Unit,
-    onDelete: () -> Unit,
-    onTestAlarm: () -> Unit
+    onDelete: () -> Unit
 ) {
     val cardBg = if (isDark) DarkSurfaceCard else Color.White
     val textPrimary = if (isDark) Color.White else TextPrimaryLight
@@ -908,22 +902,7 @@ fun TaskCard(
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(2.dp))
-
-                    // Test reminder trigger button
-                    IconButton(
-                        onClick = onTestAlarm,
-                        modifier = Modifier.size(30.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.NotificationsActive,
-                            contentDescription = "Test Alarm (3s)",
-                            tint = primaryColor,
-                            modifier = Modifier.size(17.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(2.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
 
                     // Delete button
                     IconButton(onClick = onDelete, modifier = Modifier.size(30.dp)) {
@@ -1184,6 +1163,7 @@ fun TaskCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTaskDialog(
     isDark: Boolean,
@@ -1221,7 +1201,7 @@ fun AddTaskDialog(
     var reminderMinutes by remember(initialTask) { mutableStateOf<Int?>(initialTask?.reminderMinutes ?: 1440) }
     var notes by remember(initialTask) { mutableStateOf(initialTask?.notes ?: "") }
 
-    var showCoursePicker by remember { mutableStateOf(false) }
+    var courseDropdownExpanded by remember { mutableStateOf(false) }
     var showDueCalendarPicker by remember { mutableStateOf(false) }
     var showDueTimePicker by remember { mutableStateOf(false) }
     var titleTouched by remember { mutableStateOf(false) }
@@ -1312,55 +1292,93 @@ fun AddTaskDialog(
                     }
                 }
 
-                // Course Code input with picker
-                OutlinedTextField(
-                    value = course,
-                    onValueChange = {
-                        course = it
-                        courseTouched = true
-                    },
-                    label = { Text("Course code *") },
-                    placeholder = {
-                        val sampleCode = availableCourses.firstOrNull()?.first ?: "e.g. EEE2101"
-                        Text(if (sampleCode.startsWith("e.g.")) sampleCode else "e.g. $sampleCode")
-                    },
-                    isError = courseTouched && course.isBlank(),
-                    supportingText = if (courseTouched && course.isBlank()) {
-                        { Text("Course code is required", color = MaterialTheme.colorScheme.error, fontSize = 11.sp) }
-                    } else null,
-                    trailingIcon = {
-                        IconButton(onClick = { showCoursePicker = true }) {
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = "Pick Course", tint = primaryColor)
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                // Quick course selection chips from student's enrolled courses
+                // Course Unit Selection - Pure dropdown from enrolled program courses (No manual typing)
                 if (availableCourses.isNotEmpty()) {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ExposedDropdownMenuBox(
+                        expanded = courseDropdownExpanded,
+                        onExpandedChange = { courseDropdownExpanded = !courseDropdownExpanded },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        items(availableCourses.take(5)) { (cCode, _) ->
-                            val isSelected = course.equals(cCode, ignoreCase = true)
-                            SuggestionChip(
-                                onClick = {
-                                    course = cCode
-                                    courseTouched = false
-                                },
-                                label = {
-                                    Text(
-                                        cCode,
-                                        fontSize = 11.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                },
-                                shape = RoundedCornerShape(8.dp)
-                            )
+                        val matchingCourse = availableCourses.firstOrNull { it.first.equals(course, ignoreCase = true) }
+                        val displayCourse = if (course.isNotBlank()) {
+                            if (matchingCourse != null && matchingCourse.second.isNotBlank()) {
+                                "${matchingCourse.first} · ${matchingCourse.second}"
+                            } else {
+                                course
+                            }
+                        } else ""
+
+                        OutlinedTextField(
+                            value = displayCourse,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Course unit *") },
+                            placeholder = { Text("Select course from program") },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = courseDropdownExpanded)
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(),
+                            isError = courseTouched && course.isBlank(),
+                            supportingText = if (courseTouched && course.isBlank()) {
+                                { Text("Course unit is required", color = MaterialTheme.colorScheme.error, fontSize = 11.sp) }
+                            } else null,
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth()
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = courseDropdownExpanded,
+                            onDismissRequest = { courseDropdownExpanded = false }
+                        ) {
+                            availableCourses.forEach { (cCode, cTitle) ->
+                                val isSelected = course.equals(cCode, ignoreCase = true)
+                                DropdownMenuItem(
+                                    text = {
+                                        Column(modifier = Modifier.fillMaxWidth()) {
+                                            Text(
+                                                text = cCode,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                                color = if (isSelected) primaryColor else (if (isDark) Color.White else Color(0xFF0F172A)),
+                                                fontSize = 13.sp
+                                            )
+                                            if (cTitle.isNotBlank()) {
+                                                Text(
+                                                    text = cTitle,
+                                                    fontSize = 11.sp,
+                                                    color = textSecondary,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        course = cCode
+                                        courseTouched = false
+                                        courseDropdownExpanded = false
+                                    },
+                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                )
+                            }
                         }
                     }
+                } else {
+                    OutlinedTextField(
+                        value = course,
+                        onValueChange = {
+                            course = it
+                            courseTouched = true
+                        },
+                        label = { Text("Course code *") },
+                        placeholder = { Text("e.g. BCS2101") },
+                        isError = courseTouched && course.isBlank(),
+                        supportingText = if (courseTouched && course.isBlank()) {
+                            { Text("Course code is required", color = MaterialTheme.colorScheme.error, fontSize = 11.sp) }
+                        } else null,
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
                 }
 
                 // Target Due Date & Time Pickers (Replaces old quick chips)
@@ -1587,18 +1605,6 @@ fun AddTaskDialog(
             }
         }
     )
-
-    if (showCoursePicker) {
-        DedicatedCoursePickerDialog(
-            selectedCourse = course,
-            availableCourses = availableCourses,
-            onCourseSelected = { code, _ ->
-                course = code
-                courseTouched = false
-            },
-            onDismiss = { showCoursePicker = false }
-        )
-    }
 
     if (showDueCalendarPicker) {
         DedicatedCalendarDatePickerDialog(
