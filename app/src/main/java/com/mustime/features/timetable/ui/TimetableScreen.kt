@@ -223,11 +223,7 @@ fun TimetableScreen(
     val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
-
     val listState = rememberLazyListState()
-    val isScrolled by remember {
-        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 8 }
-    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -238,7 +234,6 @@ fun TimetableScreen(
                 program = programme,
                 subtitle = if (programme.isNotBlank()) semesterWeekLabel else "Select Programme",
                 hasUnreadNotifications = false,
-                isScrolled = isScrolled,
                 onNotificationClick = {
                     showNotificationCenterSheet = true
                     onNotificationClick()

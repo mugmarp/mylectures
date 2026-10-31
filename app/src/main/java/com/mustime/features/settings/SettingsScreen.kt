@@ -20,7 +20,7 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import com.mustime.ui.components.SeamlessEditorialTopBar
+import com.mustime.ui.components.FloatingIslandTopBar
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -582,19 +582,16 @@ fun SettingsScreen(
     }
 
     val scrollState = rememberScrollState()
-    val isScrolled by remember { derivedStateOf { scrollState.value > 8 } }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             if (onBack != null) {
-                SeamlessEditorialTopBar(
-                    isScrolled = isScrolled
-                ) {
+                FloatingIslandTopBar {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(onClick = onBack) {

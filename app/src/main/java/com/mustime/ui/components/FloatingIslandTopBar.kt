@@ -1,11 +1,7 @@
 package com.mustime.ui.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -20,16 +16,13 @@ import com.mustime.ui.Chrome
 import com.mustime.ui.LocalAppTheme
 
 /**
- * Floating Island header.
- *
- * Mirrors the floating pill dock at the bottom of the screen:
- * rounded capsule, side insets, status-bar clearance, translucent frosted
- * surface, hairline border.
- *
- * Deliberately static: no scroll listeners, no derived state, no elevation
- * animation. Unlike [SeamlessEditorialTopBar] it does not react to scroll
- * position, which removes the recomposition churn that caused flicker while
- * scrolling the timetable.
+ * Floating Island Header (Option 1).
+ * Mirrors the floating pill dock at the bottom:
+ * - Rounded capsule (22.dp corner radius)
+ * - Side insets (14.dp) and status bar clearance
+ * - Translucent 0.96f frosted surface
+ * - 6.dp elevation shadow & subtle hairline border
+ * - Static properties: Zero scroll listeners, zero recalculations, completely eliminated flicker.
  */
 @Composable
 fun FloatingIslandTopBar(
