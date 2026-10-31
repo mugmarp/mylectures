@@ -16,12 +16,10 @@ import com.mustime.ui.Chrome
 import com.mustime.ui.LocalAppTheme
 
 /**
- * Floating Island Header (Option 1).
- * Mirrors the floating pill dock at the bottom:
- * - Rounded capsule (22.dp corner radius)
- * - Side insets (14.dp) and status bar clearance
- * - Translucent 0.96f frosted surface
- * - 6.dp elevation shadow & subtle hairline border
+ * Edge-to-Edge Top Bar Header with rounded bottom corners.
+ * - Extends edge-to-edge behind the Android system status bar
+ * - Frosted translucent 0.96f background surface with subtle bottom border
+ * - Rounded bottom corners (22.dp) curving into the page content below
  * - Static properties: Zero scroll listeners, zero recalculations, completely eliminated flicker.
  */
 @Composable
@@ -33,27 +31,24 @@ fun FloatingIslandTopBar(
     val navBg = if (isDark) DarkSurfaceCard else Color.White
     val navBorder = if (isDark) DarkBorderSubtle else BorderSubtleLight
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(
-                start = Chrome.DockSideInset,
-                end = Chrome.DockSideInset,
-                top = 6.dp,
-                bottom = 6.dp
-            ),
-        contentAlignment = Alignment.Center
+    Surface(
+        shape = RoundedCornerShape(
+            topStart = 0.dp,
+            topEnd = 0.dp,
+            bottomStart = 22.dp,
+            bottomEnd = 22.dp
+        ),
+        color = navBg.copy(alpha = 0.96f),
+        tonalElevation = 4.dp,
+        shadowElevation = 4.dp,
+        border = BorderStroke(1.dp, navBorder),
+        modifier = modifier.fillMaxWidth()
     ) {
-        Surface(
-            shape = RoundedCornerShape(22.dp),
-            color = navBg.copy(alpha = 0.96f),
-            tonalElevation = 6.dp,
-            shadowElevation = 6.dp,
-            border = BorderStroke(1.dp, navBorder),
+        Box(
             modifier = Modifier
-                .widthIn(max = 440.dp)
                 .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(bottom = 6.dp)
         ) {
             content()
         }

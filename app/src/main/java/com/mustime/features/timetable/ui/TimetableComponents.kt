@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -141,10 +142,10 @@ fun TimetableTopAppBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-        // Left: Calendar Container & Title Block
+        // Left: Calendar Container & Title Block (Identity Header)
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable { onProfileClick() }
+            modifier = Modifier.weight(1f, fill = false)
         ) {
             Box(
                 modifier = Modifier
@@ -160,7 +161,7 @@ fun TimetableTopAppBar(
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -171,7 +172,7 @@ fun TimetableTopAppBar(
                         color = textPrimary
                     )
                     if (program.isNotBlank()) {
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Box(
                             modifier = Modifier
                                 .background(PrimaryBlue.copy(alpha = 0.12f), RoundedCornerShape(6.dp))
@@ -181,7 +182,9 @@ fun TimetableTopAppBar(
                                 text = program,
                                 color = PrimaryBlue,
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -190,14 +193,16 @@ fun TimetableTopAppBar(
                 Text(
                     text = subtitle,
                     fontSize = 12.sp,
-                    color = textMuted
+                    color = textMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
 
         val windowInfo = com.mustime.ui.rememberLecturesWindow()
 
-        // Right: Vacant Rooms Button & Profile Avatar
+        // Right: Vacant Rooms Button & Academic Info (3-Bar Menu Icon)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -234,19 +239,20 @@ fun TimetableTopAppBar(
                 }
             }
 
-            // Profile Avatar Button
+            // Academic Info Button (3-Bar Icon)
             Surface(
                 shape = CircleShape,
                 color = capsuleBg,
                 border = BorderStroke(1.dp, borderSubtle),
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(38.dp)
                     .clip(CircleShape)
                     .clickable { onProfileClick() }
+                    .testTag("topbar_academic_info_btn")
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Outlined.Person,
+                        imageVector = Icons.Outlined.Menu,
                         contentDescription = "Academic Info",
                         tint = iconTint,
                         modifier = Modifier.size(20.dp)

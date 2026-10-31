@@ -833,6 +833,90 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Card: Notification History & In-App Alert Inbox
+            val notifStore = remember { com.mustime.core.notification.InAppNotificationStore.getInstance(context) }
+            val unreadNotifCount by notifStore.unreadCount.collectAsState(initial = 0)
+            var showNotificationCenterSheet by remember { mutableStateOf(false) }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable { showNotificationCenterSheet = true },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "Notification History & Alerts",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            if (unreadNotifCount > 0) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .background(Color(0xFFEF4444), RoundedCornerShape(8.dp))
+                                        .padding(horizontal = 7.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "$unreadNotifCount new",
+                                        color = Color.White,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            "View class alerts, task reminders & timetable announcements",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "Open Notification History",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
+            if (showNotificationCenterSheet) {
+                com.mustime.ui.components.NotificationCenterSheet(
+                    onDismiss = { showNotificationCenterSheet = false },
+                    onNavigateToTab = { /* Navigation */ }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             // Card 2: Lecture & Class Alarms Configuration
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
