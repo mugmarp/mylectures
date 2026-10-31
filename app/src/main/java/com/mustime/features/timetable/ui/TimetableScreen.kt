@@ -245,7 +245,7 @@ fun TimetableScreen(
             TimetableTopAppBar(
                 program = programme,
                 subtitle = if (programme.isNotBlank()) semesterWeekLabel else "Select Programme",
-                isPreviewing = isPreviewing,
+                isPeeking = isPreviewing,
                 onProfileClick = {
                     showAcademicProfileSheet = true
                 },
@@ -923,7 +923,7 @@ fun TimetableScreen(
         AcademicProfileSheet(
             programme = programme,
             enrolledProgramme = enrolledProgramme,
-            isPreviewing = isPreviewing,
+            isPeeking = isPreviewing,
             onDismiss = { showAcademicProfileSheet = false },
             onPeekProgramme = onPeekProgramme,
             onResetToEnrolled = onResetToEnrolled,

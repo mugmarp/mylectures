@@ -57,7 +57,7 @@ fun TimetableRoute(
     TimetableScreen(
         programme = uiState.programme,
         enrolledProgramme = uiState.enrolledProgramme,
-        isPeeking = uiState.isPeeking,
+        isPreviewing = uiState.isPreviewing,
         entries = uiState.entries,
         customEvents = uiState.customEvents,
         assignments = uiState.assignments,
