@@ -1,12 +1,8 @@
 package com.mustime.features.tasks
 
 import android.Manifest
-import android.app.Activity
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
-import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -23,13 +19,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import com.mustime.ui.components.FloatingIslandTopBar
+import com.mustime.ui.components.SeamlessEditorialTopBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material3.*
@@ -45,7 +40,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mustime.TimetableApplication
@@ -58,8 +52,6 @@ import com.mustime.features.timetable.domain.TaskCategory
 import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.launch
-import com.mustime.core.notification.InAppNotificationStore
 import com.mustime.features.timetable.domain.Assignment
 import androidx.compose.foundation.layout.WindowInsets
 import com.mustime.features.timetable.ui.*
@@ -123,8 +115,7 @@ fun resolveTaskCategoryAndTitle(title: String): Pair<TaskCategory, String> {
 fun TasksScreen(
     onBack: (() -> Unit)? = null,
     onSettingsClick: () -> Unit = {},
-    onReconfigureAcademicProfile: () -> Unit = {},
-    highlightTaskId: Long? = null
+    onReconfigureAcademicProfile: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as? TimetableApplication
@@ -170,12 +161,9 @@ fun TasksScreen(
     val uiState by viewModel.uiState.collectAsState()
     val assignments = uiState.assignments
 
-    val coroutineScope = rememberCoroutineScope()
     var showAddDialog by remember { mutableStateOf(false) }
     var taskToEdit by remember { mutableStateOf<Assignment?>(null) }
     var showProfileSheet by remember { mutableStateOf(false) }
-
-    var isNotificationBannerDismissed by rememberSaveable { mutableStateOf(false) }
 
     var hasNotificationPermission by remember {
         mutableStateOf(
@@ -194,19 +182,16 @@ fun TasksScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasNotificationPermission = isGranted
-        if (!isGranted) {
-            try {
-                val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
-            } catch (_: Exception) {
-                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.fromParts("package", context.packageName, null)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
+    }
+
+    var permissionRequested by rememberSaveable { mutableStateOf(false) }
+
+    // Check notification permission once on initial launch for Android 13+
+    LaunchedEffect(Unit) {
+        if (!permissionRequested) {
+            permissionRequested = true
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }
@@ -240,15 +225,10 @@ fun TasksScreen(
     val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
-    val listState = rememberLazyListState()
 
-    // Auto-scroll to target task when launched from notification deep link
-    LaunchedEffect(highlightTaskId, filteredTasks) {
-        val targetId = highlightTaskId ?: return@LaunchedEffect
-        val index = filteredTasks.indexOfFirst { it.id == targetId }
-        if (index != -1) {
-            listState.animateScrollToItem((index + 3).coerceAtLeast(0))
-        }
+    val listState = rememberLazyListState()
+    val isScrolled by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 8 }
     }
 
     Scaffold(
@@ -306,11 +286,13 @@ fun TasksScreen(
             }
         },
         topBar = {
-            FloatingIslandTopBar {
+            SeamlessEditorialTopBar(
+                isScrolled = isScrolled
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -358,15 +340,19 @@ fun TasksScreen(
                         }
                     }
 
-                    IconButton(
-                        onClick = { showProfileSheet = true },
-                        modifier = Modifier.testTag("topbar_academic_info_btn")
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(primaryColor.copy(alpha = 0.12f))
+                            .clickable { showProfileSheet = true },
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.Menu,
+                            Icons.Default.Person,
                             contentDescription = "Academic Info",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(24.dp)
+                            tint = primaryColor,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -381,7 +367,7 @@ fun TasksScreen(
         ) {
 
         // Notification Permission Prompt (if revoked on Android 13+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission && !isNotificationBannerDismissed) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -392,7 +378,7 @@ fun TasksScreen(
                 )
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    modifier = Modifier.padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -400,60 +386,21 @@ fun TasksScreen(
                         Icon(
                             Icons.Default.NotificationsActive,
                             contentDescription = null,
-                            tint = if (isDark) Color(0xFFFCD34D) else Color(0xFFD97706),
-                            modifier = Modifier.size(20.dp)
+                            tint = if (isDark) Color(0xFFFCD34D) else Color(0xFFD97706)
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             "Enable notifications to receive deadline alarms.",
                             fontSize = 12.sp,
-                            color = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E),
-                            lineHeight = 16.sp
+                            color = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E)
                         )
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(
-                            onClick = {
-                                val activity = context as? Activity
-                                val shouldShowRationale = if (activity != null) {
-                                    ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.POST_NOTIFICATIONS)
-                                } else false
-                                if (!shouldShowRationale) {
-                                    try {
-                                        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        }
-                                        context.startActivity(intent)
-                                    } catch (_: Exception) {
-                                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                            data = Uri.fromParts("package", context.packageName, null)
-                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        }
-                                        context.startActivity(intent)
-                                    }
-                                } else {
-                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                }
-                            }
-                        ) {
-                            Text(
-                                "Allow",
-                                fontWeight = FontWeight.Bold,
-                                color = if (isDark) Color(0xFFFBBF24) else Color(0xFFB45309)
-                            )
-                        }
-                        IconButton(
-                            onClick = { isNotificationBannerDismissed = true },
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Dismiss",
-                                tint = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E),
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
+                    TextButton(onClick = { permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }) {
+                        Text(
+                            "Allow",
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDark) Color(0xFFFBBF24) else Color(0xFFB45309)
+                        )
                     }
                 }
             }
@@ -513,7 +460,7 @@ fun TasksScreen(
                     .fillMaxSize()
                     .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(top = 4.dp, bottom = listBottomPadding + 96.dp)
+                contentPadding = PaddingValues(top = 4.dp, bottom = listBottomPadding)
             ) {
                 // 1. Visual Progress Dashboard for Total Tasks Completed vs Pending
                 item(key = "task_progress_dashboard_item") {
@@ -658,17 +605,14 @@ fun TasksScreen(
                         TaskCard(
                             task = task,
                             isDark = isDark,
-                            isHighlighted = task.id == highlightTaskId,
                             onToggleComplete = { viewModel.toggleComplete(task) },
                             onEdit = {
                                 taskToEdit = task
                                 showAddDialog = true
                             },
-                            onDelete = { taskToDelete = task }
+                            onDelete = { taskToDelete = task },
+                            onTestAlarm = { viewModel.triggerTestReminder(task, delaySeconds = 3) }
                         )
-                    }
-                    item(key = "tasks_bottom_clearance_spacer") {
-                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
             }
@@ -779,10 +723,10 @@ fun TasksScreen(
 fun TaskCard(
     task: Assignment,
     isDark: Boolean,
-    isHighlighted: Boolean = false,
     onToggleComplete: () -> Unit,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onTestAlarm: () -> Unit
 ) {
     val cardBg = if (isDark) DarkSurfaceCard else Color.White
     val textPrimary = if (isDark) Color.White else TextPrimaryLight
@@ -795,16 +739,15 @@ fun TaskCard(
     Card(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = cardBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isHighlighted) 6.dp else 1.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         border = CardDefaults.outlinedCardBorder().copy(
-            width = if (isHighlighted) 2.dp else 1.dp,
             brush = androidx.compose.ui.graphics.SolidColor(
-                when {
-                    isHighlighted -> primaryColor
-                    isDark && !task.completed && dueStatus == TaskDueStatus.OVERDUE -> Color(0xFF991B1B)
-                    isDark -> DarkBorderSubtle
-                    !task.completed && dueStatus == TaskDueStatus.OVERDUE -> Color(0xFFFCA5A5)
-                    else -> Color(0xFFE2E8F0)
+                if (isDark) {
+                    if (!task.completed && dueStatus == TaskDueStatus.OVERDUE) Color(0xFF991B1B)
+                    else DarkBorderSubtle
+                } else {
+                    if (!task.completed && dueStatus == TaskDueStatus.OVERDUE) Color(0xFFFCA5A5)
+                    else Color(0xFFE2E8F0)
                 }
             )
         ),
@@ -902,7 +845,22 @@ fun TaskCard(
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(2.dp))
+
+                    // Test reminder trigger button
+                    IconButton(
+                        onClick = onTestAlarm,
+                        modifier = Modifier.size(30.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.NotificationsActive,
+                            contentDescription = "Test Alarm (3s)",
+                            tint = primaryColor,
+                            modifier = Modifier.size(17.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(2.dp))
 
                     // Delete button
                     IconButton(onClick = onDelete, modifier = Modifier.size(30.dp)) {
@@ -1163,7 +1121,6 @@ fun TaskCard(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTaskDialog(
     isDark: Boolean,
@@ -1201,7 +1158,7 @@ fun AddTaskDialog(
     var reminderMinutes by remember(initialTask) { mutableStateOf<Int?>(initialTask?.reminderMinutes ?: 1440) }
     var notes by remember(initialTask) { mutableStateOf(initialTask?.notes ?: "") }
 
-    var courseDropdownExpanded by remember { mutableStateOf(false) }
+    var showCoursePicker by remember { mutableStateOf(false) }
     var showDueCalendarPicker by remember { mutableStateOf(false) }
     var showDueTimePicker by remember { mutableStateOf(false) }
     var titleTouched by remember { mutableStateOf(false) }
@@ -1292,93 +1249,55 @@ fun AddTaskDialog(
                     }
                 }
 
-                // Course Unit Selection - Pure dropdown from enrolled program courses (No manual typing)
+                // Course Code input with picker
+                OutlinedTextField(
+                    value = course,
+                    onValueChange = {
+                        course = it
+                        courseTouched = true
+                    },
+                    label = { Text("Course code *") },
+                    placeholder = {
+                        val sampleCode = availableCourses.firstOrNull()?.first ?: "e.g. EEE2101"
+                        Text(if (sampleCode.startsWith("e.g.")) sampleCode else "e.g. $sampleCode")
+                    },
+                    isError = courseTouched && course.isBlank(),
+                    supportingText = if (courseTouched && course.isBlank()) {
+                        { Text("Course code is required", color = MaterialTheme.colorScheme.error, fontSize = 11.sp) }
+                    } else null,
+                    trailingIcon = {
+                        IconButton(onClick = { showCoursePicker = true }) {
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = "Pick Course", tint = primaryColor)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                // Quick course selection chips from student's enrolled courses
                 if (availableCourses.isNotEmpty()) {
-                    ExposedDropdownMenuBox(
-                        expanded = courseDropdownExpanded,
-                        onExpandedChange = { courseDropdownExpanded = !courseDropdownExpanded },
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        val matchingCourse = availableCourses.firstOrNull { it.first.equals(course, ignoreCase = true) }
-                        val displayCourse = if (course.isNotBlank()) {
-                            if (matchingCourse != null && matchingCourse.second.isNotBlank()) {
-                                "${matchingCourse.first} · ${matchingCourse.second}"
-                            } else {
-                                course
-                            }
-                        } else ""
-
-                        OutlinedTextField(
-                            value = displayCourse,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Course unit *") },
-                            placeholder = { Text("Select course from program") },
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = courseDropdownExpanded)
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(),
-                            isError = courseTouched && course.isBlank(),
-                            supportingText = if (courseTouched && course.isBlank()) {
-                                { Text("Course unit is required", color = MaterialTheme.colorScheme.error, fontSize = 11.sp) }
-                            } else null,
-                            modifier = Modifier
-                                .menuAnchor()
-                                .fillMaxWidth()
-                        )
-
-                        ExposedDropdownMenu(
-                            expanded = courseDropdownExpanded,
-                            onDismissRequest = { courseDropdownExpanded = false }
-                        ) {
-                            availableCourses.forEach { (cCode, cTitle) ->
-                                val isSelected = course.equals(cCode, ignoreCase = true)
-                                DropdownMenuItem(
-                                    text = {
-                                        Column(modifier = Modifier.fillMaxWidth()) {
-                                            Text(
-                                                text = cCode,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                                                color = if (isSelected) primaryColor else (if (isDark) Color.White else Color(0xFF0F172A)),
-                                                fontSize = 13.sp
-                                            )
-                                            if (cTitle.isNotBlank()) {
-                                                Text(
-                                                    text = cTitle,
-                                                    fontSize = 11.sp,
-                                                    color = textSecondary,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                            }
-                                        }
-                                    },
-                                    onClick = {
-                                        course = cCode
-                                        courseTouched = false
-                                        courseDropdownExpanded = false
-                                    },
-                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                                )
-                            }
+                        items(availableCourses.take(5)) { (cCode, _) ->
+                            val isSelected = course.equals(cCode, ignoreCase = true)
+                            SuggestionChip(
+                                onClick = {
+                                    course = cCode
+                                    courseTouched = false
+                                },
+                                label = {
+                                    Text(
+                                        cCode,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                shape = RoundedCornerShape(8.dp)
+                            )
                         }
                     }
-                } else {
-                    OutlinedTextField(
-                        value = course,
-                        onValueChange = {
-                            course = it
-                            courseTouched = true
-                        },
-                        label = { Text("Course code *") },
-                        placeholder = { Text("e.g. BCS2101") },
-                        isError = courseTouched && course.isBlank(),
-                        supportingText = if (courseTouched && course.isBlank()) {
-                            { Text("Course code is required", color = MaterialTheme.colorScheme.error, fontSize = 11.sp) }
-                        } else null,
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
                 }
 
                 // Target Due Date & Time Pickers (Replaces old quick chips)
@@ -1605,6 +1524,18 @@ fun AddTaskDialog(
             }
         }
     )
+
+    if (showCoursePicker) {
+        DedicatedCoursePickerDialog(
+            selectedCourse = course,
+            availableCourses = availableCourses,
+            onCourseSelected = { code, _ ->
+                course = code
+                courseTouched = false
+            },
+            onDismiss = { showCoursePicker = false }
+        )
+    }
 
     if (showDueCalendarPicker) {
         DedicatedCalendarDatePickerDialog(

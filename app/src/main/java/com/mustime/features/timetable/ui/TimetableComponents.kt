@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -107,8 +106,7 @@ data class SpecClassSession(
     val hasConflict: Boolean = false,
     val progress: Float = 0.70f,
     val elapsedText: String = "1h 45m elapsed",
-    val remainingText: String = "35 mins left · Ends 11:00",
-    val sharedWith: List<String> = emptyList()
+    val remainingText: String = "35 mins left · Ends 11:00"
 )
 
 /**
@@ -119,8 +117,8 @@ data class SpecClassSession(
 fun TimetableTopAppBar(
     program: String,
     subtitle: String = TimeUtil.currentSemesterWeekLabel(),
-    isPeeking: Boolean = false,
     hasUnreadNotifications: Boolean = false,
+    isScrolled: Boolean = false,
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
@@ -134,20 +132,21 @@ fun TimetableTopAppBar(
     val borderSubtle = if (isDark) DarkBorderSubtle else BorderSubtleLight
     val iconTint = if (isDark) Color(0xFFCBD5E1) else TextSecondaryLight
 
-    com.mustime.ui.components.FloatingIslandTopBar(
+    com.mustime.ui.components.SeamlessEditorialTopBar(
+        isScrolled = isScrolled,
         modifier = modifier
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .padding(horizontal = 20.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-        // Left: Calendar Container & Title Block (Identity Header)
+        // Left: Calendar Container & Title Block
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f, fill = false)
+            modifier = Modifier.clickable { onProfileClick() }
         ) {
             Box(
                 modifier = Modifier
@@ -163,7 +162,7 @@ fun TimetableTopAppBar(
                 )
             }
 
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -174,7 +173,7 @@ fun TimetableTopAppBar(
                         color = textPrimary
                     )
                     if (program.isNotBlank()) {
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Box(
                             modifier = Modifier
                                 .background(PrimaryBlue.copy(alpha = 0.12f), RoundedCornerShape(6.dp))
@@ -184,9 +183,7 @@ fun TimetableTopAppBar(
                                 text = program,
                                 color = PrimaryBlue,
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
@@ -195,16 +192,14 @@ fun TimetableTopAppBar(
                 Text(
                     text = subtitle,
                     fontSize = 12.sp,
-                    color = textMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    color = textMuted
                 )
             }
         }
 
         val windowInfo = com.mustime.ui.rememberLecturesWindow()
 
-        // Right: Vacant Rooms Button & Academic Info (3-Bar Menu Icon)
+        // Right: Vacant Rooms Button & Profile Avatar
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -241,20 +236,19 @@ fun TimetableTopAppBar(
                 }
             }
 
-            // Academic Info Button (3-Bar Icon)
+            // Profile Avatar Button
             Surface(
                 shape = CircleShape,
                 color = capsuleBg,
                 border = BorderStroke(1.dp, borderSubtle),
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(36.dp)
                     .clip(CircleShape)
                     .clickable { onProfileClick() }
-                    .testTag("topbar_academic_info_btn")
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Outlined.Menu,
+                        imageVector = Icons.Outlined.Person,
                         contentDescription = "Academic Info",
                         tint = iconTint,
                         modifier = Modifier.size(20.dp)
@@ -1420,32 +1414,12 @@ fun TimelineClassCard(
                     color = textPrimary
                 )
 
-                // Subtitle: Code · Cohorts (e.g. DVS2105 · BSE II, BCS II)
-                // For Association / MUCOSA: remove class groups entirely
-                val isAssoc = session.type == SpecSessionType.ASSOCIATION ||
-                    session.courseCode.contains("MUCOSA", ignoreCase = true) ||
-                    session.courseName.contains("MUCOSA", ignoreCase = true)
-
-                if (isAssoc) {
-                    if (!session.courseCode.equals(session.courseName, ignoreCase = true) && session.courseCode.isNotBlank()) {
-                        Text(
-                            text = session.courseCode,
-                            fontSize = 12.sp,
-                            color = textSecondary
-                        )
-                    }
-                } else {
-                    val subtitleText = if (session.department.isNotBlank()) {
-                        "${session.courseCode} · ${session.department}"
-                    } else {
-                        session.courseCode
-                    }
-                    Text(
-                        text = subtitleText,
-                        fontSize = 12.sp,
-                        color = textSecondary
-                    )
-                }
+                // Subtitle: Code · Department
+                Text(
+                    text = "${session.courseCode} · ${session.department}",
+                    fontSize = 12.sp,
+                    color = textSecondary
+                )
 
                 Spacer(modifier = Modifier.height(10.dp))
 

@@ -1,7 +1,6 @@
 package com.mustime.features.calendar
 
 import android.widget.Toast
-import java.util.Locale
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -17,7 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import com.mustime.ui.components.FloatingIslandTopBar
+import com.mustime.ui.components.SeamlessEditorialTopBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -26,12 +25,9 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.outlined.Event
-import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
-import androidx.compose.ui.platform.testTag
-import kotlinx.coroutines.launch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -102,7 +98,6 @@ fun CalendarScreen(
         }
     }
 
-    val coroutineScope = rememberCoroutineScope()
     var showAddActivitySheet by remember { mutableStateOf(false) }
     var activityToEdit by remember { mutableStateOf<CustomEvent?>(null) }
     var showProfileSheet by remember { mutableStateOf(false) }
@@ -164,7 +159,11 @@ fun CalendarScreen(
     val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
+
     val listState = rememberLazyListState()
+    val isScrolled by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 8 }
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -197,11 +196,13 @@ fun CalendarScreen(
             }
         },
         topBar = {
-            FloatingIslandTopBar {
+            SeamlessEditorialTopBar(
+                isScrolled = isScrolled
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -267,15 +268,19 @@ fun CalendarScreen(
                             shape = RoundedCornerShape(12.dp)
                         )
 
-                        IconButton(
-                            onClick = { showProfileSheet = true },
-                            modifier = Modifier.testTag("topbar_academic_info_btn")
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                .clickable { showProfileSheet = true },
+                            contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Menu,
+                                Icons.Default.Person,
                                 contentDescription = "Academic Info",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(24.dp)
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
@@ -373,25 +378,6 @@ fun CalendarScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Pre-index days with pending tasks and scheduled classes for O(1) grid dot lookup
-                val taskDaysWithDue = remember(uiState.assignments, uiState.currentMonth, uiState.currentYear) {
-                    val days = mutableSetOf<Int>()
-                    for (day in 1..uiState.daysInMonth) {
-                        if (uiState.assignments.any { !it.completed && viewModel.isTaskDueOnDay(it, day) }) {
-                            days.add(day)
-                        }
-                    }
-                    days
-                }
-
-                val classDaysWithSchedule = remember(uiState.entries) {
-                    uiState.entries.map { it.dayOfWeek.lowercase(Locale.ROOT) }.toSet()
-                }
-
-                val activityDaysWithSchedule = remember(uiState.customEvents) {
-                    uiState.customEvents.map { it.dayOfWeek.lowercase(Locale.ROOT) }.toSet()
-                }
-
                 // Calendar Grid with distinguished color indicators
                 Column(
                     modifier = Modifier
@@ -421,13 +407,16 @@ fun CalendarScreen(
                                     val isSelected = dayNum == uiState.selectedDay
                                     val isToday = viewModel.isToday(dayNum)
                                     val cellDayName = viewModel.getDayOfWeekNameForDay(dayNum)
-                                    val cellDayLower = cellDayName.lowercase(Locale.ROOT)
 
-                                    val hasClassesThisDay = cellDayLower in classDaysWithSchedule
-                                    val activitiesThisDay = if (cellDayLower in activityDaysWithSchedule) {
-                                        uiState.customEvents.filter { it.dayOfWeek.equals(cellDayName, ignoreCase = true) }
-                                    } else emptyList()
-                                    val hasTasksThisDay = dayNum in taskDaysWithDue
+                                    val hasClassesThisDay = uiState.entries.any {
+                                        it.dayOfWeek.equals(cellDayName, ignoreCase = true)
+                                    }
+                                    val activitiesThisDay = uiState.customEvents.filter {
+                                        it.dayOfWeek.equals(cellDayName, ignoreCase = true)
+                                    }
+                                    val hasTasksThisDay = uiState.assignments.any {
+                                        !it.completed && viewModel.isTaskDueOnDay(it, dayNum)
+                                    }
 
                                     Box(
                                         modifier = Modifier
@@ -693,7 +682,8 @@ fun CalendarScreen(
                                     isDark = isDark,
                                     onToggleComplete = { viewModel.toggleTaskComplete(item.assignment) },
                                     onEdit = { },
-                                    onDelete = { taskToDelete = item.assignment }
+                                    onDelete = { taskToDelete = item.assignment },
+                                    onTestAlarm = { }
                                 )
                             }
                         }
@@ -826,7 +816,6 @@ fun CalendarScreen(
             }
         )
     }
-
 
     // Delete Confirmation Dialog for Activity
     eventToDelete?.let { event ->

@@ -15,7 +15,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import com.mustime.ui.components.FloatingIslandTopBar
+import com.mustime.ui.components.SeamlessEditorialTopBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -28,7 +28,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,15 +35,12 @@ import com.mustime.core.storage.AttachmentStore
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mustime.TimetableApplication
-import com.mustime.core.notification.InAppNotificationStore
 import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.ui.*
 import com.mustime.ui.Chrome
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.rememberLecturesWindow
 import com.mustime.ui.components.AcademicProfileSheet
-import com.mustime.ui.components.NotificationCenterSheet
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -82,8 +78,6 @@ fun NotesScreen(
     var noteToEdit by remember { mutableStateOf<LectureNote?>(null) }
     var noteToDelete by remember { mutableStateOf<LectureNote?>(null) }
     var showProfileSheet by remember { mutableStateOf(false) }
-
-    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(isEditing) {
         onEditingChanged(isEditing)
@@ -130,7 +124,11 @@ fun NotesScreen(
     val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
+
     val listState = rememberLazyListState()
+    val isScrolled by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 8 }
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -176,11 +174,13 @@ fun NotesScreen(
             }
         },
         topBar = {
-            FloatingIslandTopBar {
+            SeamlessEditorialTopBar(
+                isScrolled = isScrolled
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -234,15 +234,19 @@ fun NotesScreen(
                         }
                     }
 
-                    IconButton(
-                        onClick = { showProfileSheet = true },
-                        modifier = Modifier.testTag("topbar_academic_info_btn")
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                            .clickable { showProfileSheet = true },
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.Menu,
-                            contentDescription = "Academic Info",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(24.dp)
+                            Icons.Default.Person,
+                            contentDescription = "Account",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }

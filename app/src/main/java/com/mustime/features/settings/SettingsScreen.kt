@@ -1,7 +1,5 @@
 package com.mustime.features.settings
 
-import android.content.Intent
-import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -20,18 +18,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.MusicNote
-import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
-import com.mustime.ui.components.FloatingIslandTopBar
+import com.mustime.ui.components.SeamlessEditorialTopBar
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,26 +47,8 @@ fun SettingsScreen(
     currentProgramme: String = "",
     onReconfigureAcademicProfile: () -> Unit = {},
     onResetOnboarding: (() -> Unit)? = null,
-    onOpenAccount: (() -> Unit)? = null,
     onBack: (() -> Unit)? = null
 ) {
-    var isAccountScreenOpen by remember { mutableStateOf(false) }
-
-    val handleOpenAccount = {
-        if (onOpenAccount != null) {
-            onOpenAccount()
-        } else {
-            isAccountScreenOpen = true
-        }
-    }
-
-    if (isAccountScreenOpen) {
-        com.mustime.features.account.AccountScreen(
-            onBack = { isAccountScreenOpen = false }
-        )
-        return
-    }
-
     val context = LocalContext.current
     val app = context.applicationContext as? TimetableApplication
     val repository = app?.repository
@@ -102,7 +78,6 @@ fun SettingsScreen(
 
     val uiState by viewModel.uiState.collectAsState()
     val appTheme = LocalAppTheme.current
-    val isDark = appTheme.isDark
 
     val onSelectThemeMode: (ThemeMode) -> Unit = { mode ->
         viewModel.setThemeMode(mode)
@@ -111,6 +86,7 @@ fun SettingsScreen(
 
     var showResetNotesDialog by remember { mutableStateOf(false) }
     var showResetTasksDialog by remember { mutableStateOf(false) }
+    var showResetOnboardingDialog by remember { mutableStateOf(false) }
     var showDisclaimerDialog by remember { mutableStateOf(false) }
     var showTermsDialog by remember { mutableStateOf(false) }
     var showPrivacyDialog by remember { mutableStateOf(false) }
@@ -457,7 +433,31 @@ fun SettingsScreen(
         )
     }
 
-
+    // Reset Onboarding / Welcome Screen Confirmation Dialog
+    if (showResetOnboardingDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetOnboardingDialog = false },
+            icon = { Icon(Icons.Default.RestartAlt, contentDescription = null, tint = Color(0xFFDC2626)) },
+            title = { Text("Reset Welcome Screen?", fontWeight = FontWeight.Bold) },
+            text = { Text("This resets the onboarding state stored in DataStore. On next app launch, the Welcome Screen will display again so you can select your academic profile from scratch.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showResetOnboardingDialog = false
+                        onResetOnboarding?.invoke()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
+                ) {
+                    Text("Reset & View Welcome", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetOnboardingDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     // Developer Profile Bottom Sheet
     if (showDeveloperModal) {
@@ -582,16 +582,19 @@ fun SettingsScreen(
     }
 
     val scrollState = rememberScrollState()
+    val isScrolled by remember { derivedStateOf { scrollState.value > 8 } }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             if (onBack != null) {
-                FloatingIslandTopBar {
+                SeamlessEditorialTopBar(
+                    isScrolled = isScrolled
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(onClick = onBack) {
@@ -619,7 +622,18 @@ fun SettingsScreen(
                 .padding(padding)
                 .verticalScroll(scrollState)
         ) {
-            Spacer(modifier = Modifier.height(12.dp))
+            if (onBack == null) {
+                Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = "Settings",
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
+            } else {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             // User Feedback: Error Message Banner
             AnimatedVisibility(
@@ -725,99 +739,102 @@ fun SettingsScreen(
             val areNotificationsAllowed = remember(context) {
                 NotificationManagerCompat.from(context).areNotificationsEnabled()
             }
-            var isPermissionBannerDismissed by rememberSaveable { mutableStateOf(false) }
 
-            // Dismissible banner when notifications are disabled in system settings
-            if (!areNotificationsAllowed && !isPermissionBannerDismissed) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 6.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isDark) Color(0xFF78350F).copy(alpha = 0.35f) else Color(0xFFFEF3C7)
-                    ),
-                    border = BorderStroke(1.dp, if (isDark) Color(0xFFB45309).copy(alpha = 0.5f) else Color(0xFFFDE68A))
-                ) {
+            // Card 1: Master Controls & System Permission Status
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
-                                .background(if (isDark) Color(0xFFB45309).copy(alpha = 0.3f) else Color(0xFFFDE68A), CircleShape),
+                                .size(44.dp)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.NotificationsActive,
+                                if (uiState.notificationsEnabled) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
                                 contentDescription = null,
-                                tint = if (isDark) Color(0xFFFBBF24) else Color(0xFFD97706),
-                                modifier = Modifier.size(20.dp)
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Notifications Paused",
+                                "Master Notification Switch",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E)
+                                fontSize = 15.sp,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "Lectures notifications are currently paused — enable permissions so you receive class alarms and coursework reminders.",
+                                if (uiState.notificationsEnabled) "All scheduled alarms & reminders active" else "Alarms paused (quiet mode)",
                                 fontSize = 12.sp,
-                                lineHeight = 16.sp,
-                                color = if (isDark) Color(0xFFFDE68A).copy(alpha = 0.9f) else Color(0xFF78350F)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(
-                                onClick = {
-                                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                    }
-                                    try {
-                                        context.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        val fallback = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                            data = android.net.Uri.fromParts("package", context.packageName, null)
-                                        }
-                                        try {
-                                            context.startActivity(fallback)
-                                        } catch (_: Exception) {}
-                                    }
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isDark) Color(0xFFD97706) else Color(0xFFB45309),
-                                    contentColor = Color.White
-                                ),
-                                modifier = Modifier.defaultMinSize(minHeight = 32.dp)
-                            ) {
-                                Text("Enable in System Settings", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                            }
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        IconButton(
-                            onClick = { isPermissionBannerDismissed = true },
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Dismiss",
-                                tint = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E),
-                                modifier = Modifier.size(18.dp)
+                        Switch(
+                            checked = uiState.notificationsEnabled,
+                            onCheckedChange = { viewModel.setNotificationsEnabled(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary
                             )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // System status & Test notification button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .background(
+                                        if (areNotificationsAllowed) Color(0xFF10B981) else Color(0xFFF59E0B),
+                                        CircleShape
+                                    )
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (areNotificationsAllowed) "System Permission Granted" else "Notification Permission Needed",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (areNotificationsAllowed) Color(0xFF10B981) else Color(0xFFD97706)
+                            )
+                        }
+
+                        Button(
+                            onClick = { viewModel.sendTestNotification(context) },
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                contentColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(Icons.Default.VolumeUp, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Test Alert", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(10.dp))
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Card 2: Lecture & Class Alarms Configuration
             Card(
@@ -927,70 +944,114 @@ fun SettingsScreen(
 
             // Card 4: Audio & Haptic Feedback
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .clickable {
-                        val intent = Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
-                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                            putExtra(Settings.EXTRA_CHANNEL_ID, com.mustime.core.notification.NotificationHelper.CHANNEL_CLASS_ALARMS)
-                        }
-                        try {
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            val fallback = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                            }
-                            try {
-                                context.startActivity(fallback)
-                            } catch (_: Exception) {}
-                        }
-                    },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
-                        contentAlignment = Alignment.Center
+                Column(modifier = Modifier.padding(18.dp)) {
+                    // Vibration toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Outlined.MusicNote,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Vibration, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Vibrate on Alarms",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                "Tactile feedback during class alerts",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = uiState.alarmVibration,
+                            onCheckedChange = { viewModel.setAlarmVibration(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary
+                            )
                         )
                     }
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Notification Sounds, Ringtones & Vibration",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            "Configure tone, vibration, pop-on-screen & alert priority in Android System Settings",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = "Open System Sound Settings",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Sound Profile Selection
+                    Text(
+                        "Sound Profile",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val soundOptions = listOf("System Default", "Chime", "Gentle Bell", "Standard")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        soundOptions.forEach { soundName ->
+                            val isSelected = uiState.alarmSound.equals(soundName, ignoreCase = true)
+                            val chipBg = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                            val chipText = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(chipBg)
+                                    .clickable {
+                                        viewModel.setAlarmSound(soundName)
+                                        com.mustime.core.notification.NotificationHelper.previewSound(context, soundName)
+                                    }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = soundName,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = chipText
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Reschedule Alarms Action
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { viewModel.rescheduleAllAlarms() }
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Reschedule & Refresh Active Alarms",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
 
@@ -1145,166 +1206,6 @@ fun SettingsScreen(
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 14.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
-                    // Reactive Authentication & Cloud Sync Section
-                    if (uiState.isCloudSyncActive && uiState.userAccountEmail != null) {
-                        // ACTIVE SIGNED-IN STATE
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .clickable { handleOpenAccount() }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val initial = uiState.userAccountEmail?.firstOrNull()?.uppercaseChar() ?: 'U'
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .background(MaterialTheme.colorScheme.primary, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = initial.toString(),
-                                    color = Color.White,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(14.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    "Signed in as",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    uiState.userAccountEmail ?: "Student",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                )
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(6.dp)
-                                            .background(Color(0xFF22C55E), CircleShape)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        "Cloud Sync Active",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color(0xFF15803D)
-                                    )
-                                }
-                            }
-                            Button(
-                                onClick = { handleOpenAccount() },
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                    contentColor = MaterialTheme.colorScheme.primary
-                                ),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Text("Manage", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    } else {
-                        // SIGNED-OUT / GUEST STATE
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .clickable { handleOpenAccount() }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Default.CloudSync,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(14.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    "Google Account & Cloud Backup",
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    "Guest mode · Link account to sync",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Button(
-                                onClick = { handleOpenAccount() },
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = Color.White
-                                ),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                modifier = Modifier.testTag("settings_google_signin_btn")
-                            ) {
-                                Icon(Icons.Default.AccountCircle, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Sign In", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Preserved Items summary pill
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable { handleOpenAccount() }
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                                RoundedCornerShape(10.dp)
-                            )
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Preserved: ${uiState.userNotesCount} Notes · ${uiState.userEventsCount} Events · ${uiState.userAssignmentsCount} Tasks",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Box(
-                            modifier = Modifier
-                                .background(Color(0xFF22C55E).copy(alpha = 0.15f), RoundedCornerShape(6.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = if (uiState.isCloudSyncActive) "SYNCED" else "OFFLINE-SAFE",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF16A34A)
-                            )
-                        }
-                    }
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 14.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-
                     val isFinalRelease = uiState.isFinal || uiState.timetableVersion.contains("Final", ignoreCase = true)
                     val badgeText = uiState.metadata?.displayBadge ?: if (isFinalRelease) "FINAL" else uiState.timetableStatus.uppercase()
                     val badgeBg = if (isFinalRelease) Color(0xFFDCFCE7) else Color(0xFFFEF3C7)
@@ -1390,6 +1291,28 @@ fun SettingsScreen(
                             Text("Cancel all scheduled alarms and clear coursework", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(18.dp))
+                    }
+
+                    if (onResetOnboarding != null) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+                        // Reset Onboarding / Welcome Screen
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { showResetOnboardingDialog = true }
+                                .padding(vertical = 8.dp, horizontal = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.RestartAlt, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Reset Welcome Screen & First-Launch", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color(0xFFDC2626))
+                                Text("Clear DataStore onboarding state to view tutorial again", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(18.dp))
+                        }
                     }
                 }
             }
