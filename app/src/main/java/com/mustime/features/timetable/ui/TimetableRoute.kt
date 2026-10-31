@@ -56,6 +56,8 @@ fun TimetableRoute(
 
     TimetableScreen(
         programme = uiState.programme,
+        enrolledProgramme = uiState.enrolledProgramme,
+        isPeeking = uiState.isPeeking,
         entries = uiState.entries,
         customEvents = uiState.customEvents,
         assignments = uiState.assignments,
@@ -71,6 +73,9 @@ fun TimetableRoute(
         },
         onToggleTaskComplete = { viewModel.toggleTaskComplete(it) },
         onDeleteTask = { viewModel.deleteTask(it) },
+        onPeekProgramme = { viewModel.peekProgramme(it) },
+        onResetToEnrolled = { viewModel.resetToEnrolledProgramme() },
+        onSetOfficialProgramme = { viewModel.setOfficialProgramme(it) },
         onSettingsClick = onSettingsClick,
         onReconfigureAcademicProfile = onReconfigureAcademicProfile,
         onNavigateToNotes = onNavigateToNotes,

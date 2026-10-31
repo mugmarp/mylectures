@@ -24,8 +24,12 @@ data class TimetableUiState(
     val customEvents: List<CustomEvent> = emptyList(),
     val assignments: List<Assignment> = emptyList(),
     val notes: Map<String, LectureNote> = emptyMap(),
-    val programme: String = ""
-)
+    val enrolledProgramme: String = "",
+    val viewingProgramme: String = "",
+    val isPeeking: Boolean = false
+) {
+    val programme: String get() = if (viewingProgramme.isNotBlank()) viewingProgramme else enrolledProgramme
+}
 
 class TimetableViewModel(
     private val repository: TimetableRepository,
@@ -37,7 +41,9 @@ class TimetableViewModel(
     private val _uiState = MutableStateFlow(
         TimetableUiState(
             isLoading = initialProg.isNotEmpty(),
-            programme = initialProg
+            enrolledProgramme = initialProg,
+            viewingProgramme = initialProg,
+            isPeeking = false
         )
     )
     val uiState: StateFlow<TimetableUiState> = _uiState.asStateFlow()
@@ -49,9 +55,10 @@ class TimetableViewModel(
         viewModelScope.launch {
             _isRefreshing.value = true
             try {
-                repository.refreshTimetable(_uiState.value.programme)
-                if (_uiState.value.programme.isNotEmpty()) {
-                    loadSchedule(_uiState.value.programme)
+                val progToRefresh = _uiState.value.programme
+                repository.refreshTimetable(progToRefresh)
+                if (progToRefresh.isNotEmpty()) {
+                    loadSchedule(progToRefresh)
                 }
                 kotlinx.coroutines.delay(500)
             } finally {
@@ -65,16 +72,28 @@ class TimetableViewModel(
     init {
         viewModelScope.launch {
             repository.programmePref.collect { pref ->
-                val prog = pref?.trim() ?: ""
-                val currentProg = _uiState.value.programme
-                if (prog != currentProg) {
-                    _uiState.value = _uiState.value.copy(programme = prog)
-                    if (prog.isNotEmpty()) {
-                        loadSchedule(prog)
+                val newEnrolled = pref?.trim() ?: ""
+                val current = _uiState.value
+                val wasPeeking = current.isPeeking
+                
+                if (newEnrolled != current.enrolledProgramme) {
+                    if (!wasPeeking) {
+                        _uiState.value = current.copy(
+                            enrolledProgramme = newEnrolled,
+                            viewingProgramme = newEnrolled,
+                            isPeeking = false
+                        )
+                        if (newEnrolled.isNotEmpty()) {
+                            loadSchedule(newEnrolled)
+                        } else {
+                            _uiState.value = _uiState.value.copy(entries = emptyList(), isLoading = false)
+                        }
                     } else {
-                        _uiState.value = _uiState.value.copy(entries = emptyList(), isLoading = false)
+                        // User was peeking a friend's timetable; keep viewing friend's schedule but update enrolled anchor
+                        _uiState.value = current.copy(enrolledProgramme = newEnrolled)
                     }
                 } else if (_uiState.value.entries.isEmpty() && scheduleJob == null) {
+                    val prog = current.programme
                     if (prog.isNotEmpty()) {
                         loadSchedule(prog)
                     } else {
@@ -122,6 +141,64 @@ class TimetableViewModel(
 
     fun selectDay(day: String) {
         _uiState.value = _uiState.value.copy(selectedDay = day)
+    }
+
+    /**
+     * Peeks another cohort/friend's schedule transiently without touching the user's permanent
+     * enrolled identity, background class alarms, or notification scheduling.
+     */
+    fun peekProgramme(targetCohort: String) {
+        val cleanTarget = targetCohort.trim()
+        val enrolled = _uiState.value.enrolledProgramme.trim()
+        if (cleanTarget.isEmpty()) return
+        if (cleanTarget.equals(enrolled, ignoreCase = true)) {
+            resetToEnrolledProgramme()
+            return
+        }
+        _uiState.value = _uiState.value.copy(
+            viewingProgramme = cleanTarget,
+            isPeeking = true,
+            isLoading = true
+        )
+        loadSchedule(cleanTarget)
+        _userMessage.value = "Peeking $cleanTarget timetable"
+    }
+
+    /**
+     * Returns the user cleanly back to their enrolled academic timetable.
+     */
+    fun resetToEnrolledProgramme() {
+        val enrolled = _uiState.value.enrolledProgramme.trim()
+        _uiState.value = _uiState.value.copy(
+            viewingProgramme = enrolled,
+            isPeeking = false,
+            isLoading = true
+        )
+        if (enrolled.isNotEmpty()) {
+            loadSchedule(enrolled)
+        } else {
+            _uiState.value = _uiState.value.copy(entries = emptyList(), isLoading = false)
+        }
+        _userMessage.value = "Returned to your enrolled timetable"
+    }
+
+    /**
+     * Permanently switches the user's enrolled academic programme (updates alarms, preferences, and Room cache).
+     */
+    fun setOfficialProgramme(newProgramme: String) {
+        val clean = newProgramme.trim()
+        if (clean.isEmpty()) return
+        viewModelScope.launch {
+            repository.setProgrammePref(clean)
+            _uiState.value = _uiState.value.copy(
+                enrolledProgramme = clean,
+                viewingProgramme = clean,
+                isPeeking = false,
+                isLoading = true
+            )
+            loadSchedule(clean)
+            _userMessage.value = "Academic profile updated to $clean"
+        }
     }
 
     fun addCustomEvent(event: CustomEvent) {

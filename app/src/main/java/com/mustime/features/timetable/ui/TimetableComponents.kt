@@ -107,7 +107,8 @@ data class SpecClassSession(
     val hasConflict: Boolean = false,
     val progress: Float = 0.70f,
     val elapsedText: String = "1h 45m elapsed",
-    val remainingText: String = "35 mins left · Ends 11:00"
+    val remainingText: String = "35 mins left · Ends 11:00",
+    val sharedWith: List<String> = emptyList()
 )
 
 /**
@@ -118,6 +119,7 @@ data class SpecClassSession(
 fun TimetableTopAppBar(
     program: String,
     subtitle: String = TimeUtil.currentSemesterWeekLabel(),
+    isPeeking: Boolean = false,
     hasUnreadNotifications: Boolean = false,
     onNotificationClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
