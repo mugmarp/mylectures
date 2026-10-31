@@ -68,7 +68,9 @@ class TimetableApplication : Application() {
             AppDatabase.MIGRATION_6_7,
             AppDatabase.MIGRATION_7_8,
             AppDatabase.MIGRATION_8_9,
-            AppDatabase.MIGRATION_9_10
+            AppDatabase.MIGRATION_9_10,
+            AppDatabase.MIGRATION_10_11,
+            AppDatabase.MIGRATION_11_12
         )
         // Strictly protect all production coursework migrations (v2-v7).
         // Only allow destructive reset for pre-release prototype version 1.

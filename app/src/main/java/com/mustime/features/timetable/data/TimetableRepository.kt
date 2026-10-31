@@ -21,8 +21,13 @@ class TimetableRepository(
     private val assignmentDao: AssignmentDao,
     private val etagStore: ETagStore,
     val onboardingDataStore: OnboardingDataStore? = null,
-    val syncRepository: com.mustime.core.sync.SyncRepository? = null
+    val syncRepository: com.mustime.core.sync.SyncRepository? = null,
+    val userSettingsSyncManager: com.mustime.core.sync.UserSettingsSyncManager = com.mustime.core.sync.UserSettingsSyncManager(etagStore, onboardingDataStore)
 ) {
+    suspend fun performFullUserSync(userId: String): com.mustime.core.sync.SyncMergeStats? {
+        return syncRepository?.performFullUserSync(userId, userSettingsSyncManager)
+    }
+
     fun getLocalSchedule(programme: String): Flow<List<TimetableEntry>> {
         val clean = programme.trim()
         if (clean.isEmpty()) return flowOf(emptyList())
@@ -71,17 +76,20 @@ class TimetableRepository(
 
     fun getCustomEvents(): Flow<List<CustomEvent>> = eventDao.getAll()
 
-    suspend fun saveCustomEvent(event: CustomEvent): Long = eventDao.upsert(event)
+    suspend fun saveCustomEvent(event: CustomEvent): Long =
+        eventDao.upsert(event.copy(updatedAt = System.currentTimeMillis()))
 
-    suspend fun deleteCustomEvent(id: Long) = eventDao.delete(id)
+    suspend fun deleteCustomEvent(id: Long) = eventDao.softDelete(id)
 
     fun getAssignments(): Flow<List<Assignment>> = assignmentDao.getAll()
 
-    suspend fun saveAssignment(assignment: Assignment): Long = assignmentDao.upsert(assignment)
+    suspend fun saveAssignment(assignment: Assignment): Long =
+        assignmentDao.upsert(assignment.copy(updatedAt = System.currentTimeMillis()))
 
-    suspend fun updateAssignmentCompletion(id: Long, completed: Boolean) = assignmentDao.updateCompletion(id, completed)
+    suspend fun updateAssignmentCompletion(id: Long, completed: Boolean) =
+        assignmentDao.updateCompletion(id, completed, System.currentTimeMillis())
 
-    suspend fun deleteAssignment(id: Long) = assignmentDao.delete(id)
+    suspend fun deleteAssignment(id: Long) = assignmentDao.softDelete(id)
 
     suspend fun deleteAllNotes() = dao.deleteAllNotes()
 
@@ -235,7 +243,7 @@ class TimetableRepository(
     }
 
     suspend fun deleteNote(naturalKey: String) {
-        dao.deleteNote(naturalKey)
+        dao.softDeleteNote(naturalKey)
     }
 
     suspend fun getTimetableEntryByNaturalKey(naturalKey: String): TimetableEntry? {

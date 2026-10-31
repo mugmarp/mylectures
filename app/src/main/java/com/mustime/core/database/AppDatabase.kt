@@ -18,7 +18,7 @@ import com.mustime.features.timetable.domain.TimetableMetadata
         Assignment::class,
         TimetableMetadata::class
     ],
-    version = 10,
+    version = 12,
     exportSchema = true
 )
 @androidx.room.TypeConverters(Converters::class)
@@ -176,6 +176,41 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE lecture_notes ADD COLUMN attachmentPath TEXT")
             }
         }
+
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 1. Upgrade custom_events: add clientUuid, updatedAt, isDeleted, and index
+                db.execSQL("ALTER TABLE custom_events ADD COLUMN clientUuid TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE custom_events ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE custom_events ADD COLUMN isDeleted INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE custom_events SET clientUuid = lower(hex(randomblob(16))), updatedAt = ${System.currentTimeMillis()} WHERE clientUuid = ''")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_custom_events_clientUuid ON custom_events (clientUuid)")
+
+                // 2. Upgrade assignments: add clientUuid, updatedAt, isDeleted, and index
+                db.execSQL("ALTER TABLE assignments ADD COLUMN clientUuid TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE assignments ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE assignments ADD COLUMN isDeleted INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE assignments SET clientUuid = lower(hex(randomblob(16))), updatedAt = ${System.currentTimeMillis()} WHERE clientUuid = ''")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_assignments_clientUuid ON assignments (clientUuid)")
+
+                // 3. Upgrade lecture_notes: add isDeleted flag and index
+                db.execSQL("ALTER TABLE lecture_notes ADD COLUMN isDeleted INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_lecture_notes_isDeleted ON lecture_notes (isDeleted)")
+            }
+        }
+
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Multi-tenant user scoping & guest data isolation
+                db.execSQL("ALTER TABLE custom_events ADD COLUMN ownerId TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE assignments ADD COLUMN ownerId TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE lecture_notes ADD COLUMN ownerId TEXT DEFAULT NULL")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_custom_events_ownerId ON custom_events (ownerId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_assignments_ownerId ON assignments (ownerId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_lecture_notes_ownerId ON lecture_notes (ownerId)")
+            }
+        }
     }
 }
+
 

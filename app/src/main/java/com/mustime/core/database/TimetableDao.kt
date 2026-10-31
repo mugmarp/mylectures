@@ -78,26 +78,50 @@ interface TimetableDao {
     @Query("SELECT COUNT(*) FROM timetable")
     suspend fun getEntryCount(): Int
 
-    @Query("SELECT * FROM lecture_notes WHERE naturalKey = :key LIMIT 1")
+    @Query("SELECT * FROM lecture_notes WHERE naturalKey = :key AND isDeleted = 0 LIMIT 1")
     fun getNoteForKey(key: String): Flow<LectureNote?>
 
-    @Query("SELECT * FROM lecture_notes WHERE naturalKey = :key LIMIT 1")
+    @Query("SELECT * FROM lecture_notes WHERE naturalKey = :key AND isDeleted = 0 LIMIT 1")
     suspend fun getNoteDirect(key: String): LectureNote?
+
+    @Query("SELECT * FROM lecture_notes WHERE naturalKey = :key LIMIT 1")
+    suspend fun getNoteRawDirect(key: String): LectureNote?
 
     @Upsert
     suspend fun upsertNote(note: LectureNote)
 
+    @Upsert
+    suspend fun upsertNotes(notes: List<LectureNote>)
+
+    @Query("UPDATE lecture_notes SET isDeleted = 1, updatedAt = :timestamp WHERE naturalKey = :key")
+    suspend fun softDeleteNote(key: String, timestamp: Long = System.currentTimeMillis())
+
     @Query("DELETE FROM lecture_notes WHERE naturalKey = :key")
     suspend fun deleteNote(key: String)
 
-    @Query("SELECT * FROM lecture_notes WHERE alarmMinutes IS NOT NULL")
+    @Query("SELECT * FROM lecture_notes WHERE alarmMinutes IS NOT NULL AND isDeleted = 0")
     suspend fun getNotesWithAlarms(): List<LectureNote>
 
-    @Query("SELECT * FROM lecture_notes ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM lecture_notes WHERE isDeleted = 0 ORDER BY updatedAt DESC")
     fun getAllNotes(): Flow<List<LectureNote>>
 
-    @Query("SELECT * FROM lecture_notes ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM lecture_notes WHERE isDeleted = 0 ORDER BY updatedAt DESC")
     suspend fun getAllNotesSync(): List<LectureNote>
+
+    @Query("SELECT * FROM lecture_notes")
+    suspend fun getAllNotesRawSync(): List<LectureNote>
+
+    @Query("SELECT * FROM lecture_notes WHERE ownerId = :userId OR ownerId IS NULL")
+    suspend fun getAllNotesRawSyncForUser(userId: String): List<LectureNote>
+
+    @Query("UPDATE lecture_notes SET ownerId = :userId WHERE ownerId IS NULL")
+    suspend fun promoteGuestNotes(userId: String)
+
+    @Query("DELETE FROM lecture_notes WHERE isDeleted = 1 AND updatedAt < :cutoffTimestamp")
+    suspend fun purgeNoteTombstones(cutoffTimestamp: Long): Int
+
+    @Query("DELETE FROM lecture_notes WHERE ownerId = :userId")
+    suspend fun purgeUserNotes(userId: String)
 
     @Query("DELETE FROM lecture_notes")
     suspend fun deleteAllNotes()

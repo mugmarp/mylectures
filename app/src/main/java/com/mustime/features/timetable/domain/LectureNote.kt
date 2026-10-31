@@ -7,7 +7,9 @@ import androidx.room.PrimaryKey
 @Entity(
     tableName = "lecture_notes",
     indices = [
-        Index(value = ["updatedAt"])
+        Index(value = ["updatedAt"]),
+        Index(value = ["isDeleted"]),
+        Index(value = ["ownerId"])
     ]
 )
 data class LectureNote(
@@ -29,5 +31,7 @@ data class LectureNote(
      * persisted. Null for legacy name-only rows.
      */
     val attachmentPath: String? = null,
-    val isPinned: Boolean = false
+    val isPinned: Boolean = false,
+    val isDeleted: Boolean = false,
+    val ownerId: String? = null
 )
