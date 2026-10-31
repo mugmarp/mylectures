@@ -35,7 +35,7 @@ ROOM_DIRECTORY = (
 )
 OUTPUT_DB = REPO / "app" / "src" / "main" / "assets" / "mustime_prepopulated.db"
 
-DB_VERSION = 10
+DB_VERSION = 12
 
 # Mirrors BuildingLevel.floorNumber in RoomDirectory.kt
 LEVEL_TO_FLOOR = {
