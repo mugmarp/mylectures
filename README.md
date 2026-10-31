@@ -58,7 +58,10 @@ If you want announcements, attendance, or campus maps — use Pulse. If you want
 ## Features
 
 ### 📅 Timetable that works offline
-The full semester timetable is bundled in the app, so it is available the moment you install it — no download, no login, no signal. Seven-day schedule with a live "Happening Now" tracker: real-time progress bar, elapsed and remaining minutes, and a countdown to the next class. Filter by lectures, labs, or student associations, and set a reminder 10, 15, or 30 minutes before any class.
+The full semester timetable is bundled in the app, so it is available the moment you install it — no download, no login, no signal. Seven-day schedule with a live "Happening Now" tracker: real-time progress bar, elapsed and remaining minutes, and a countdown to the next class. Full support for specialized curriculum tracks (BS combinations, HEAP certificates, DLT, BBA, and BPCD), uncluttered shared class indicators, and pre-class reminder alarms.
+
+### 👁️ Preview Mode
+Temporarily inspect any other academic class, year, or track without altering your official enrollment. A persistent status banner keeps you informed while your background alarms remain securely locked to your enrolled schedule.
 
 ### 🏫 Vacant Room Finder
 Derived from the university's own room allocation data: **92 rooms across 7 buildings and 2 campuses**.
@@ -73,7 +76,7 @@ Derived from the university's own room allocation data: **92 rooms across 7 buil
 Distraction-free editor. Link a note to a specific class session or course, tag it, and attach a pre-class reminder.
 
 ### ✅ Tasks & deadlines
-Assignments across Urgent / High / Medium / Low, with course tagging, completion toggles, and deadline alarms.
+Assignments across Urgent / High / Medium / Low with completion toggles, deadline alarms, read-only enrolled course dropdowns, and an interactive weekly progress dashboard with daily breakdown stacked charts.
 
 ### 📆 Academic calendar
 Merges your timetable with personal study activities into one day view, with a month grid and quick "today" jump.

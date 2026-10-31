@@ -13,7 +13,7 @@ This document details the local database architecture implemented using **Androi
 * **Database Class**: `com.mustime.core.database.AppDatabase`
 * **Version**: `9`
 * **Entities**:
-  1. `TimetableEntry` (`timetable_entries`)
+  1. `TimetableEntry` (`timetable`)
   2. `Assignment` (`assignments`)
   3. `CustomEvent` (`custom_events`)
   4. `LectureNote` (`lecture_notes`)
@@ -23,25 +23,24 @@ This document details the local database architecture implemented using **Androi
 
 ## 2. Table Specifications
 
-### A. `timetable_entries` (`TimetableEntry`)
+### A. `timetable` (`TimetableEntry`)
 Stores academic lecture sessions, practical labs, and clinical rotations.
 
 | Column | Type | Primary Key | Description |
 |---|---|:---:|---|
-| `naturalKey` | `TEXT` | ✅ | Composite unique hash (e.g. `BCS2101_Mon_0800_Hall1`) |
-| `courseCode` | `TEXT` | ❌ | Course code (e.g. `BCS 2101`) |
-| `courseTitle` | `TEXT` | ❌ | Full course title |
-| `dayOfWeek` | `TEXT` | ❌ | Day name (`Monday`, `Tuesday`...) |
-| `startTime` | `TEXT` | ❌ | Format `HH:mm` (e.g. `08:00`) |
-| `endTime` | `TEXT` | ❌ | Format `HH:mm` (e.g. `10:00`) |
-| `room` | `TEXT` | ❌ | Classroom / Hall name (e.g. `LT 1`) |
-| `floor` | `INTEGER` | ❌ | Building floor index (0 = Ground, 1 = 1st, 2 = 2nd, 3 = 3rd, 4 = 4th; nullable) |
+| `natural_key` | `TEXT` | ✅ | Composite unique hash (e.g. `BCS II|BCS2101|Monday|08:00`) |
+| `course_code` | `TEXT` | ❌ | Course code (e.g. `BCS2101`) |
+| `course_title` | `TEXT` | ❌ | Full course title |
+| `day` | `TEXT` | ❌ | Day name (`Monday`, `Tuesday`...) |
+| `time_slot` | `TEXT` | ❌ | Original time slot string from source data (e.g. `08:00-9:00`) |
+| `start_time` | `TEXT` | ❌ | Format `HH:mm` (e.g. `08:00`) |
+| `end_time` | `TEXT` | ❌ | Format `HH:mm` (e.g. `10:00`) |
+| `session_type` | `TEXT` | ❌ | `Lecture`, `Lab`, `Clinical`, `Practical`, `Association` |
 | `lecturer` | `TEXT` | ❌ | Lecturer / Professor name |
-| `sessionType` | `TEXT` | ❌ | `Lecture`, `Lab`, `Clinical`, `Association` |
-| `program_group` | `TEXT` | ❌ | Associated academic programme |
-| `shared_with` | `TEXT` | ❌ | Semicolon-separated list of other programme groups attending the same session |
-| `time_slot` | `TEXT` | ❌ | Original time slot string from source data |
-| `natural_key` | `TEXT` | ❌ | Composite unique key (e.g. `BCS2101_Mon_0800_Hall1`) |
+| `room` | `TEXT` | ❌ | Classroom / Hall name (e.g. `S211`, `GFL02`) |
+| `floor` | `INTEGER` | ❌ | Building floor index (0 = Ground, 1 = 1st, 2 = 2nd, 3 = 3rd, 4 = 4th; nullable) |
+| `program_group` | `TEXT` | ❌ | Associated academic programme cohort |
+| `shared_with` | `TEXT` | ❌ | Serialized list of other programme cohorts sharing the session |
 
 ---
 
@@ -55,9 +54,10 @@ Stores student tasks, coursework deadlines, and reminders.
 | `courseCode` | `TEXT` | ❌ | Linked course code |
 | `dueDate` | `TEXT` | ❌ | Due date string (e.g. `Tomorrow 17:00`) |
 | `priority` | `TEXT` | ❌ | `Urgent`, `High`, `Medium`, `Low` |
-| `isCompleted` | `INTEGER` | ❌ | Boolean flag (0 = false, 1 = true) |
+| `completed` | `INTEGER` | ❌ | Boolean flag (0 = false, 1 = true) |
 | `notes` | `TEXT` | ❌ | Additional assignment details |
 | `reminderMinutes` | `INTEGER` | ❌ | Minutes before deadline for alarm notification |
+| `updatedAt` | `INTEGER` | ❌ | Unix timestamp in milliseconds |
 
 ---
 
@@ -75,6 +75,7 @@ Stores personal student activities (e.g. group discussions, gym, library revisio
 | `location` | `TEXT` | ❌ | Optional venue or library room |
 | `notes` | `TEXT` | ❌ | Optional notes |
 | `alarmMinutes` | `INTEGER` | ❌ | Reminder alert in minutes |
+| `updatedAt` | `INTEGER` | ❌ | Unix timestamp in milliseconds |
 
 ---
 
@@ -92,6 +93,8 @@ Stores rich summaries, linked class notes, and revision checklists.
 | `attachedClass` | `TEXT` | ❌ | Class description string if linked to a class |
 | `attachmentName` | `TEXT` | ❌ | Optional attachment file name |
 | `updatedAt` | `INTEGER` | ❌ | Unix timestamp in milliseconds |
+
+---
 
 ### E. `timetable_metadata` (`TimetableMetadata`)
 Tracks the current timetable release version and sync status.
@@ -112,39 +115,49 @@ Tracks the current timetable release version and sync status.
 
 ---
 
-## 3. Data Access Objects (DAOs)
+## 3. Un-Prefixed Database Group Mapping
 
-### `TimetableDao`
+In the raw university export (`timetable_export.json`), several final-year specializations and multi-disciplinary certificates are saved under bare subject titles without programme prefixes or Roman numerals:
+
+| Raw Database `program_group` | Canonical Programme | Track / Specialization | Academic Year |
+|---|---|---|:---:|
+| `MATHEMATICS` | `BS` | Mathematics | `III` |
+| `BIOLOGY` | `BS` | Biological Science | `III` |
+| `CHEMISTRY` | `BS` | Chemistry | `III` |
+| `PHYSICS` | `BS` | Physics | `III` |
+| `ACCOUNTING` | `BBA` | Accounting | `III` |
+| `BANKING AND FINANCE` | `BBA` | Banking and Finance | `III` |
+| `HUMAN RESOURCE` | `BBA` | Human Resource Management | `III` |
+| `MARKETING` | `BBA` | Marketing | `III` |
+| `PROCUREMENT` | `BBA` | Procurement & Supply Chain | `III` |
+| `SUSTAINABLE RURAL DEVELOPMENT` | `BPCD` | Sustainable Rural Development | `III` |
+| `URBAN POLICY` | `BPCD` | Urban Policy | `III` |
+| `Biology-Chemistry` | `HEAP` | Biology-Chemistry | `I` |
+| `Chemistry- Maths` | `HEAP` | Chemistry-Maths | `I` |
+| `Physics-Maths` | `HEAP` | Physics-Maths | `I` |
+| `DLT BIOLOGY II` / `DLT-BIOLOGY II` | `DLT` | Biology | `II` |
+| `DLT CHEMISTRY II` / `DLT-CHEMISTRY II` | `DLT` | Chemistry | `II` |
+| `DLT PHYSICS II` / `DLT-PHYSICS II` | `DLT` | Physics | `II` |
+
+### Specialization SQL Candidate Filtering:
+To ensure SQLite fetches candidate rows without losing courses that lack the primary code prefix (e.g. `BS MATHEMATICS III` needing entries with `program_group = 'MATHEMATICS'`), `TimetableDao` executes:
+
 ```kotlin
-fun getAllEntries(): Flow<List<TimetableEntry>>
-suspend fun getAllEntriesSync(): List<TimetableEntry>
-fun getScheduleForProgramme(programme: String): Flow<List<TimetableEntry>>
-fun getScheduleIncludingShared(programme: String): Flow<List<TimetableEntry>>
-fun getScheduleCandidates(programme: String, code: String, alias: String?): Flow<List<TimetableEntry>>
-fun getScheduleForDay(day: String): Flow<List<TimetableEntry>>
-fun getAllProgrammeGroups(): Flow<List<String>>
-suspend fun upsertEntries(entries: List<TimetableEntry>)
-suspend fun insertAll(entries: List<TimetableEntry>)
-suspend fun deleteByNaturalKey(naturalKey: String)
-suspend fun deleteEntriesForProgramme(programme: String)
-suspend fun deleteAllEntries()
-suspend fun getEntryCount(): Int
-fun getTimetableMetadata(): Flow<TimetableMetadata?>
-suspend fun getTimetableMetadataSync(): TimetableMetadata?
-suspend fun upsertTimetableMetadata(metadata: TimetableMetadata)
+@Query("""
+    SELECT * FROM timetable 
+    WHERE program_group = :programme 
+       OR program_group LIKE '%' || :code || '%' 
+       OR shared_with LIKE '%' || :code || '%' 
+       OR (:alias IS NOT NULL AND (program_group LIKE '%' || :alias || '%' OR shared_with LIKE '%' || :alias || '%'))
+       OR (:specialization IS NOT NULL AND (program_group LIKE '%' || :specialization || '%' OR shared_with LIKE '%' || :specialization || '%'))
+    ORDER BY start_time ASC
+""")
+fun getScheduleCandidates(
+    programme: String,
+    code: String,
+    alias: String?,
+    specialization: String? = null
+): Flow<List<TimetableEntry>>
 ```
 
-### `AssignmentDao`
-```kotlin
-fun getAllAssignments(): Flow<List<Assignment>>
-suspend fun insertAssignment(assignment: Assignment): Long
-suspend fun updateAssignment(assignment: Assignment)
-suspend fun deleteAssignment(id: Long)
-```
-
-### `CustomEventDao`
-```kotlin
-fun getAllCustomEvents(): Flow<List<CustomEvent>>
-suspend fun insertCustomEvent(event: CustomEvent): Long
-suspend fun deleteCustomEvent(event: CustomEvent)
-```
+This guarantees 100% recall from the database, which is subsequently refined by `TimetableMatcher.entryMatchesGroup` and deduplicated in memory.

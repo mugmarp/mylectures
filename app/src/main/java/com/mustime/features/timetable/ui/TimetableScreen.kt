@@ -30,6 +30,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import com.mustime.TimetableApplication
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.os.Build
@@ -46,6 +47,7 @@ import com.mustime.features.timetable.domain.Assignment
 import com.mustime.features.timetable.domain.CustomEvent
 import com.mustime.features.timetable.domain.LectureNote
 import com.mustime.features.timetable.domain.TimetableEntry
+import com.mustime.features.timetable.domain.TimetableMatcher
 import com.mustime.ui.Chrome
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.rememberLecturesWindow
@@ -71,6 +73,8 @@ data class GlobalNextUp(
 @Composable
 fun TimetableScreen(
     programme: String,
+    enrolledProgramme: String = "",
+    isPeeking: Boolean = false,
     entries: List<TimetableEntry>,
     customEvents: List<CustomEvent> = emptyList(),
     assignments: List<Assignment> = emptyList(),
@@ -84,6 +88,9 @@ fun TimetableScreen(
     onAddTask: (title: String, courseCode: String, dueDate: String, priority: String, reminderMinutes: Int?, notes: String) -> Unit = { _, _, _, _, _, _ -> },
     onToggleTaskComplete: (Assignment) -> Unit = {},
     onDeleteTask: (Long) -> Unit = {},
+    onPeekProgramme: (String) -> Unit = {},
+    onResetToEnrolled: () -> Unit = {},
+    onSetOfficialProgramme: (String) -> Unit = {},
     onNotificationClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onReconfigureAcademicProfile: () -> Unit = {},
@@ -224,6 +231,12 @@ fun TimetableScreen(
     val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
     val listState = rememberLazyListState()
 
+    if (isPeeking) {
+        BackHandler(enabled = true) {
+            onResetToEnrolled()
+        }
+    }
+
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = if (isDark) DarkSurfaceBase else SurfaceBaseLight,
@@ -232,6 +245,7 @@ fun TimetableScreen(
             TimetableTopAppBar(
                 program = programme,
                 subtitle = if (programme.isNotBlank()) semesterWeekLabel else "Select Programme",
+                isPeeking = isPeeking,
                 onProfileClick = {
                     showAcademicProfileSheet = true
                 },
@@ -323,6 +337,69 @@ fun TimetableScreen(
                     bottom = listBottomPadding
                 )
             ) {
+                // PEEK MODE BANNER: Shown when temporarily browsing another program or friend's schedule
+                if (isPeeking) {
+                    item(key = "peek_mode_banner") {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (isDark) Color(0xFF291B00) else Color(0xFFFEF3C7),
+                            border = BorderStroke(1.dp, if (isDark) Color(0xFFB45309) else Color(0xFFF59E0B)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .background(
+                                            if (isDark) Color(0xFF78350F) else Color(0xFFFDE68A),
+                                            CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Visibility,
+                                        contentDescription = "Peek Mode",
+                                        tint = if (isDark) Color(0xFFFBBF24) else Color(0xFFB45309),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Previewing $programme",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E)
+                                    )
+                                    Text(
+                                        text = "Viewing temporarily. Your alarms remain set for $enrolledProgramme.",
+                                        fontSize = 11.sp,
+                                        color = if (isDark) Color(0xFFFCD34D) else Color(0xFFB45309),
+                                        lineHeight = 14.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Button(
+                                    onClick = onResetToEnrolled,
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isDark) Color(0xFFB45309) else Color(0xFFD97706),
+                                        contentColor = Color.White
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text("Exit Preview", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Prompt to select programme if not yet chosen
                 if (programme.isBlank()) {
                     item(key = "no_prog_prompt") {
@@ -455,6 +532,7 @@ fun TimetableScreen(
 
                         if (currentNextUp.isLive) {
                             val session = entry.toSpecClassSession(
+                                currentProgramme = programme,
                                 note = note,
                                 isLive = true,
                                 progress = currentNextUp.progress
@@ -484,6 +562,7 @@ fun TimetableScreen(
                             }
 
                             val session = entry.toSpecClassSession(
+                                currentProgramme = programme,
                                 note = note,
                                 isLive = false,
                                 startsInText = countdownText
@@ -661,6 +740,7 @@ fun TimetableScreen(
                         val hasConflict = com.mustime.features.timetable.domain.TimetableConflictDetector
                             .hasConflict(entry, dayEntries)
                         val specSession = entry.toSpecClassSession(
+                            currentProgramme = programme,
                             hasConflict = hasConflict,
                             note = entryNote,
                             startsInText = if (isViewingToday) {
@@ -842,7 +922,12 @@ fun TimetableScreen(
     if (showAcademicProfileSheet) {
         AcademicProfileSheet(
             programme = programme,
+            enrolledProgramme = enrolledProgramme,
+            isPeeking = isPeeking,
             onDismiss = { showAcademicProfileSheet = false },
+            onPeekProgramme = onPeekProgramme,
+            onResetToEnrolled = onResetToEnrolled,
+            onSetOfficialProgramme = onSetOfficialProgramme,
             onReconfigureProfile = {
                 showAcademicProfileSheet = false
                 onReconfigureAcademicProfile()
@@ -879,6 +964,7 @@ private fun PaddingBox(
  * Converts a TimetableEntry into a SpecClassSession for high-fidelity specification UI rendering.
  */
 private fun TimetableEntry.toSpecClassSession(
+    currentProgramme: String = "",
     note: LectureNote? = null,
     isLive: Boolean = false,
     progress: SessionProgress? = null,
@@ -920,11 +1006,42 @@ private fun TimetableEntry.toSpecClassSession(
     }
     val cleanNotePreview = note?.content?.trim()?.takeIf { it.isNotBlank() }?.take(40)
 
+    val isAssociation = specType == SpecSessionType.ASSOCIATION ||
+        codeUpper.contains("MUCOSA") || titleUpper.contains("MUCOSA") ||
+        titleUpper.contains("ASSOCIATION") || titleUpper.contains("GUILD")
+
+    val userParsed = TimetableMatcher.parseGroupParts(currentProgramme)
+    val userCanon = TimetableMatcher.canonicalCohort(currentProgramme)
+
+    val allCohorts = (listOf(programmeGroup) + shared_with)
+        .map { TimetableMatcher.canonicalCohort(it.trim()) }
+        .filter { it.isNotBlank() }
+        .distinct()
+
+    val otherCohorts = if (isAssociation) emptyList() else allCohorts.filter { cohort ->
+        if (cohort.equals(currentProgramme.trim(), ignoreCase = true)) return@filter false
+        if (userCanon.isNotBlank() && cohort.equals(userCanon, ignoreCase = true)) return@filter false
+        if (userParsed != null) {
+            val cParsed = TimetableMatcher.parseGroupParts(cohort)
+            if (cParsed != null && cParsed.code == userParsed.code && cParsed.year == userParsed.year) {
+                if (userParsed.subject.isEmpty() || cParsed.subject.isEmpty() ||
+                    cParsed.subject.equals(userParsed.subject, ignoreCase = true) ||
+                    (userParsed.subject.startsWith("BIOLOG") && cParsed.subject.startsWith("BIOLOG"))) {
+                    return@filter false
+                }
+            }
+        }
+        true
+    }
+
+    val cohortsText = if (isAssociation) "" else otherCohorts.joinToString(", ")
+    val effectiveShared = if (isAssociation) emptyList() else otherCohorts
+
     return SpecClassSession(
         id = naturalKey,
         courseCode = courseCode,
         courseName = courseTitle,
-        department = programmeGroup,
+        department = cohortsText,
         topicDescription = null,
         startTime = startTime,
         endTime = endTime,
@@ -941,7 +1058,8 @@ private fun TimetableEntry.toSpecClassSession(
         hasConflict = hasConflict,
         progress = progress?.progress ?: 0.5f,
         elapsedText = elapsedStr,
-        remainingText = remStr
+        remainingText = remStr,
+        sharedWith = effectiveShared
     )
 }
 

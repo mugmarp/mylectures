@@ -385,35 +385,30 @@ fun TaskProgressDashboard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Dual-Tone Progress Bar (Completed vs Pending)
+            // Progress Bar (Completed in Green, Pending in Blue)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(14.dp)
-                    .clip(RoundedCornerShape(7.dp))
-                    .background(if (isDark) Color(0xFF334155) else Color(0xFFE2E8F0))
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(
+                        if (metrics.pendingCount > 0) {
+                            if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.6f) else Color(0xFFDBEAFE)
+                        } else {
+                            if (isDark) Color(0xFF334155) else Color(0xFFE2E8F0)
+                        }
+                    )
                     .testTag("tasks_completed_vs_pending_progress_bar")
             ) {
-                if (metrics.totalCount > 0) {
-                    // Pending background fill
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(Color(0xFF60A5FA), Color(0xFF3B82F6))
-                                )
-                            )
-                    )
-
-                    // Completed foreground fill with animated width
+                if (metrics.totalCount > 0 && animatedProgress > 0f) {
+                    // Completed foreground fill is ALWAYS emerald green
                     Box(
                         modifier = Modifier
                             .fillMaxHeight()
                             .fillMaxWidth(animatedProgress)
                             .clip(
-                                if (animatedProgress >= 0.99f) RoundedCornerShape(7.dp)
-                                else RoundedCornerShape(topStart = 7.dp, bottomStart = 7.dp)
+                                if (animatedProgress >= 0.99f) RoundedCornerShape(5.dp)
+                                else RoundedCornerShape(topStart = 5.dp, bottomStart = 5.dp)
                             )
                             .background(
                                 Brush.horizontalGradient(

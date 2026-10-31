@@ -9,34 +9,56 @@ Welcome to **Lectures**! This user manual walks you through all the academic fea
 ---
 
 > ### ⚠️ Notice of Non-Affiliation
-> Lectures is an independently developed academic student companion created by Mark Paul M. **Lectures is NOT an official app of, nor is it endorsed by, affiliated with, or sponsored by Mbarara University of Science and Technology (MUST).** Always check the official university sources — [timetable.must.ac.ug](https://timetable.must.ac.ug) and the [student portal](https://systems.must.ac.ug) — for schedule announcements, test dates, and room changes.
+> Lectures is an independently developed academic student companion created by Mark Paul M. **Lectures is NOT an official app of, nor is it endorsed by, affiliated with, or sponsored by Mbarara University of Science and Technology (MUST).** Always check official university sources — [timetable.must.ac.ug](https://timetable.must.ac.ug) and the [student portal](https://systems.must.ac.ug) — for schedule announcements, test dates, and room changes.
 
 ---
 
 ## 1. Getting Started: Setting Up Your Academic Programme
 
 When you first launch Lectures, you will be prompted to select your academic profile:
-1. Select your **Faculty** (e.g. *Faculty of Computing and Informatics*).
-2. Choose your **Academic Programme** (e.g. *Bachelor of Computer Science*).
-3. Choose your **Year & Semester** (e.g. *Year 2 Semester 1*).
-4. Tap **Confirm Programme**. The app immediately loads your full university timetable offline.
+1. Select your **Faculty** (e.g. *Faculty of Computing and Informatics*, *Faculty of Science*, *Faculty of Medicine*).
+2. Choose your **Degree or Diploma Programme** (e.g. *Bachelor of Science with Education*, *Bachelor of Computer Science*, *Higher Education Access Certificate*).
+3. Choose your **Academic Class Group**:
+   * For standard degrees: pick your year (`Year I`, `Year II`, `Year III`...).
+   * For degrees with specialized tracks (such as `BS`, `HEAP`, `DLT`, `BBA`, or `BPCD`):
+     * Select your **Year of Study**.
+     * Select your **Subject Track / Specialization** (e.g. *Biological*, *Chemistry - Maths*, *Physical*, *Banking & Finance*, *Rural Development*).
+4. Tap **Continue to Timetable**. The app immediately loads your full university schedule offline.
 
-> **Tip**: You can switch or reconfigure your programme anytime by tapping the **Profile** icon in the top right corner of the Timetable or Calendar screens, or via the Settings screen.
+> **Tip**: You can switch or preview any programme anytime by tapping the **Profile** icon in the top right corner of the Timetable or Calendar screens, or via the Settings screen.
 
 ---
 
-## 2. Navigating the Timetable
+## 2. Navigating the Timetable & Reading Lecture Cards
 
-* **Happening Now Hero**: Look at the top card on the Timetable screen. If you have an ongoing class, it turns into a live tracker displaying a pulsating badge, elapsed minutes, and a visual progress bar.
+* **Happening Now Hero**: Look at the top card on the Timetable screen. If you have an active class, it turns into a live tracker displaying a pulsating `LIVE NOW` badge, elapsed minutes, and a visual progress bar.
 * **Switching Days**: Tap any day capsule (`Mon`, `Tue`, `Wed`, `Thu`, `Fri`, `Sat`, `Sun`) to view that day's schedule. Today's date is always highlighted.
+* **Reading Lecture Cards**:
+  * **Unshared Lectures**: Subtitles display only the course unit code (e.g. `BIO1101`), keeping your view clean and clutter-free.
+  * **Shared Lectures**: Subtitles display the course code followed by the other sharing classes (e.g. `DVS2105 · BCS II`).
+  * **Association Events**: Events such as `MUCOSA` display without irrelevant class groups.
 * **Setting Alarms**: Tap the **Bell** icon on any class card to set a reminder (10m, 15m, or 30m before class). Your phone will notify you with the course title and room number even if the app is closed.
 * **Adding Personal Activities**: Tap the blue **Add Activity** button at the bottom right. Choose an activity category (*Study & Revision*, *Lab & Practical*, *Sports*, *Club*), tap **Start Time** and **End Time** to pick times via the circular clock, and tap **Add Activity**.
 
 ---
 
-## 3. Using the Circular Clock Time Picker
+## 3. Preview Mode: Viewing Other Class Schedules Safely
 
-Lectures uses a Google Clock-inspired circular dial:
+Need to check when a friend has a lecture or verify a room without disrupting your own alarms? Use **Preview Mode**:
+1. Tap the **Profile** icon in the top bar.
+2. Tap **Switch Programme**.
+3. Choose the faculty, programme, year, and track you want to inspect.
+4. Tap the outlined **Preview <Class>** button (e.g. `Preview BCS II`).
+5. A persistent amber banner will confirm you are in preview mode:
+   * **Banner**: `Previewing BCS II`
+   * **Subtitle**: `Viewing temporarily. Your alarms remain set for <Your Enrolled Programme>.`
+6. When done, tap **Exit Preview** on the banner to immediately return to your official schedule.
+
+---
+
+## 4. Using the Circular Clock Time Picker
+
+Lectures features a Google Clock-inspired circular dial:
 1. When creating a task or personal activity, tap the **Start Time** or **End Time** card.
 2. The circular clock appears:
    * **Hours**: Drag the clock hand to your desired hour.
@@ -47,7 +69,7 @@ Lectures uses a Google Clock-inspired circular dial:
 
 ---
 
-## 4. Taking & Managing Lecture Notes
+## 5. Taking & Managing Lecture Notes
 
 1. Tap the **Notes** tab in the bottom floating dock.
 2. Tap the blue **Add Note** button.
@@ -62,63 +84,26 @@ Lectures uses a Google Clock-inspired circular dial:
 
 ---
 
-## 5. Tracking Tasks & Assignment Deadlines
+## 6. Tracking Tasks, Deadlines & Weekly Progress
 
 1. Tap the **Tasks** tab in the bottom floating dock.
-2. View your assignments organized by priority (*Urgent*, *High*, *Medium*, *Low*).
-3. To add an assignment:
+2. **Weekly Progress Dashboard**:
+   * View your total task completion percentage.
+   * Completed tasks are highlighted in **emerald green**, while pending tasks are represented in **blue**.
+   * Inspect the daily bar chart from Monday to Sunday to balance your academic workload.
+3. **Adding an Assignment**:
    * Tap the **Add Task** button.
-   * Enter the assignment title and select the course.
-   * Tap the **Due Date & Time** card to open the scheduler dialog. Pick `Tomorrow`, a weekday, or an exact date, and select the deadline time.
-   * Set your priority and tap **Add Task**.
-4. When finished, tap the checkbox next to the task to mark it complete.
+   * Select your **Course Unit** directly from the read-only dropdown containing only your enrolled courses.
+   * Enter the task title and choose the category (*Assignment*, *Lab Report*, *Project*, *Exam Prep*, *Reading*).
+   * Tap **Due Date & Time** to set the deadline with the scheduler picker.
+   * Pick reminder lead time (e.g. 30m, 1h, 1d) and tap **Add Task**.
+4. Tap the checkmark icon to mark any task complete.
 
 ---
 
-## 6. Customising Notification Sounds
+## 7. Finding Vacant Campus Rooms
 
-1. Open **Settings** → scroll to **Audio & Haptic Feedback**.
-2. Under **Sound Profile**, tap one of four options:
-   * **System Default** — uses your device's default notification sound
-   * **Chime** — a short, high-pitched beep
-   * **Gentle Bell** — a soft, longer-decay tone
-   * **Standard** — a mid-frequency double beep
-3. The change applies immediately to all notification channels (class reminders, task deadlines, and class alarms).
-4. Use **Vibrate on Alarms** to toggle haptic feedback independently.
-
----
-
-## 7. Sending Anonymous Feedback
-
-1. Open **Settings** → scroll to **Anonymous Feedback & Bugs**.
-2. Choose a category: *Bug Report*, *Timetable Discrepancy*, *Feature Request*, *Room Finder Issue*, or *General Thought*.
-3. Type your message. Optionally enable diagnostics (device model, OS version, enrolled programme) to help diagnose issues.
-4. Tap **Send**. If you are offline, the submission is queued and sent automatically on next launch.
-
----
-
-## 8. Finding Vacant Study Rooms on Campus
-
-1. From the Timetable screen, tap the **Building/Door** icon in the top app bar.
-2. The **Vacant Rooms** directory opens. Your campus is detected automatically from your
-   enrolled programme — if it guessed wrong, tap **Detected: …** to switch, or use the
-   **Campus** chips (`All Campuses` / `Kihumuro` / `Town`).
-
-   > Kihumuro and Town are about 7 km apart, so pick the campus you are actually on before
-   > walking anywhere.
-
-3. Narrow down with the **Building** chips (FCI, FAST, Kihumuro Library on Kihumuro;
-   Science Block, Pharmacy, IMS, Clinical on Town).
-4. Set the **Minimum Study Gap** — how long you need the room for. `30 min` is the default;
-   choose `1 hour` if you are settling in to work.
-5. Browse the list. Rooms are ordered so the most useful suggestions come first:
-   * **Lecture rooms and labs first** — their availability is what you could not have known
-   * **Libraries last** — marked `Known`, because you already know the library is free.
-     Tap **Hide Library** to remove them entirely.
-6. Read the status badge:
-   * 🟢 **Green** — free now, e.g. `Free until 14:30 (1h 45m)`
-   * 🔴 **Red** — occupied, e.g. `Occupied until 16:00`, with the course code in session
-   * 🔵 **Blue** — `Free all semester (no scheduled classes)`, for rooms with no bookings at all
-7. Tap any room to see its **full day schedule** — every session, with times, course codes,
-   and which programmes use it. Use the clock and calendar buttons at the top to check a
-   different time or day.
+1. Tap the **Free Rooms** button in the Timetable top bar.
+2. Filter by **Campus** (*Kihumuro* or *Town*) — the app automatically pre-selects your campus based on your degree.
+3. Filter by **Building** or set a **Minimum Study Gap** (e.g. at least 30 minutes free).
+4. Tap any room to view its complete hourly schedule, floor number, and which classes occupy it throughout the day.

@@ -35,9 +35,15 @@ interface TimetableDao {
            OR program_group LIKE '%' || :code || '%' 
            OR shared_with LIKE '%' || :code || '%' 
            OR (:alias IS NOT NULL AND (program_group LIKE '%' || :alias || '%' OR shared_with LIKE '%' || :alias || '%'))
+           OR (:specialization IS NOT NULL AND (program_group LIKE '%' || :specialization || '%' OR shared_with LIKE '%' || :specialization || '%'))
         ORDER BY start_time ASC
     """)
-    fun getScheduleCandidates(programme: String, code: String, alias: String?): Flow<List<TimetableEntry>>
+    fun getScheduleCandidates(
+        programme: String,
+        code: String,
+        alias: String?,
+        specialization: String? = null
+    ): Flow<List<TimetableEntry>>
 
     @Query("SELECT * FROM timetable WHERE day = :day ORDER BY start_time ASC")
     fun getScheduleForDay(day: String): Flow<List<TimetableEntry>>

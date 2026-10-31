@@ -38,7 +38,19 @@ class TimetableRepository(
             TimetableMatcher.CODE_ALIASES.entries.firstOrNull { it.value == officialCode }?.key
         }
 
-        return dao.getScheduleCandidates(clean, officialCode, alias).map { candidates ->
+        val parsed = TimetableMatcher.parseGroupParts(clean)
+        val specialization = when {
+            clean.contains("Biology-Chemistry", ignoreCase = true) -> "Biology-Chemistry"
+            clean.contains("Chemistry- Maths", ignoreCase = true) -> "Chemistry- Maths"
+            clean.contains("Physics-Maths", ignoreCase = true) -> "Physics-Maths"
+            parsed != null && parsed.subject.isNotBlank() -> {
+                val s = parsed.subject
+                if (s.startsWith("BIOLOG")) "BIOLOG" else s.split(" ").firstOrNull() ?: s
+            }
+            else -> null
+        }
+
+        return dao.getScheduleCandidates(clean, officialCode, alias, specialization).map { candidates ->
             val matched = candidates.filter { TimetableMatcher.entryMatchesGroup(it, clean) }
             TimetableMatcher.deduplicateEntries(matched, clean)
         }.distinctUntilChanged()

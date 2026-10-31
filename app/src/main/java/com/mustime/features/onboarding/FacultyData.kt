@@ -23,6 +23,7 @@ data class Programme(
             4 -> listOf("I", "II", "III", "IV")
             3 -> listOf("I", "II", "III")
             2 -> listOf("I", "II")
+            1 -> listOf("I")
             else -> listOf("I", "II", "III")
         }
 
@@ -34,11 +35,16 @@ data class Programme(
                 if (yearTracks.isNullOrEmpty()) {
                     list.add("$code $yr")
                 } else {
-                    // Include the parent year group (which aggregates all tracks or common classes)
-                    list.add("$code $yr")
-                    // Include each specific track group
+                    // Include each specific track group.
+                    // For years with specialized tracks (e.g. BS, BBA III, DLT II, BPCD III, HEAP),
+                    // avoid creating generic parent groups that have no real dedicated schedule
+                    // and cause false schedule conflicts.
                     yearTracks.forEach { track ->
-                        list.add("$code $track $yr")
+                        if (code == "HEAP") {
+                            list.add("$code $track")
+                        } else {
+                            list.add("$code $track $yr")
+                        }
                     }
                 }
             }
@@ -68,7 +74,7 @@ val FACULTIES = listOf(
             tracks = mapOf(
                 "I" to listOf("BIOLOGICAL", "CHEM MATHS", "PHYSICAL"),
                 "II" to listOf("BIOLOGICAL", "CHEM MATHS", "PHYSICAL"),
-                "III" to listOf("BIOLOGICAL", "MATHEMATICS", "PHYSICS")
+                "III" to listOf("BIOLOGICAL", "CHEMISTRY", "MATHEMATICS", "PHYSICS")
             )
         ),
         Programme(
@@ -77,6 +83,14 @@ val FACULTIES = listOf(
             2,
             tracks = mapOf(
                 "II" to listOf("BIOLOGY", "CHEMISTRY", "PHYSICS")
+            )
+        ),
+        Programme(
+            "HEAP",
+            "Higher Education Access Certificate",
+            1,
+            tracks = mapOf(
+                "I" to listOf("Biology-Chemistry", "Chemistry- Maths", "Physics-Maths")
             )
         )
     )),
@@ -93,7 +107,14 @@ val FACULTIES = listOf(
         Programme("BSE", "Bachelor of Software Engineering", 4)
     )),
     Faculty("business", "Faculty of Business and Management Sciences", null, "Briefcase", listOf(
-        Programme("BBA", "Bachelor of Business Administration", 3),
+        Programme(
+            "BBA",
+            "Bachelor of Business Administration",
+            3,
+            tracks = mapOf(
+                "III" to listOf("ACCOUNTING", "BANKING AND FINANCE", "HUMAN RESOURCE", "MARKETING", "PROCUREMENT")
+            )
+        ),
         Programme("BSAF", "Bachelor of Science in Accounting and Finance", 3),
         Programme("ECO", "Bachelor of Science in Economics", 3),
         Programme("BPSM", "BSc in Procurement & Supply Chain Management", 3)
@@ -101,7 +122,14 @@ val FACULTIES = listOf(
     Faculty("interdisciplinary", "Faculty of Interdisciplinary Studies", null, "Users", listOf(
         Programme("BSAL", "BSc in Agriculture and Livelihoods", 4),
         Programme("BGWH", "BSc in Gender and Applied Women Health", 3),
-        Programme("BPCD", "BSc in Planning and Community Development", 3)
+        Programme(
+            "BPCD",
+            "BSc in Planning and Community Development",
+            3,
+            tracks = mapOf(
+                "III" to listOf("SUSTAINABLE RURAL DEVELOPMENT", "URBAN POLICY")
+            )
+        )
     ))
 )
 

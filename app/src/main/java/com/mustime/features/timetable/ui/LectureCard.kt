@@ -30,12 +30,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mustime.core.util.TimeUtil
 import com.mustime.features.timetable.domain.TimetableEntry
+import com.mustime.features.timetable.domain.TimetableMatcher
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.components.RoomFloorBadge
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun LectureCard(entry: TimetableEntry, onClick: () -> Unit) {
+fun LectureCard(
+    entry: TimetableEntry,
+    currentProgramme: String = "",
+    onClick: () -> Unit
+) {
     val style = sessionStyle(entry.sessionType, entry.room ?: "", entry.courseTitle)
     val progress = remember(entry.startTime, entry.endTime, entry.dayOfWeek) {
         TimeUtil.calculateProgress(entry.startTime, entry.endTime, entry.dayOfWeek)
@@ -193,14 +198,19 @@ fun LectureCard(entry: TimetableEntry, onClick: () -> Unit) {
                             
                             val isAssoc = entry.courseCode.contains("MUCOSA", ignoreCase = true) ||
                                 entry.courseTitle.contains("MUCOSA", ignoreCase = true)
+                            val userCanon = TimetableMatcher.canonicalCohort(currentProgramme)
                             val allAttending = if (isAssoc) emptyList() else (listOf(entry.programmeGroup) + entry.shared_with)
-                                .map { it.trim() }
+                                .map { TimetableMatcher.canonicalCohort(it.trim()) }
                                 .filter { it.isNotBlank() }
                                 .distinct()
-                            if (allAttending.size > 1) {
+                            val otherAttending = allAttending.filter {
+                                !it.equals(currentProgramme.trim(), ignoreCase = true) &&
+                                !it.equals(userCanon, ignoreCase = true)
+                            }
+                            if (otherAttending.isNotEmpty()) {
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    "• ${allAttending.joinToString(", ")}",
+                                    "• ${otherAttending.joinToString(", ")}",
                                     color = MaterialTheme.colorScheme.primary,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
@@ -212,13 +222,18 @@ fun LectureCard(entry: TimetableEntry, onClick: () -> Unit) {
                     } else {
                         val isAssoc = entry.courseCode.contains("MUCOSA", ignoreCase = true) ||
                             entry.courseTitle.contains("MUCOSA", ignoreCase = true)
+                        val userCanon = TimetableMatcher.canonicalCohort(currentProgramme)
                         val allAttending = if (isAssoc) emptyList() else (listOf(entry.programmeGroup) + entry.shared_with)
-                            .map { it.trim() }
+                            .map { TimetableMatcher.canonicalCohort(it.trim()) }
                             .filter { it.isNotBlank() }
                             .distinct()
-                        if (allAttending.size > 1) {
+                        val otherAttending = allAttending.filter {
+                            !it.equals(currentProgramme.trim(), ignoreCase = true) &&
+                            !it.equals(userCanon, ignoreCase = true)
+                        }
+                        if (otherAttending.isNotEmpty()) {
                             Text(
-                                allAttending.joinToString(", "),
+                                otherAttending.joinToString(", "),
                                 color = MaterialTheme.colorScheme.primary,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,

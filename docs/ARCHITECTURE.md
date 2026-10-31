@@ -31,7 +31,8 @@
                                  ┌────────────────────┐                            ┌────────────────────┐
                                  │   Room Database    │                            │    AlarmManager    │
                                  │  (SQLite Storage)  │                            │ (System Alarms)    │
-                                 └────────────────────┘                            └────────────────────┘
+                                 │+ Specialization SQL│                            └────────────────────┘
+                                 └────────────────────┘
 ```
 
 ### Key Principles:
@@ -58,19 +59,15 @@
   3. `2 -> NotesScreen` (Academic Notes & Editor)
   4. `3 -> TasksScreen` (Assignment & Task Manager)
 
-  Two further screens are **modal overlays**, not dock destinations — they are pushed over the
-  current tab and dismissed with the system back button:
+  Two further screens are **modal overlays**, not dock destinations:
   * `VacantRoomsScreen` (`features/rooms/ui`) — the Campus Vacant Rooms Finder
   * `SettingsScreen` (`features/settings`) — theme, accent, academic profile, legal dialogs
-
-  Both are driven by boolean state in `MainScaffold` (`isVacantRoomsOpen`, `isSettingsOpen`)
-  rather than by the nav library, so opening one does not disturb the selected tab.
-* **Smooth Transitions**: Screen tab switching uses `AnimatedContent` with crossfade easing to prevent visual blinks and frame drops.
 * **Component Architecture**: Reusable UI components (`DedicatedPickers.kt`, `TimelineClassCard`, `LectureCard`, `ActivityCard`) are separated into modular, testable composables.
+* **Two-Step Hierarchy Selector**: Academic profile switching employs a structured 2-step hierarchy: **Year of Study** chips followed by **Subject Track / Specialization** `FlowRow` chips with full labels.
 
 ### B. ViewModel Layer (`com.mustime.features.*`)
 * Each screen possesses a dedicated `ViewModel` tied to its lifecycle:
-  * `TimetableViewModel`: Coordinates loaded schedule entries, day selection, and live countdown calculations.
+  * `TimetableViewModel`: Coordinates loaded schedule entries, day selection, live countdown calculations, and temporary Preview mode state.
   * `CalendarViewModel`: Manages month grid matrices, days offset, and unified event aggregation.
   * `NotesViewModel`: Handles note filtering, course grouping, search queries, and natural key associations.
   * `TasksViewModel`: Tracks pending/completed assignments, deadline sorting, and priority states.
@@ -80,53 +77,40 @@
 ### C. Data & Repository Layer (`com.mustime.features.timetable.data`)
 * **`TimetableRepository`**:
   * Central coordination point for all application data.
-  * Abstracts Room DAOs and preference stores.
   * Exposes public methods for saving notes, adding custom events, toggling task completion, and retrieving timetable sessions.
+  * Employs `getLocalSchedule(programme)` which resolves programme aliases, queries Room candidate entries via `getScheduleCandidates`, filters by `entryMatchesGroup`, and runs in-memory deduplication.
 * **Strict Non-Destructive Migrations (`AppDatabase`)**:
   * Guarantees 100% preservation of student coursework, notes, and deadlines.
   * Uses `fallbackToDestructiveMigrationFrom(1)` — only the pre-release prototype v1 can be wiped; v2+ are protected by explicit migration steps (`MIGRATION_2_3` through `MIGRATION_8_9`).
-* **`AnalyticsManager`** (`com.mustime.core.analytics`):
-  * Collects pseudonymous diagnostics (install UUID, device model, OS version, launch count, enrolled programme) and writes to Firestore `/user_telemetry/{installId}`.
-  * No PII, no behavioural tracking, no advertising SDKs.
-* **`FeedbackManager`** (`com.mustime.feedback`):
-  * Anonymous feedback submission to Firestore `/feedback/` collection.
-  * Offline retry queue — submissions persist locally until network is available.
 * **`DataLoader`**:
   * Pre-populates the local database on initial launch from bundled academic assets (`timetable_export.json`).
   * Employs MD5 and ETag tracking (`ETagStore`) to avoid redundant parsing.
-  * **Scraper Swap Self-Healing**: Automatically cleans entries where upstream scraper inverted `course_code` and `shared_with` (e.g. DLT and clinical entries where lecturer name occupied `course_code` and the real course code was in `shared_with`).
 
-### D. Programme Group Matching & Specialised Tracks (`com.mustime.features.timetable.domain`)
+### D. Timetable Matching & Specialization Architecture (`com.mustime.features.timetable.domain`)
 * **`TimetableMatcher`**:
-  * Implements `entryMatchesGroup(entry, group)` matching both owner `program_group` and attendee `shared_with`.
-  * **Track Subdivisions**: Programmes with genuine academic subject specialisations (such as Science Laboratory Technology `DLT` with Biology, Chemistry, Physics; Science Education `BS` with Biological, Chem Maths, Physical, Physics, Mathematics) are modelled with explicit tracks in `FacultyData.kt`. False tracks (such as `BBA TAXATION II`, which is an exact duplicate of `BBA II` with only 2 non-track shared annotations) are omitted.
-  * Selecting a general group (e.g. `DLT II`) seamlessly aggregates all tracks (18 entries), while choosing a specific track (e.g. `DLT BIOLOGY II`) accurately isolates only relevant lectures.
-  * **Dynamic Count Computation**: Real timetable counts are derived dynamically from database entries (`filterTimetable`) rather than stale hardcoded maps, with self-invalidating updates whenever timetable data changes. [PRECOMPUTED_GROUP_COUNTS] serves strictly as a temporary startup fallback with documented contract warnings.
-  * **Accurate Cohort & 0-Entry Contextual Messaging**:
-    * True clinical hospital rotations (`DCM`, `DEM`, `DCAM` Years I & II) explicitly indicate clinical hospital rotations as the reason for absence.
-    * Non-existent cohorts are eliminated at the root data level (`FacultyData.kt` supports `customYears`, ensuring `BGWH` strictly offers `BGWH III` as its sole valid class group, preventing false offerings of absent Year I/II groups while accurately delivering its 12 lectures).
-    * General empty off-campus sessions display appropriate contextual schedule notices rather than misleading clinical hospital tags.
+  * Implements `entryMatchesGroup(entry, group)` matching both primary `program_group` and attendee `shared_with`.
+  * **Un-Prefixed Group Aliases (`DIRECT_DB_GROUPS`)**:
+    Maps raw database cohort labels (e.g. `MATHEMATICS`, `BIOLOGY`, `CHEMISTRY`, `PHYSICS`, `ACCOUNTING`, `SUSTAINABLE RURAL DEVELOPMENT`, `Biology-Chemistry`) directly to structured `ParsedGroup(code, subject, year)`.
+  * **Canonical Cohort Normalization (`canonicalCohort`)**:
+    Collapses sibling aliases (such as raw `BIOLOGY` vs prefixed `BS BIOLOGICAL III`) into a single canonical cohort string to prevent duplicate cohort clutter on shared classes.
+  * **Specialization Candidate Retrieval (`TimetableDao.getScheduleCandidates`)**:
+    Uses SQL parameter `:specialization` alongside `:code` and `:alias` so SQLite loads candidate entries for un-prefixed cohorts without truncation.
+  * **Removal of Synthetic Parent Groups**:
+    By eliminating fictitious parent groups (`BS I`, `BS II`, `BS III`, `DLT II`, `BBA III`, `BPCD III`), students enroll in their actual track, preventing artificial schedule conflicts caused by overlapping tracks.
+  * **Lecture Card Subtitle Formatting**:
+    * Unshared classes show only the course code (e.g. `BIO1101`).
+    * Shared classes show only other sharing cohorts (e.g. `DVS2105 · BCS II`).
+    * Guild/association entries (`MUCOSA`) omit cohort groups.
+    * NextUp hero card suppresses cohort listings.
 
-### E. Timetable Metadata & Version Sync
-* **`TimetableMetadata`** entity (Room table `timetable_metadata`):
-  * Tracks the current timetable release: `versionLabel`, `status`, `isFinal`, `draftNumber`, `academicYear`, `semester`, `totalSessions`, `lastUpdated`, `source`.
-  * `draftNumber` is `null` when `isFinal = true`; an integer (1, 2, 3…) during draft cycles.
-* **`TimetableVersionResolver`** (`com.mustime.features.timetable.domain`):
-  * Pure function that parses a raw version string into structured metadata.
-  * Dynamically handles any integer draft (Draft 1 through Draft N), Roman numerals (Draft I–VI), and Final releases.
-* **`SyncRepository.startTimetableSync(scope)`**:
-  * Observes Firestore `/timetable` and `/timetable/metadata` on app launch.
-  * Writes resolved metadata to Room; does not require user authentication.
-* **`SyncRepository.fetchRemoteTimetableMetadata()`**:
-  * On-demand query used by Settings → Sync Now, with offline fallback to local cache.
-* **`SyncRepository.startAllSync(userId, scope)`**:
-  * Per-user notes/tasks sync via Firestore. Requires authentication — not yet started.
+### E. Preview Mode Architecture
+* Driven by `TimetableViewModel.peekingProgramme` (`StateFlow<String?>`).
+* When active, schedule queries load the previewed cohort while background alarms, notifications, and persistent preferences remain strictly bound to the enrolled programme.
+* Banner surfaces current preview status with an `Exit Preview` callback.
 
 ---
 
 ## 3. Background Processing & Alarms
-
-Lectures features exact alarm scheduling for lectures and task deadlines:
 
 * **`AlarmScheduler`** (`com.mustime.core.alarm.AlarmScheduler`):
   * Schedules alerts for upcoming university classes (e.g. 10m, 15m, or 30m prior to start time).
@@ -135,17 +119,3 @@ Lectures features exact alarm scheduling for lectures and task deadlines:
   * Schedules alerts for task due dates.
 * **`AlarmReceiver`**:
   * `BroadcastReceiver` that captures alarm triggers and emits rich Android notifications with channel groupings and deep links.
-
----
-
-## 4. Performance Engineering
-
-Several deliberate architectural optimizations were applied to ensure peak 60–120 FPS rendering:
-
-1. **Elimination of `IntrinsicSize.Min`**:
-   * Previously, timeline cards used `IntrinsicSize.Min` to stretch the left accent bar. This caused a heavy two-pass layout on every card as it entered the screen.
-   * Refactored to use `Modifier.matchParentSize` inside a parent `Box`, achieving zero-overhead single-pass measurement.
-2. **Pointer Event Decoupling**:
-   * Removed full-screen horizontal drag gesture interceptors from `LazyColumn` containers, allowing native vertical scrolling without touch slop delays.
-3. **Stable Identity Keys**:
-   * All `LazyColumn` items use unique, stable keys (`naturalKey`, `task.id`, `event.id`) so Compose only recomposes items that have actually changed.

@@ -693,8 +693,7 @@ fun CalendarScreen(
                                     isDark = isDark,
                                     onToggleComplete = { viewModel.toggleTaskComplete(item.assignment) },
                                     onEdit = { },
-                                    onDelete = { taskToDelete = item.assignment },
-                                    onTestAlarm = { }
+                                    onDelete = { taskToDelete = item.assignment }
                                 )
                             }
                         }
