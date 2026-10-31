@@ -153,9 +153,14 @@ fun MainScaffold(
                 navState = AppNavState.ProgrammeSelection(state.faculty)
             }
             val allEntries by repository.getAllEntries().collectAsState(initial = emptyList())
-            val calculatedCounts = remember(state.programme, allEntries) {
+            val liveCohortCounts by repository.getCohortCounts(state.programme.code).collectAsState(initial = emptyMap())
+            val calculatedCounts = remember(state.programme, allEntries, liveCohortCounts) {
                 state.programme.allGroups.associateWith { g ->
-                    com.mustime.features.timetable.domain.TimetableMatcher.getGroupCount(g, allEntries)
+                    com.mustime.features.timetable.domain.TimetableMatcher.getGroupCount(
+                        group = g,
+                        entries = allEntries,
+                        cohortCounts = liveCohortCounts
+                    )
                 }
             }
             ClassGroupSelectionScreen(
@@ -176,6 +181,7 @@ fun MainScaffold(
         is AppNavState.MainApp -> {
             var isSettingsOpen by remember { mutableStateOf(false) }
             var isVacantRoomsOpen by remember { mutableStateOf(false) }
+            var isAccountOpen by remember { mutableStateOf(false) }
 
             val haptic = LocalHapticFeedback.current
             val tabs = listOf("Timetable", "Calendar", "Notes", "Tasks")
@@ -206,6 +212,13 @@ fun MainScaffold(
                     onBack = { isVacantRoomsOpen = false },
                     enrolledProgramme = savedProgramme
                 )
+            } else if (isAccountOpen) {
+                BackHandler {
+                    isAccountOpen = false
+                }
+                com.mustime.features.account.AccountScreen(
+                    onBack = { isAccountOpen = false }
+                )
             } else if (isSettingsOpen) {
                 BackHandler {
                     isSettingsOpen = false
@@ -215,6 +228,9 @@ fun MainScaffold(
                     onReconfigureAcademicProfile = {
                         isSettingsOpen = false
                         navState = AppNavState.FacultySelection
+                    },
+                    onOpenAccount = {
+                        isAccountOpen = true
                     },
                     onResetOnboarding = {
                         scope.launch {

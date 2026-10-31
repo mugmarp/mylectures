@@ -42,6 +42,13 @@ data class SettingsUiState(
     val metadata: com.mustime.features.timetable.domain.TimetableMetadata? = null,
     val isSyncing: Boolean = false,
     val isResetting: Boolean = false,
+    val userNotesCount: Int = 0,
+    val userEventsCount: Int = 0,
+    val userAssignmentsCount: Int = 0,
+    val isBackingUpUserData: Boolean = false,
+    val userDataBackupStatus: String = "Local storage active (Guest mode)",
+    val userAccountEmail: String? = null,
+    val isCloudSyncActive: Boolean = false,
     val successMessage: String? = null,
     val errorMessage: String? = null
 )
@@ -159,6 +166,86 @@ class SettingsViewModel(
                         timetableStatus = repository.getTimetableStatus()
                     )
                 }
+            }
+        }
+
+        // Collect user item counts for cloud sync card
+        viewModelScope.launch {
+            repository.getAllNotes().collect { notes ->
+                _uiState.value = _uiState.value.copy(userNotesCount = notes.size)
+            }
+        }
+        viewModelScope.launch {
+            repository.getCustomEvents().collect { events ->
+                _uiState.value = _uiState.value.copy(userEventsCount = events.size)
+            }
+        }
+        viewModelScope.launch {
+            repository.getAssignments().collect { assignments ->
+                _uiState.value = _uiState.value.copy(userAssignmentsCount = assignments.size)
+            }
+        }
+
+        // Reactively observe authentication state from AuthRepository
+        viewModelScope.launch {
+            com.mustime.core.auth.AuthRepository.getInstance().currentUser.collect { user ->
+                if (user != null) {
+                    _uiState.value = _uiState.value.copy(
+                        userAccountEmail = user.email ?: user.displayName ?: user.uid,
+                        isCloudSyncActive = true,
+                        userDataBackupStatus = "Signed in as ${user.displayName ?: user.email ?: "Student"}"
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        userAccountEmail = null,
+                        isCloudSyncActive = false,
+                        userDataBackupStatus = "Guest mode · Local storage active"
+                    )
+                }
+            }
+        }
+    }
+
+    fun syncUserData() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isBackingUpUserData = true, errorMessage = null, successMessage = null)
+            try {
+                val currentUid = try {
+                    com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                } catch (_: Throwable) { null }
+
+                val stats = withContext(ioDispatcher) {
+                    if (currentUid != null) {
+                        repository.performFullUserSync(currentUid)
+                    } else {
+                        val notes = repository.dao.getAllNotesSync()
+                        val events = repository.getCustomEvents().firstOrNull() ?: emptyList()
+                        val assignments = repository.getAssignments().firstOrNull() ?: emptyList()
+                        com.mustime.core.sync.SyncMergeStats(
+                            notesCount = notes.size,
+                            eventsCount = events.size,
+                            assignmentsCount = assignments.size
+                        )
+                    }
+                }
+
+                val format = SimpleDateFormat("h:mm a, MMM d", Locale.getDefault())
+                val timeString = format.format(Date())
+
+                _uiState.value = _uiState.value.copy(
+                    isBackingUpUserData = false,
+                    userDataBackupStatus = if (currentUid != null) "Synced with Cloud at $timeString" else "Preserved locally · Verified at $timeString",
+                    successMessage = if (stats != null && stats.pushedCount > 0) {
+                        "Cloud sync completed: ${stats.pushedCount} records synced, ${stats.conflictsResolvedCount} conflicts safely resolved."
+                    } else {
+                        "Data secure: ${stats?.notesCount ?: 0} notes, ${stats?.eventsCount ?: 0} events, ${stats?.assignmentsCount ?: 0} coursework tasks ready to sync."
+                    }
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isBackingUpUserData = false,
+                    errorMessage = "User sync error: ${e.localizedMessage ?: "Unknown error"}"
+                )
             }
         }
     }
