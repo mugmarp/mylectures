@@ -377,7 +377,10 @@ fun VacantRoomsScreen(
                             value = campusDisplayText,
                             icon = Icons.Outlined.School,
                             expanded = campusDropdownExpanded,
-                            onExpandedChange = { campusDropdownExpanded = it },
+                            onExpandedChange = { 
+                                if (it) buildingDropdownExpanded = false
+                                campusDropdownExpanded = it 
+                            },
                             modifier = mod,
                             isDark = isDark,
                             badgeText = if (selectedCampus == defaultScope.campus) "Default" else null
@@ -495,7 +498,10 @@ fun VacantRoomsScreen(
                             value = displayBuildingName,
                             icon = Icons.Outlined.Domain,
                             expanded = buildingDropdownExpanded,
-                            onExpandedChange = { buildingDropdownExpanded = it },
+                            onExpandedChange = { 
+                                if (it) campusDropdownExpanded = false
+                                buildingDropdownExpanded = it 
+                            },
                             modifier = mod,
                             isDark = isDark,
                             badgeText = if (isFacultyBuildingSelected) "Faculty" else null,

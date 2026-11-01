@@ -1234,8 +1234,13 @@ fun AddTaskDialog(
         TaskDateTimeParser.formatSchedulePreview(fullDueDateTime, reminderMinutes)
     }
 
+    val handleDismiss = {
+        courseDropdownExpanded = false
+        onDismiss()
+    }
+
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = handleDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -1611,6 +1616,7 @@ fun AddTaskDialog(
         confirmButton = {
             Button(
                 onClick = {
+                    courseDropdownExpanded = false
                     titleTouched = true
                     courseTouched = true
                     if (title.isNotBlank() && course.isNotBlank()) {
@@ -1632,7 +1638,7 @@ fun AddTaskDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = handleDismiss) {
                 Text("Cancel")
             }
         }

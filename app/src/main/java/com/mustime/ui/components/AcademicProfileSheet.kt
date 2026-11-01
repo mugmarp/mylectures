@@ -526,7 +526,13 @@ fun QuickChangeProgrammeDialog(
 
     val primaryColor = MaterialTheme.colorScheme.primary
 
-    Dialog(onDismissRequest = onDismiss) {
+    val handleDismiss = {
+        facultyDropdownExpanded = false
+        programmeDropdownExpanded = false
+        onDismiss()
+    }
+
+    Dialog(onDismissRequest = handleDismiss) {
         Card(
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = if (isDark) DarkSurfaceCard else Color.White),
@@ -537,6 +543,7 @@ fun QuickChangeProgrammeDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(20.dp)
             ) {
                 // Header
@@ -558,7 +565,7 @@ fun QuickChangeProgrammeDialog(
                             color = if (isDark) Color(0xFF94A3B8) else TextMutedLight
                         )
                     }
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                    IconButton(onClick = handleDismiss, modifier = Modifier.size(28.dp)) {
                         Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(18.dp))
                     }
                 }
@@ -582,7 +589,10 @@ fun QuickChangeProgrammeDialog(
                         border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else BorderSubtleLight),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { facultyDropdownExpanded = true }
+                            .clickable {
+                                programmeDropdownExpanded = false
+                                facultyDropdownExpanded = !facultyDropdownExpanded
+                            }
                     ) {
                         Row(
                             modifier = Modifier
@@ -668,7 +678,10 @@ fun QuickChangeProgrammeDialog(
                         border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else BorderSubtleLight),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { programmeDropdownExpanded = true }
+                            .clickable {
+                                facultyDropdownExpanded = false
+                                programmeDropdownExpanded = !programmeDropdownExpanded
+                            }
                     ) {
                         Row(
                             modifier = Modifier
@@ -873,7 +886,11 @@ fun QuickChangeProgrammeDialog(
                     // 1. Preview Schedule
                     val previewEnabled = isDifferentFromViewing || canReturnToEnrolled
                     OutlinedButton(
-                        onClick = { onPeekSelected(chosenGroup) },
+                        onClick = {
+                            facultyDropdownExpanded = false
+                            programmeDropdownExpanded = false
+                            onPeekSelected(chosenGroup)
+                        },
                         enabled = previewEnabled,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
@@ -904,7 +921,11 @@ fun QuickChangeProgrammeDialog(
 
                     // 2. Set as My Programme
                     Button(
-                        onClick = { onProgrammeSelected(chosenGroup) },
+                        onClick = {
+                            facultyDropdownExpanded = false
+                            programmeDropdownExpanded = false
+                            onProgrammeSelected(chosenGroup)
+                        },
                         enabled = isDifferentFromEnrolled,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
@@ -924,7 +945,11 @@ fun QuickChangeProgrammeDialog(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 TextButton(
-                    onClick = onOpenFullReconfigure,
+                    onClick = {
+                        facultyDropdownExpanded = false
+                        programmeDropdownExpanded = false
+                        onOpenFullReconfigure()
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Open Full Onboarding / Reconfigure", fontSize = 12.sp)
