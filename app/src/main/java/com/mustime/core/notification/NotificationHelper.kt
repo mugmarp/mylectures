@@ -151,6 +151,17 @@ object NotificationHelper {
 
             // Channel 5: Timetable Updates & Publishing Announcements
             val updatesChannel = NotificationChannel(
+                CHANNEL_TIMETABLE_UPDATES,
+                "Timetable Updates",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notifications when a new timetable version or schedule revision is published."
+                enableLights(true)
+                lightColor = Color.parseColor("#4F46E5")
+                setShowBadge(true)
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+            }
+
             // Channel 6: App Updates
             val appUpdatesChannel = NotificationChannel(
                 CHANNEL_APP_UPDATES,
@@ -163,19 +174,11 @@ object NotificationHelper {
                 setShowBadge(true)
                 lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
             }
-            notificationManager.createNotificationChannel(appUpdatesChannel)
-                CHANNEL_TIMETABLE_UPDATES,
-                "Timetable Updates",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Notifications when a new timetable version or schedule revision is published."
-                enableLights(true)
-                lightColor = Color.parseColor("#4F46E5")
-                setShowBadge(true)
-                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
-            }
 
-            notificationManager.createNotificationChannels(listOf(taskChannel, classChannel, alarmChannel, digestChannel, updatesChannel))
+            notificationManager.createNotificationChannels(listOf(
+                taskChannel, classChannel, alarmChannel, 
+                digestChannel, updatesChannel, appUpdatesChannel
+            ))
             Log.d(TAG, "Notification channels registered successfully")
         }
     }
@@ -614,7 +617,7 @@ object NotificationHelper {
 
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("EXTRA_NAV_TAB", 4) // Settings tab (or custom update screen)
+            putExtra("EXTRA_NAV_TAB", 4) // Settings tab
         }
         val contentPendingIntent = PendingIntent.getActivity(
             context,
@@ -661,10 +664,6 @@ object NotificationHelper {
             Log.e(TAG, "SecurityException while posting app update notification: ${e.message}")
         }
     }
-
-    /**
-     * Creates the App Updates notification channel.
-     */
 
     fun cancelNotification(context: Context, notificationId: Int) {
         try {
