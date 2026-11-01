@@ -86,7 +86,7 @@ object InAppUpdateManager {
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
 
-            val jsonString = connection.inputStream.use { it.readText() }
+            val jsonString = connection.inputStream.bufferedReader().use { it.readText() }
             val versionInfo = parseVersionJson(jsonString)
             
             if (versionInfo.versionCode > currentVersionCode) {
@@ -170,11 +170,12 @@ object InAppUpdateManager {
                 FileOutputStream(apkFile).use { output ->
                     val buffer = ByteArray(BUFFER_SIZE)
                     var total = 0L
-                    var count: Int
-                    while (input.read(buffer).also { it != -1 }) {
+                    var count = input.read(buffer)
+                    while (count != -1) {
                         output.write(buffer, 0, count)
                         total += count.toLong()
                         onProgress(total.toFloat() / contentLength.toFloat())
+                        count = input.read(buffer)
                     }
                 }
             }
@@ -192,17 +193,18 @@ object InAppUpdateManager {
     }
 
     private fun verifySha256(file: File, expectedSha256: String): Boolean {
-        try {
+        return try {
             val digest = MessageDigest.getInstance(SHA256_ALGORITHM)
-            file.inputStream.use { input ->
+            file.inputStream().use { input ->
                 val buffer = ByteArray(BUFFER_SIZE)
-                var bytesRead: Int
-                while (input.read(buffer) != -1) {
-                    digest.update(buffer)
+                var bytesRead = input.read()
+                while (bytesRead != -1) {
+                    digest.update(buffer, 0, bytesRead)
+                    bytesRead = input.read()
                 }
             }
             val actualSha256 = digest.digest().joinToString("") { "%02x".format(it) }
-            return actualSha256.equals(expectedSha256, ignoreCase = true)
+            actualSha256.equals(expectedSha256, ignoreCase = true)
         } catch (e: Exception) {
             false
         }
@@ -290,4 +292,3 @@ class UpdateViewModel(private val scope: CoroutineScope) {
         _state.postValue(InAppUpdateManager.UpdateState.Idle())
     }
 }
-// CI trigger

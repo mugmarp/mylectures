@@ -1,5 +1,5 @@
 package com.mustime.core.sync
-import com.lectures.must.BuildConfig
+import com.mustime.BuildConfig
 
 import android.content.Context
 import android.content.pm.PackageManager
