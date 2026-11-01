@@ -644,7 +644,7 @@ object NotificationHelper {
             .setContentText("Version $versionName is ready")
             .setStyle(NotificationCompat.BigTextStyle().bigText(detailedText))
             .setPriority(priority)
-            .setCategory(NotificationCompat.CATEGORY_SYSTEM_UPDATE)
+            .setCategory("sys_update")
             .setAutoCancel(true)
             .setContentIntent(contentPendingIntent)
             .setColor(if (isMandatory) Color.parseColor("#EF4444") else Color.parseColor("#4F46E5"))

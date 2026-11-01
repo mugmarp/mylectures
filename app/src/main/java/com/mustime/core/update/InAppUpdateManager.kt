@@ -22,6 +22,7 @@ import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
+import java.util.regex.Pattern
 
 /**
  * Manages in-app updates for sideloaded APK distribution.
@@ -81,7 +82,7 @@ object InAppUpdateManager {
      */
     suspend fun fetchVersionInfo(versionJsonUrl: String, currentVersionCode: Int): VersionInfo? = withContext(Dispatchers.IO) {
         try {
-            val connection = URL(versionJsonUrl).openConnection() as java.net.HttpURLConnection
+            val connection = URL(versionJsonUrl).openConnection() as HttpURLConnection
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
 
@@ -99,8 +100,6 @@ object InAppUpdateManager {
     }
 
     private fun parseVersionJson(json: String): VersionInfo {
-        // Simple JSON parsing without external library
-        // Expected keys: versionCode, versionName, releaseNotes, downloadUrl, fileSizeBytes, sha256, isMandatory
         val versionCode = extractJsonInt(json, "versionCode") ?: 0
         val versionName = extractJsonString(json, "versionName") ?: ""
         val releaseNotes = extractJsonString(json, "releaseNotes") ?: ""
@@ -121,23 +120,27 @@ object InAppUpdateManager {
     }
 
     private fun extractJsonInt(json: String, key: String): Int? {
-        val pattern = "\"$key\"\\s*:\\s*(\\d+)".toRegex()
-        return json.find(pattern)?.groupValues?.get(1)?.toIntOrNull()
+        val pattern = Pattern.compile("\"$key\"\\s*:\\s*(\\d+)")
+        val matcher = pattern.matcher(json)
+        return if (matcher.find()) matcher.group(1).toIntOrNull() else null
     }
 
     private fun extractJsonLong(json: String, key: String): Long? {
-        val pattern = "\"$key\"\\s*:\\s*(\\d+)".toRegex()
-        return json.find(pattern)?.groupValues?.get(1)?.toLongOrNull()
+        val pattern = Pattern.compile("\"$key\"\\s*:\\s*(\\d+)")
+        val matcher = pattern.matcher(json)
+        return if (matcher.find()) matcher.group(1).toLongOrNull() else null
     }
 
     private fun extractJsonString(json: String, key: String): String? {
-        val pattern = "\"$key\"\\s*:\\s*\"([^\"]*)\"".toRegex()
-        return json.find(pattern)?.groupValues?.get(1)
+        val pattern = Pattern.compile("\"$key\"\\s*:\\s*\"([^\"]*)\"")
+        val matcher = pattern.matcher(json)
+        return if (matcher.find()) matcher.group(1) else null
     }
 
     private fun extractJsonBoolean(json: String, key: String): Boolean? {
-        val pattern = "\"$key\"\\s*:\\s*(true|false)".toRegex()
-        return json.find(pattern)?.groupValues?.get(1)?.toBoolean()
+        val pattern = Pattern.compile("\"$key\"\\s*:\\s*(true|false)")
+        val matcher = pattern.matcher(json)
+        return if (matcher.find()) matcher.group(1).toBoolean() else null
     }
 
     /**
@@ -155,7 +158,7 @@ object InAppUpdateManager {
             val apkFile = File(updateDir, APK_FILENAME)
             if (apkFile.exists()) apkFile.delete()
 
-            val connection = URL(downloadUrl).openConnection() as java.net.HttpURLConnection
+            val connection = URL(downloadUrl).openConnection() as HttpURLConnection
             connection.connectTimeout = 30000
             connection.readTimeout = 30000
             connection.instanceFollowRedirects = true
@@ -258,12 +261,12 @@ class UpdateViewModel(private val scope: CoroutineScope) {
         }
     }
 
-    fun startDownload(versionInfo: InAppUpdateManager.VersionInfo) {
+    fun startDownload(versionInfo: InAppUpdateManager.VersionInfo, context: Context) {
         _state.postValue(InAppUpdateManager.UpdateState.Downloading(0f, versionInfo))
         job?.cancel()
         job = scope.launch {
             val apkFile = InAppUpdateManager.downloadApk(
-                context = scope.coroutineContext[androidx.lifecycle.DispatcherProvider]?.get() as Context,
+                context = context,
                 downloadUrl = versionInfo.downloadUrl,
                 expectedSha256 = versionInfo.sha256,
                 onProgress = { progress ->
