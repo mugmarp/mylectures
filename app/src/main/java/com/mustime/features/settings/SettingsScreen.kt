@@ -1,6 +1,8 @@
 package com.mustime.features.settings
 
 import android.content.Intent
+import android.content.Context
+import com.mustime.BuildConfig
 import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -47,6 +49,10 @@ import com.mustime.ui.AccentColors
 import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.ThemeMode
 import kotlinx.coroutines.Dispatchers
+import com.mustime.core.update.InAppUpdateManager
+import com.mustime.core.update.UpdateViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
@@ -100,6 +106,7 @@ fun SettingsScreen(
         )
     )
 
+// UpdateViewModel for app updates    val updateScope = rememberCoroutineScope()    val updateViewModel = remember { UpdateViewModel(updateScope) }
     val uiState by viewModel.uiState.collectAsState()
     val appTheme = LocalAppTheme.current
     val isDark = appTheme.isDark
@@ -119,6 +126,7 @@ fun SettingsScreen(
     var showCustomLeadDialog by remember { mutableStateOf(false) }
     var customLeadInput by remember { mutableStateOf("") }
     var showVersionDetailsDialog by remember { mutableStateOf(false) }
+    var showUpdateProgressDialog by remember { mutableStateOf(false) }
 
     // Custom Alarm Lead Time Dialog
     if (showCustomLeadDialog) {
@@ -581,6 +589,89 @@ fun SettingsScreen(
         )
     }
 
+
+    if (showUpdateProgressDialog) {
+        updateViewModel.state.observeAsState(InAppUpdateManager.UpdateState.Idle()).value?.let { state ->
+            when (state) {
+                is InAppUpdateManager.UpdateState.Downloading -> {
+                    AlertDialog(
+                        onDismissRequest = { },
+                        title = { Text("Downloading Update", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                        text = {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = "Downloading version ${(updateViewModel.state.value as? InAppUpdateManager.UpdateState.Downloading)?.versionInfo?.versionName ?: \"\"}...",
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                LinearProgressIndicator(
+                                    progress = (updateViewModel.state.value as InAppUpdateManager.UpdateState.Downloading).progress,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "%.0f%%".format((updateViewModel.state.value as InAppUpdateManager.UpdateState.Downloading).progress * 100),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { }) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
+                }
+                is InAppUpdateManager.UpdateState.Downloaded -> {
+                    AlertDialog(
+                        onDismissRequest = { showUpdateProgressDialog = false },
+                        title = { Text("Update Ready to Install", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                        text = {
+                            Text(
+                                text = "Version ${(updateViewModel.state.value as InAppUpdateManager.UpdateState.Downloaded).versionInfo.versionName} downloaded successfully. Tap Install to update.",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    val apkFile = (updateViewModel.state.value as InAppUpdateManager.UpdateState.Downloaded).apkFile
+                                    updateViewModel.install(LocalContext.current, apkFile, (updateViewModel.state.value as InAppUpdateManager.UpdateState.Downloaded).versionInfo)
+                                    showUpdateProgressDialog = false
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Text("Install Now", color = Color.White)
+                            }
+                        }
+                    )
+                }
+                is InAppUpdateManager.UpdateState.Error -> {
+                    AlertDialog(
+                        onDismissRequest = { showUpdateProgressDialog = false },
+                        icon = { Icon(Icons.Default.Error, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(24.dp)) },
+                        title = { Text("Update Failed", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                        text = { Text(text = (updateViewModel.state.value as InAppUpdateManager.UpdateState.Error).message, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        confirmButton = {
+                            Button(
+                                onClick = { showUpdateProgressDialog = false },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                            ) {
+                                Text("OK")
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
     val scrollState = rememberScrollState()
 
     Scaffold(
@@ -1328,6 +1419,77 @@ fun SettingsScreen(
                         }
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
+
+                    // App Update Check Card
+                    val updatePrefs = context.getSharedPreferences("app_update_prefs", Context.MODE_PRIVATE)
+                    val availableVersionCode = updatePrefs.getInt("available_version_code", 0)
+                    val availableVersionName = updatePrefs.getString("available_version_name", "")
+                    val releaseNotes = updatePrefs.getString("release_notes", "")
+                    val downloadUrl = updatePrefs.getString("download_url", "")
+                    val fileSizeBytes = updatePrefs.getLong("file_size_bytes", 0L)
+                    val sha256 = updatePrefs.getString("sha256", "")
+                    val isMandatory = updatePrefs.getBoolean("is_mandatory", false)
+                    val hasUpdate = availableVersionCode > 0 && availableVersionCode > BuildConfig.VERSION_CODE
+
+                    if (hasUpdate) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 14.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(Color(0xFFE8F5E9), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.SystemUpdate, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(22.dp))
+                            }
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    "App Update Available",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 15.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    "Version $availableVersionName is ready to install",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Button(
+                                onClick = {
+                                    showUpdateProgressDialog = true
+                                    updateViewModel.startDownload(
+                                        InAppUpdateManager.VersionInfo(
+                                            versionCode = availableVersionCode,
+                                            versionName = availableVersionName,
+                                            releaseNotes = releaseNotes,
+                                            downloadUrl = downloadUrl,
+                                            fileSizeBytes = fileSizeBytes,
+                                            sha256 = sha256,
+                                            isMandatory = isMandatory
+                                        ),
+                                        LocalContext.current
+                                    )
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = Color.White
+                                ),
+                                modifier = Modifier.padding(end = 8.dp)
+                            ) {
+                                Text("Update Now", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
                             Text("Timetable Version & Mode", fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
                             Text("${uiState.timetableVersion} · ${uiState.metadata?.semester ?: "Semester 1"}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
