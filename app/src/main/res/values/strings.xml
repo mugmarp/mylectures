@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">Lectures</string>
+    <!--
+      Web Client ID for Google Sign-In via Credential Manager.
+      Generate in Google Cloud Console → APIs & Services → Credentials →
+      Create Credentials → OAuth client ID → Web application.
+      Add to Firebase Console → Project Settings → Your Android app.
+      The google-services plugin reads this from google-services.json
+      (oauth_client with client_type=3) and generates this string.
+      If missing, replace YOUR_WEB_CLIENT_ID below with the actual ID.
+    -->
+    <string name="default_web_client_id" translatable="false">YOUR_WEB_CLIENT_ID.apps.googleusercontent.com</string>
 </resources>

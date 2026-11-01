@@ -68,8 +68,8 @@ class AuthRepository private constructor() {
             val serverClientId = if (resId != 0) {
                 context.getString(resId)
             } else {
-                // Fallback client id placeholder if google-services has not generated one
-                "default_web_client_id"
+                // Fallback to string resource (replace YOUR_WEB_CLIENT_ID in strings.xml with actual Web Client ID)
+                context.getString(R.string.default_web_client_id)
             }
 
             val googleIdOption = GetSignInWithGoogleOption.Builder(serverClientId)
