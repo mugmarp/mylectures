@@ -290,3 +290,4 @@ class UpdateViewModel(private val scope: CoroutineScope) {
         _state.postValue(InAppUpdateManager.UpdateState.Idle())
     }
 }
+// CI trigger
