@@ -175,7 +175,7 @@ fun ProgrammeSelectionScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Faculty: ${faculty.name}",
+                                    text = faculty.name,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -288,7 +288,7 @@ fun ClassGroupSelectionScreen(
                             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                                 if (faculty != null) {
                                     Text(
-                                        text = "Faculty: ${faculty.name}",
+                                        text = faculty.name,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -296,7 +296,7 @@ fun ClassGroupSelectionScreen(
                                     Spacer(modifier = Modifier.height(2.dp))
                                 }
                                 Text(
-                                    text = "Programme: ${programme.code} · ${programme.name}",
+                                    text = "${programme.code} · ${programme.name}",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer

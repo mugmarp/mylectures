@@ -54,6 +54,9 @@ fun NotesScreen(
     onBack: (() -> Unit)? = null,
     onSettingsClick: () -> Unit = {},
     onReconfigureAcademicProfile: () -> Unit = {},
+    onNavigateToTimetable: () -> Unit = {},
+    onPeekProgramme: (String) -> Unit = {},
+    onSetOfficialProgramme: (String) -> Unit = {},
     onEditingChanged: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -96,6 +99,21 @@ fun NotesScreen(
             timetableClasses = uiState.timetableClasses,
             onSettingsClick = onSettingsClick,
             onReconfigureAcademicProfile = onReconfigureAcademicProfile,
+            onNavigateToTimetable = {
+                isEditing = false
+                noteToEdit = null
+                onNavigateToTimetable()
+            },
+            onPeekProgramme = { group ->
+                isEditing = false
+                noteToEdit = null
+                onPeekProgramme(group)
+            },
+            onSetOfficialProgramme = { group ->
+                isEditing = false
+                noteToEdit = null
+                onSetOfficialProgramme(group)
+            },
             onAttachmentError = { message ->
                 android.widget.Toast.makeText(
                     context,
@@ -531,9 +549,21 @@ fun NotesScreen(
     }
 
     if (showProfileSheet) {
+        val enrolledProg = repository.getInitialProgramme() ?: "EEE II"
         AcademicProfileSheet(
             programme = uiState.userProgramme,
+            enrolledProgramme = enrolledProg,
             onDismiss = { showProfileSheet = false },
+            onPeekProgramme = { peekGroup ->
+                showProfileSheet = false
+                onPeekProgramme(peekGroup)
+                onNavigateToTimetable()
+            },
+            onSetOfficialProgramme = { newGroup ->
+                showProfileSheet = false
+                onSetOfficialProgramme(newGroup)
+                onNavigateToTimetable()
+            },
             onReconfigureProfile = {
                 showProfileSheet = false
                 onReconfigureAcademicProfile()
@@ -541,6 +571,10 @@ fun NotesScreen(
             onOpenSettings = {
                 showProfileSheet = false
                 onSettingsClick()
+            },
+            onNavigateToTimetable = {
+                showProfileSheet = false
+                onNavigateToTimetable()
             }
         )
     }

@@ -57,7 +57,8 @@ fun AcademicProfileSheet(
     onResetToEnrolled: () -> Unit = {},
     onSetOfficialProgramme: (String) -> Unit = {},
     onReconfigureProfile: () -> Unit = {},
-    onOpenSettings: () -> Unit = {}
+    onOpenSettings: () -> Unit = {},
+    onNavigateToTimetable: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as? TimetableApplication
@@ -237,6 +238,7 @@ fun AcademicProfileSheet(
                             onClick = {
                                 onResetToEnrolled()
                                 onDismiss()
+                                onNavigateToTimetable?.invoke()
                             },
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(
@@ -425,18 +427,22 @@ fun AcademicProfileSheet(
 
     if (showChangeProgrammeDialog) {
         QuickChangeProgrammeDialog(
-            currentProgramme = effectiveEnrolled,
+            viewingProgramme = effectiveProgramme,
+            enrolledProgramme = effectiveEnrolled,
+            isPeeking = isPeeking,
             isDark = isDark,
             onDismiss = { showChangeProgrammeDialog = false },
             onPeekSelected = { peekGroup ->
                 showChangeProgrammeDialog = false
                 onDismiss()
                 onPeekProgramme(peekGroup)
+                onNavigateToTimetable?.invoke()
             },
             onProgrammeSelected = { newGroup ->
                 showChangeProgrammeDialog = false
                 onDismiss()
                 onSetOfficialProgramme(newGroup)
+                onNavigateToTimetable?.invoke()
             },
             onOpenFullReconfigure = {
                 showChangeProgrammeDialog = false
@@ -449,15 +455,18 @@ fun AcademicProfileSheet(
 
 @Composable
 fun QuickChangeProgrammeDialog(
-    currentProgramme: String,
+    viewingProgramme: String,
+    enrolledProgramme: String,
+    isPeeking: Boolean,
     isDark: Boolean,
     onDismiss: () -> Unit,
     onPeekSelected: (String) -> Unit = {},
     onProgrammeSelected: (String) -> Unit,
     onOpenFullReconfigure: () -> Unit
 ) {
-    val currentProgCode = currentProgramme.substringBefore(" ").trim()
-    val currentYear = currentProgramme.substringAfter(" ").trim().ifBlank { "I" }
+    val effectiveActive = viewingProgramme.ifBlank { enrolledProgramme }
+    val currentProgCode = effectiveActive.substringBefore(" ").trim()
+    val currentYear = effectiveActive.substringAfter(" ").trim().ifBlank { "I" }
 
     var selectedFacultyId by remember {
         val found = FACULTIES.find { f -> f.programmes.any { it.code.equals(currentProgCode, ignoreCase = true) } }
@@ -478,7 +487,7 @@ fun QuickChangeProgrammeDialog(
         selectedFaculty.programmes.find { it.code == selectedProgrammeCode } ?: selectedFaculty.programmes.first()
     }
 
-    val parsedCurrent = com.mustime.features.timetable.domain.TimetableMatcher.parseGroupParts(currentProgramme)
+    val parsedCurrent = com.mustime.features.timetable.domain.TimetableMatcher.parseGroupParts(effectiveActive)
     val initialYear = parsedCurrent?.year?.ifBlank { "I" } ?: "I"
 
     var selectedYear by remember(selectedProgramme) {
@@ -633,7 +642,7 @@ fun QuickChangeProgrammeDialog(
 
                 // 2. Degree / Diploma Programme Dropdown Selector
                 Text(
-                    text = "2. Degree / Diploma Programme (${selectedFaculty.programmes.size} available)",
+                    text = "2. Programme (${selectedFaculty.programmes.size} available)",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = primaryColor
@@ -726,7 +735,7 @@ fun QuickChangeProgrammeDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "3. Academic Class Group",
+                        text = "3. Class Group",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = primaryColor
@@ -765,8 +774,8 @@ fun QuickChangeProgrammeDialog(
                             onClick = { selectedYear = yr },
                             label = {
                                 Text(
-                                    text = "Year $yr",
-                                    fontSize = 12.sp,
+                                    text = yr,
+                                    fontSize = 13.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                 )
                             },
@@ -831,21 +840,24 @@ fun QuickChangeProgrammeDialog(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 val chosenGroup = selectedClassGroup
-                val isDifferentProgram = chosenGroup.trim() != currentProgramme.trim()
+                val isDifferentFromViewing = chosenGroup.trim() != viewingProgramme.trim()
+                val isDifferentFromEnrolled = chosenGroup.trim() != enrolledProgramme.trim()
+                val canReturnToEnrolled = isPeeking && !isDifferentFromEnrolled
 
                 Column(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     // 1. Preview Schedule
+                    val previewEnabled = isDifferentFromViewing || canReturnToEnrolled
                     OutlinedButton(
                         onClick = { onPeekSelected(chosenGroup) },
-                        enabled = isDifferentProgram,
+                        enabled = previewEnabled,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(
                             1.dp,
-                            if (isDifferentProgram) (if (isDark) Color(0xFFF59E0B) else Color(0xFFD97706)) else (if (isDark) DarkBorderSubtle else Color(0xFFCBD5E1))
+                            if (previewEnabled) (if (isDark) Color(0xFFF59E0B) else Color(0xFFD97706)) else (if (isDark) DarkBorderSubtle else Color(0xFFCBD5E1))
                         ),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = if (isDark) Color(0xFFFBBF24) else Color(0xFFB45309),
@@ -859,7 +871,11 @@ fun QuickChangeProgrammeDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (isDifferentProgram) "Preview $chosenGroup" else "Currently Viewing",
+                            text = when {
+                                canReturnToEnrolled -> "Return to My Programme ($enrolledProgramme)"
+                                isDifferentFromViewing -> "Preview $chosenGroup"
+                                else -> "Currently Viewing"
+                            },
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -867,7 +883,7 @@ fun QuickChangeProgrammeDialog(
                     // 2. Set as My Programme
                     Button(
                         onClick = { onProgrammeSelected(chosenGroup) },
-                        enabled = isDifferentProgram,
+                        enabled = isDifferentFromEnrolled,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -877,7 +893,7 @@ fun QuickChangeProgrammeDialog(
                         )
                     ) {
                         Text(
-                            text = if (isDifferentProgram) "Set as My Programme" else "Current Programme",
+                            text = if (isDifferentFromEnrolled) "Set as My Programme" else "Enrolled Programme",
                             fontWeight = FontWeight.Bold
                         )
                     }

@@ -124,6 +124,9 @@ fun TasksScreen(
     onBack: (() -> Unit)? = null,
     onSettingsClick: () -> Unit = {},
     onReconfigureAcademicProfile: () -> Unit = {},
+    onNavigateToTimetable: () -> Unit = {},
+    onPeekProgramme: (String) -> Unit = {},
+    onSetOfficialProgramme: (String) -> Unit = {},
     highlightTaskId: Long? = null
 ) {
     val context = LocalContext.current
@@ -760,9 +763,21 @@ fun TasksScreen(
     }
 
     if (showProfileSheet) {
+        val enrolledProg = savedProgramme ?: repository.getInitialProgramme() ?: "EEE II"
         AcademicProfileSheet(
             programme = savedProgramme ?: "",
+            enrolledProgramme = enrolledProg,
             onDismiss = { showProfileSheet = false },
+            onPeekProgramme = { peekGroup ->
+                showProfileSheet = false
+                onPeekProgramme(peekGroup)
+                onNavigateToTimetable()
+            },
+            onSetOfficialProgramme = { newGroup ->
+                showProfileSheet = false
+                onSetOfficialProgramme(newGroup)
+                onNavigateToTimetable()
+            },
             onReconfigureProfile = {
                 showProfileSheet = false
                 onReconfigureAcademicProfile()
@@ -770,6 +785,10 @@ fun TasksScreen(
             onOpenSettings = {
                 showProfileSheet = false
                 onSettingsClick()
+            },
+            onNavigateToTimetable = {
+                showProfileSheet = false
+                onNavigateToTimetable()
             }
         )
     }

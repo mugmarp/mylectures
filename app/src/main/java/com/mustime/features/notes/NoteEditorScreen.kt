@@ -6,6 +6,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.PickVisualMediaRequest
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
+import com.mustime.TimetableApplication
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -67,6 +69,9 @@ fun NoteEditorScreen(
     timetableClasses: List<TimetableEntry>,
     onSettingsClick: () -> Unit = {},
     onReconfigureAcademicProfile: () -> Unit = {},
+    onNavigateToTimetable: (() -> Unit)? = null,
+    onPeekProgramme: ((String) -> Unit)? = null,
+    onSetOfficialProgramme: ((String) -> Unit)? = null,
     onAttachmentError: ((String) -> Unit)? = null,
     onSave: (
         naturalKey: String?,
@@ -1485,8 +1490,21 @@ fun NoteEditorScreen(
     }
 
     if (showProfileSheet) {
+        val enrolledProg = (LocalContext.current.applicationContext as? TimetableApplication)?.repository?.getInitialProgramme() ?: "EEE II"
         AcademicProfileSheet(
+            programme = enrolledProg,
+            enrolledProgramme = enrolledProg,
             onDismiss = { showProfileSheet = false },
+            onPeekProgramme = { peekGroup ->
+                showProfileSheet = false
+                onPeekProgramme?.invoke(peekGroup)
+                onNavigateToTimetable?.invoke()
+            },
+            onSetOfficialProgramme = { newGroup ->
+                showProfileSheet = false
+                onSetOfficialProgramme?.invoke(newGroup)
+                onNavigateToTimetable?.invoke()
+            },
             onReconfigureProfile = {
                 showProfileSheet = false
                 onReconfigureAcademicProfile()
@@ -1494,6 +1512,10 @@ fun NoteEditorScreen(
             onOpenSettings = {
                 showProfileSheet = false
                 onSettingsClick()
+            },
+            onNavigateToTimetable = {
+                showProfileSheet = false
+                onNavigateToTimetable?.invoke()
             }
         )
     }

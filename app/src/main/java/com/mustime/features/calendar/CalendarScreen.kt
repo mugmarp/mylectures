@@ -73,7 +73,10 @@ private sealed class CalendarItem(val startTime: String) {
 fun CalendarScreen(
     onBack: (() -> Unit)? = null,
     onSettingsClick: () -> Unit = {},
-    onReconfigureAcademicProfile: () -> Unit = {}
+    onReconfigureAcademicProfile: () -> Unit = {},
+    onNavigateToTimetable: () -> Unit = {},
+    onPeekProgramme: (String) -> Unit = {},
+    onSetOfficialProgramme: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as? TimetableApplication
@@ -813,9 +816,21 @@ fun CalendarScreen(
 
     // Academic Profile Sheet
     if (showProfileSheet) {
+        val enrolledProg = repository.getInitialProgramme() ?: "EEE II"
         AcademicProfileSheet(
             programme = uiState.currentProgramme,
+            enrolledProgramme = enrolledProg,
             onDismiss = { showProfileSheet = false },
+            onPeekProgramme = { peekGroup ->
+                showProfileSheet = false
+                onPeekProgramme(peekGroup)
+                onNavigateToTimetable()
+            },
+            onSetOfficialProgramme = { newGroup ->
+                showProfileSheet = false
+                onSetOfficialProgramme(newGroup)
+                onNavigateToTimetable()
+            },
             onReconfigureProfile = {
                 showProfileSheet = false
                 onReconfigureAcademicProfile()
@@ -823,6 +838,10 @@ fun CalendarScreen(
             onOpenSettings = {
                 showProfileSheet = false
                 onSettingsClick()
+            },
+            onNavigateToTimetable = {
+                showProfileSheet = false
+                onNavigateToTimetable()
             }
         )
     }

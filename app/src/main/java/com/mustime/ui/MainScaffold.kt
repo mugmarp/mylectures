@@ -192,6 +192,21 @@ fun MainScaffold(
             val primaryBlue = com.mustime.features.timetable.ui.PrimaryBlue
             val textMuted = if (isDark) Color(0xFF94A3B8) else com.mustime.features.timetable.ui.TextMutedLight
 
+            val classAlarmScheduler = remember(context) { com.mustime.core.alarm.AlarmScheduler(context) }
+            val taskAlarmScheduler = remember(context) { com.mustime.core.alarm.TaskAlarmScheduler(context) }
+            val timetableViewModel: com.mustime.features.timetable.ui.TimetableViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                factory = com.mustime.features.timetable.ui.TimetableViewModel.provideFactory(repository, taskAlarmScheduler, classAlarmScheduler)
+            )
+
+            val onPeekProgrammeAndGoToTimetable: (String) -> Unit = { group ->
+                timetableViewModel.peekProgramme(group)
+                selectedTab = 0
+            }
+            val onSetOfficialProgrammeAndGoToTimetable: (String) -> Unit = { group ->
+                timetableViewModel.setOfficialProgramme(group)
+                selectedTab = 0
+            }
+
             if (isVacantRoomsOpen) {
                 BackHandler {
                     isVacantRoomsOpen = false
@@ -259,7 +274,10 @@ fun MainScaffold(
                             onReconfigureAcademicProfile = {
                                 isSettingsOpen = false
                                 navState = AppNavState.FacultySelection
-                            }
+                            },
+                            onNavigateToTimetable = { selectedTab = 0 },
+                            onPeekProgramme = onPeekProgrammeAndGoToTimetable,
+                            onSetOfficialProgramme = onSetOfficialProgrammeAndGoToTimetable
                         )
                         2 -> NotesScreen(
                             onBack = null,
@@ -268,6 +286,9 @@ fun MainScaffold(
                                 isSettingsOpen = false
                                 navState = AppNavState.FacultySelection
                             },
+                            onNavigateToTimetable = { selectedTab = 0 },
+                            onPeekProgramme = onPeekProgrammeAndGoToTimetable,
+                            onSetOfficialProgramme = onSetOfficialProgrammeAndGoToTimetable,
                             onEditingChanged = { isNotesEditing = it }
                         )
                         3 -> TasksScreen(
@@ -277,6 +298,9 @@ fun MainScaffold(
                                 isSettingsOpen = false
                                 navState = AppNavState.FacultySelection
                             },
+                            onNavigateToTimetable = { selectedTab = 0 },
+                            onPeekProgramme = onPeekProgrammeAndGoToTimetable,
+                            onSetOfficialProgramme = onSetOfficialProgrammeAndGoToTimetable,
                             highlightTaskId = pendingHighlightTaskId
                         )
                     }

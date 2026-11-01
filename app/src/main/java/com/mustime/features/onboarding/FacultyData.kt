@@ -55,21 +55,21 @@ data class Programme(
 val CLINICAL_PROGRAMMES = setOf("MBR", "PHA", "BNS", "MLS", "BSP", "PHS", "DCM", "DEM", "DCAM")
 
 val FACULTIES = listOf(
-    Faculty("medicine", "Faculty of Medicine", "Faculty Health Sciences", "Stethoscope", listOf(
-        Programme("MBR", "Bachelor of Medicine and Bachelor of Surgery", 5),
-        Programme("PHA", "Bachelor of Pharmacy", 4),
-        Programme("BNS", "Bachelor of Nursing Science", 4),
-        Programme("MLS", "Bachelor of Medical Laboratory Science", 4),
-        Programme("BSP", "Bachelor of Science in Physiotherapy", 4),
-        Programme("PHS", "Bachelor of Science in Pharmaceutical Sciences", 3),
-        Programme("DCM", "Diploma in Community HIV/AIDS Care and Management", 2),
-        Programme("DEM", "Diploma in Emergency Medicine", 2),
-        Programme("DCAM", "Adv. Diploma in Child and Adolescent Mental Health", 2)
+    Faculty("medicine", "Medicine", "Health Sciences", "Stethoscope", listOf(
+        Programme("MBR", "MBChB (Medicine & Surgery)", 5),
+        Programme("PHA", "B. Pharmacy (BPharm)", 4),
+        Programme("BNS", "BSc Nursing Science", 4),
+        Programme("MLS", "BSc Medical Lab Science", 4),
+        Programme("BSP", "BSc Physiotherapy", 4),
+        Programme("PHS", "BSc Pharmaceutical Sciences", 3),
+        Programme("DCM", "Dip. Community HIV/AIDS Care & Mgt", 2),
+        Programme("DEM", "Dip. Emergency Medicine", 2),
+        Programme("DCAM", "Adv. Dip. Child & Adolescent Mental Health", 2)
     )),
-    Faculty("science", "Faculty of Science", null, "FlaskConical", listOf(
+    Faculty("science", "Science", null, "FlaskConical", listOf(
         Programme(
             "BS",
-            "Bachelor of Science with Education",
+            "BSc Education (BSc.Ed)",
             3,
             tracks = mapOf(
                 "I" to listOf("BIOLOGICAL", "CHEM MATHS", "PHYSICAL"),
@@ -79,7 +79,7 @@ val FACULTIES = listOf(
         ),
         Programme(
             "DLT",
-            "Diploma in Science Laboratory Technology",
+            "Dip. Science Laboratory Technology",
             2,
             tracks = mapOf(
                 "II" to listOf("BIOLOGY", "CHEMISTRY", "PHYSICS")
@@ -87,44 +87,44 @@ val FACULTIES = listOf(
         ),
         Programme(
             "HEAP",
-            "Higher Education Access Certificate",
+            "Higher Education Access Cert.",
             1,
             tracks = mapOf(
                 "I" to listOf("Biology-Chemistry", "Chemistry- Maths", "Physics-Maths")
             )
         )
     )),
-    Faculty("fast", "Faculty of Applied Sciences and Technology", "FAST", "Cog", listOf(
-        Programme("BME", "Bachelor of Biomedical Engineering", 4),
-        Programme("EEE", "Bachelor of Engineering in Electrical & Electronics Engineering", 4),
-        Programme("PEEM", "BSc in Petroleum Engineering & Environmental Management", 4),
-        Programme("CVE", "Bachelor of Science in Civil Engineering", 4),
-        Programme("MIE", "Bachelor of Science in Mechanical and Industrial Engineering", 4)
+    Faculty("fast", "Applied Sciences & Technology", "FAST", "Cog", listOf(
+        Programme("BME", "BEng Biomedical Engineering", 4),
+        Programme("EEE", "BEng Electrical & Electronics Engineering", 4),
+        Programme("PEEM", "BSc Petroleum Engineering & Env. Mgt", 4),
+        Programme("CVE", "BSc Civil Engineering", 4),
+        Programme("MIE", "BSc Mechanical & Industrial Engineering", 4)
     )),
-    Faculty("computing", "Faculty of Computing and Informatics", null, "Cpu", listOf(
-        Programme("BCS", "Bachelor of Computer Science", 3),
-        Programme("BIT", "Bachelor of Information Technology", 3),
-        Programme("BSE", "Bachelor of Software Engineering", 4)
+    Faculty("computing", "Computing & Informatics", null, "Cpu", listOf(
+        Programme("BCS", "BSc Computer Science", 3),
+        Programme("BIT", "B. Information Technology", 3),
+        Programme("BSE", "B. Software Engineering", 4)
     )),
-    Faculty("business", "Faculty of Business and Management Sciences", null, "Briefcase", listOf(
+    Faculty("business", "Business & Management Sciences", null, "Briefcase", listOf(
         Programme(
             "BBA",
-            "Bachelor of Business Administration",
+            "B. Business Administration",
             3,
             tracks = mapOf(
                 "III" to listOf("ACCOUNTING", "BANKING AND FINANCE", "HUMAN RESOURCE", "MARKETING", "PROCUREMENT")
             )
         ),
-        Programme("BSAF", "Bachelor of Science in Accounting and Finance", 3),
-        Programme("ECO", "Bachelor of Science in Economics", 3),
-        Programme("BPSM", "BSc in Procurement & Supply Chain Management", 3)
+        Programme("BSAF", "BSc Accounting & Finance", 3),
+        Programme("ECO", "BSc Economics", 3),
+        Programme("BPSM", "BSc Procurement & Supply Chain Mgt", 3)
     )),
-    Faculty("interdisciplinary", "Faculty of Interdisciplinary Studies", null, "Users", listOf(
-        Programme("BSAL", "BSc in Agriculture and Livelihoods", 4),
-        Programme("BGWH", "BSc in Gender and Applied Women Health", 3),
+    Faculty("interdisciplinary", "Interdisciplinary Studies", null, "Users", listOf(
+        Programme("BSAL", "BSc Agriculture & Livelihoods", 4),
+        Programme("BGWH", "BSc Gender & Applied Women Health", 3),
         Programme(
             "BPCD",
-            "BSc in Planning and Community Development",
+            "BSc Planning & Community Dev.",
             3,
             tracks = mapOf(
                 "III" to listOf("SUSTAINABLE RURAL DEVELOPMENT", "URBAN POLICY")

@@ -30,6 +30,11 @@ This document details the functional specifications, user interface behaviors, a
   * **Contextual Guidance & Tailored Cohorts**:
     * Clinical medical programmes (`DCM`, `DEM`, `DCAM`) clearly inform students of hospital clinical rotations for unscheduled terms.
     * For programmes where specific academic years are absent from the central timetable (such as `BGWH` which only has Year III scheduled in this export), the onboarding and profile switcher restrict selection to genuine class groups (`BGWH III`), preventing confusing 0-entry choices.
+  * **Optimized Switch Programme Dialog UX**:
+    * **Year of Study Segmented Chips**: Display concise Roman numeral labels (`I`, `II`, `III`, `IV`, `V`) under the "Year of Study" heading, eliminating redundant "Year" repetitions and preventing multi-line text wrapping (e.g., `Ye\nar\nIV`).
+    * **Decluttered Faculty Selection**: Stripped the redundant "Faculty of " prefix from all selectors and dropdown listings (e.g. `Applied Sciences & Technology`, `Computing & Informatics`, `Medicine`).
+    * **Short-Form Degree Titles**: Adopted standardized academic short forms (`BSc`, `BEng`, `B.`, `Dip.`) preventing truncated dropdown choices on mobile screens.
+    * **Seamless Navigation to Timetable**: Previewing or switching a programme from any app screen (Calendar, Notes, Tasks, or Settings) immediately dismisses the dialog/sheet and routes the user straight to the Timetable tab with the target schedule displayed.
 * **Lecture Card Cohort & Subtitle Rules**:
   * **Unshared Lectures**: Subtitle displays **only the course unit code** (e.g. `BIO1101`), never repeating the student's own enrolled class.
   * **Shared Lectures**: Subtitle displays the course code followed by only the **other** cohorts sharing the session (e.g., `DVS2105 · BCS II` when enrolled in BSE II). The word "Shared" is omitted for conciseness.
