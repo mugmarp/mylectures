@@ -69,7 +69,7 @@ class AuthRepository private constructor() {
                 context.getString(resId)
             } else {
                 // Fallback to string resource (replace YOUR_WEB_CLIENT_ID in strings.xml with actual Web Client ID)
-                context.getString(R.string.default_web_client_id)
+                context.getString(context.resources.getIdentifier("default_web_client_id", "string", context.packageName))
             }
 
             val googleIdOption = GetSignInWithGoogleOption.Builder(serverClientId)
