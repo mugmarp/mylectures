@@ -24,7 +24,7 @@ import org.robolectric.annotation.Config
  * as a crash. That makes the mismatch easy to ship, so it is asserted directly.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [36])
 class AttachmentStoreTest {
 
     private val context: Context get() = ApplicationProvider.getApplicationContext()

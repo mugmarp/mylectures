@@ -574,7 +574,8 @@ fun QuickChangeProgrammeDialog(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
 
-                Box(modifier = Modifier.fillMaxWidth()) {
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    val triggerWidth = maxWidth
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = if (isDark) DarkSurfaceBase else Color(0xFFF8FAFC),
@@ -609,17 +610,32 @@ fun QuickChangeProgrammeDialog(
                         expanded = facultyDropdownExpanded,
                         onDismissRequest = { facultyDropdownExpanded = false },
                         modifier = Modifier
-                            .fillMaxWidth(0.85f)
-                            .background(if (isDark) DarkSurfaceCard else Color.White)
+                            .width(triggerWidth)
+                            .heightIn(max = 240.dp)
+                            .background(if (isDark) DarkSurfaceCard else Color.White, RoundedCornerShape(12.dp))
+                            .border(1.dp, if (isDark) DarkBorderSubtle else BorderSubtleLight, RoundedCornerShape(12.dp))
                     ) {
                         FACULTIES.forEach { faculty ->
                             val isSelected = faculty.id == selectedFacultyId
                             DropdownMenuItem(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (isSelected) (if (isDark) primaryColor.copy(alpha = 0.22f) else primaryColor.copy(alpha = 0.12f))
+                                        else Color.Transparent
+                                    )
+                                    .border(
+                                        width = if (isSelected) 1.dp else 0.dp,
+                                        color = if (isSelected) (if (isDark) primaryColor.copy(alpha = 0.5f) else primaryColor.copy(alpha = 0.35f)) else Color.Transparent,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ),
                                 text = {
                                     Text(
                                         text = faculty.name,
                                         fontSize = 13.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
                                         color = if (isSelected) primaryColor else (if (isDark) Color.White else TextPrimaryLight)
                                     )
                                 },
@@ -627,11 +643,6 @@ fun QuickChangeProgrammeDialog(
                                     selectedFacultyId = faculty.id
                                     selectedProgrammeCode = faculty.programmes.first().code
                                     facultyDropdownExpanded = false
-                                },
-                                leadingIcon = {
-                                    if (isSelected) {
-                                        Icon(Icons.Default.Check, contentDescription = null, tint = primaryColor, modifier = Modifier.size(18.dp))
-                                    }
                                 }
                             )
                         }
@@ -649,7 +660,8 @@ fun QuickChangeProgrammeDialog(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
 
-                Box(modifier = Modifier.fillMaxWidth()) {
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    val triggerWidth = maxWidth
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = if (isDark) DarkSurfaceBase else Color(0xFFF8FAFC),
@@ -691,35 +703,45 @@ fun QuickChangeProgrammeDialog(
                         expanded = programmeDropdownExpanded,
                         onDismissRequest = { programmeDropdownExpanded = false },
                         modifier = Modifier
-                            .fillMaxWidth(0.85f)
-                            .background(if (isDark) DarkSurfaceCard else Color.White)
+                            .width(triggerWidth)
+                            .heightIn(max = 240.dp)
+                            .background(if (isDark) DarkSurfaceCard else Color.White, RoundedCornerShape(12.dp))
+                            .border(1.dp, if (isDark) DarkBorderSubtle else BorderSubtleLight, RoundedCornerShape(12.dp))
                     ) {
                         selectedFaculty.programmes.forEach { prog ->
                             val isSelected = prog.code == selectedProgrammeCode
                             DropdownMenuItem(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (isSelected) (if (isDark) primaryColor.copy(alpha = 0.22f) else primaryColor.copy(alpha = 0.12f))
+                                        else Color.Transparent
+                                    )
+                                    .border(
+                                        width = if (isSelected) 1.dp else 0.dp,
+                                        color = if (isSelected) (if (isDark) primaryColor.copy(alpha = 0.5f) else primaryColor.copy(alpha = 0.35f)) else Color.Transparent,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ),
                                 text = {
                                     Column {
                                         Text(
                                             text = "${prog.code} · ${prog.name}",
                                             fontSize = 13.sp,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
                                             color = if (isSelected) primaryColor else (if (isDark) Color.White else TextPrimaryLight)
                                         )
                                         Text(
                                             text = "${prog.years} Years Curriculum",
                                             fontSize = 10.sp,
-                                            color = if (isDark) Color(0xFF94A3B8) else TextMutedLight
+                                            color = if (isSelected) primaryColor.copy(alpha = 0.8f) else (if (isDark) Color(0xFF94A3B8) else TextMutedLight)
                                         )
                                     }
                                 },
                                 onClick = {
                                     selectedProgrammeCode = prog.code
                                     programmeDropdownExpanded = false
-                                },
-                                leadingIcon = {
-                                    if (isSelected) {
-                                        Icon(Icons.Default.Check, contentDescription = null, tint = primaryColor, modifier = Modifier.size(18.dp))
-                                    }
                                 }
                             )
                         }

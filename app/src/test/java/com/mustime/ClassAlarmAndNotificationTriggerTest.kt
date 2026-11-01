@@ -20,7 +20,7 @@ import org.robolectric.shadows.ShadowAlarmManager
 import org.robolectric.shadows.ShadowNotificationManager
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [36])
 class ClassAlarmAndNotificationTriggerTest {
 
     private lateinit var context: Context

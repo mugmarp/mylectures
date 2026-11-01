@@ -16,7 +16,7 @@ import org.robolectric.annotation.Config
 import java.util.Calendar
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [36])
 class AlarmAndNotificationTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()

@@ -743,8 +743,11 @@ fun DedicatedDayPickerDialog(
                     val isSelected = day.equals(selectedDay, ignoreCase = true)
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = if (isSelected) PrimaryBlue.copy(alpha = 0.12f) else Color.Transparent,
-                        border = if (isSelected) BorderStroke(1.dp, PrimaryBlue) else null,
+                        color = if (isSelected) PrimaryBlue.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                        border = BorderStroke(
+                            width = if (isSelected) 1.5.dp else 1.dp,
+                            color = if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+                        ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
@@ -755,24 +758,15 @@ fun DedicatedDayPickerDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                                .padding(horizontal = 16.dp, vertical = 13.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = day,
                                 fontSize = 15.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
                                 color = if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.onSurface
                             )
-                            if (isSelected) {
-                                Icon(
-                                    Icons.Default.Check,
-                                    contentDescription = null,
-                                    tint = PrimaryBlue,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(4.dp))
@@ -889,8 +883,11 @@ fun DedicatedCoursePickerDialog(
                             val isSelected = code.equals(selectedCourse, ignoreCase = true)
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) PrimaryBlue.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                border = if (isSelected) BorderStroke(1.dp, PrimaryBlue) else null,
+                                color = if (isSelected) PrimaryBlue.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                                border = BorderStroke(
+                                    width = if (isSelected) 1.5.dp else 1.dp,
+                                    color = if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+                                ),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
@@ -924,27 +921,19 @@ fun DedicatedCoursePickerDialog(
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = code,
-                                            fontWeight = FontWeight.Bold,
+                                            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
                                             fontSize = 14.sp,
-                                            color = MaterialTheme.colorScheme.onSurface
+                                            color = if (isSelected) PrimaryBlue else MaterialTheme.colorScheme.onSurface
                                         )
                                         if (title.isNotBlank()) {
                                             Text(
                                                 text = title,
                                                 fontSize = 12.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
+                                                color = if (isSelected) PrimaryBlue.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant,
                                                 maxLines = 1
                                             )
                                         }
-                                    }
-
-                                    if (isSelected) {
-                                        Icon(
-                                            Icons.Default.Check,
-                                            contentDescription = null,
-                                            tint = PrimaryBlue,
-                                            modifier = Modifier.size(18.dp)
-                                        )
                                     }
                                 }
                             }

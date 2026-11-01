@@ -1353,11 +1353,24 @@ fun AddTaskDialog(
                             availableCourses.forEach { (cCode, cTitle) ->
                                 val isSelected = course.equals(cCode, ignoreCase = true)
                                 DropdownMenuItem(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(
+                                            if (isSelected) (if (isDark) primaryColor.copy(alpha = 0.22f) else primaryColor.copy(alpha = 0.12f))
+                                            else Color.Transparent
+                                        )
+                                        .border(
+                                            width = if (isSelected) 1.dp else 0.dp,
+                                            color = if (isSelected) (if (isDark) primaryColor.copy(alpha = 0.5f) else primaryColor.copy(alpha = 0.35f)) else Color.Transparent,
+                                            shape = RoundedCornerShape(8.dp)
+                                        ),
                                     text = {
                                         Column(modifier = Modifier.fillMaxWidth()) {
                                             Text(
                                                 text = cCode,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
                                                 color = if (isSelected) primaryColor else (if (isDark) Color.White else Color(0xFF0F172A)),
                                                 fontSize = 13.sp
                                             )
@@ -1365,7 +1378,7 @@ fun AddTaskDialog(
                                                 Text(
                                                     text = cTitle,
                                                     fontSize = 11.sp,
-                                                    color = textSecondary,
+                                                    color = if (isSelected) primaryColor.copy(alpha = 0.85f) else textSecondary,
                                                     maxLines = 1,
                                                     overflow = TextOverflow.Ellipsis
                                                 )

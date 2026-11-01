@@ -23,7 +23,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [36])
 class TimetableQuickAddTest {
 
     private lateinit var context: Context

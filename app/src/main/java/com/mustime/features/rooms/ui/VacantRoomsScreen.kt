@@ -2,6 +2,7 @@ package com.mustime.features.rooms.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -385,6 +386,19 @@ fun VacantRoomsScreen(
                                 val isSelected = selectedCampus == campus.displayName
                                 val isDefault = campus.displayName.equals(defaultScope.campus, ignoreCase = true)
                                 DropdownMenuItem(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(
+                                            if (isSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.22f) else PrimaryBlue.copy(alpha = 0.12f))
+                                            else Color.Transparent
+                                        )
+                                        .border(
+                                            width = if (isSelected) 1.dp else 0.dp,
+                                            color = if (isSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.5f) else PrimaryBlue.copy(alpha = 0.35f)) else Color.Transparent,
+                                            shape = RoundedCornerShape(8.dp)
+                                        ),
                                     text = {
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
@@ -395,13 +409,13 @@ fun VacantRoomsScreen(
                                                 Text(
                                                     text = campus.displayName,
                                                     fontSize = 13.sp,
-                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
                                                     color = if (isSelected) PrimaryBlue else textPrimary
                                                 )
                                                 Text(
                                                     text = if (campus == Campus.KIHUMURO) "FAST, FCI · 3 Buildings" else "Medicine, Science, Business · 4 Buildings",
                                                     fontSize = 10.5.sp,
-                                                    color = textMuted
+                                                    color = if (isSelected) PrimaryBlue.copy(alpha = 0.8f) else textMuted
                                                 )
                                             }
                                             if (isDefault) {
@@ -419,15 +433,6 @@ fun VacantRoomsScreen(
                                                     )
                                                 }
                                             }
-                                            if (isSelected) {
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Icon(
-                                                    Icons.Default.Check,
-                                                    contentDescription = "Selected",
-                                                    tint = PrimaryBlue,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                            }
                                         }
                                     },
                                     onClick = {
@@ -442,7 +447,21 @@ fun VacantRoomsScreen(
                                 )
                             }
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                            val isAllCampusesSelected = selectedCampus == null
                             DropdownMenuItem(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (isAllCampusesSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.22f) else PrimaryBlue.copy(alpha = 0.12f))
+                                        else Color.Transparent
+                                    )
+                                    .border(
+                                        width = if (isAllCampusesSelected) 1.dp else 0.dp,
+                                        color = if (isAllCampusesSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.5f) else PrimaryBlue.copy(alpha = 0.35f)) else Color.Transparent,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ),
                                 text = {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -452,17 +471,9 @@ fun VacantRoomsScreen(
                                         Text(
                                             text = "All Campuses",
                                             fontSize = 13.sp,
-                                            fontWeight = if (selectedCampus == null) FontWeight.Bold else FontWeight.Normal,
-                                            color = if (selectedCampus == null) PrimaryBlue else textPrimary
+                                            fontWeight = if (isAllCampusesSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                            color = if (isAllCampusesSelected) PrimaryBlue else textPrimary
                                         )
-                                        if (selectedCampus == null) {
-                                            Icon(
-                                                Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                                tint = PrimaryBlue,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
                                     }
                                 },
                                 onClick = {
@@ -494,6 +505,19 @@ fun VacantRoomsScreen(
                                 val isSelected = selectedBuilding == b.code
                                 val isMyFaculty = b.code == defaultScope.buildingCode && (selectedCampus == null || selectedCampus == defaultScope.campus)
                                 DropdownMenuItem(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(
+                                            if (isSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.22f) else PrimaryBlue.copy(alpha = 0.12f))
+                                            else Color.Transparent
+                                        )
+                                        .border(
+                                            width = if (isSelected) 1.dp else 0.dp,
+                                            color = if (isSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.5f) else PrimaryBlue.copy(alpha = 0.35f)) else Color.Transparent,
+                                            shape = RoundedCornerShape(8.dp)
+                                        ),
                                     text = {
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
@@ -504,7 +528,7 @@ fun VacantRoomsScreen(
                                                 Text(
                                                     text = b.name,
                                                     fontSize = 13.sp,
-                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
                                                     color = if (isSelected) PrimaryBlue else textPrimary,
                                                     maxLines = 1,
                                                     overflow = TextOverflow.Ellipsis
@@ -512,7 +536,7 @@ fun VacantRoomsScreen(
                                                 Text(
                                                     text = "${b.totalRooms} rooms on catalog",
                                                     fontSize = 10.5.sp,
-                                                    color = textMuted
+                                                    color = if (isSelected) PrimaryBlue.copy(alpha = 0.8f) else textMuted
                                                 )
                                             }
                                             if (isMyFaculty) {
@@ -530,15 +554,6 @@ fun VacantRoomsScreen(
                                                     )
                                                 }
                                             }
-                                            if (isSelected) {
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Icon(
-                                                    Icons.Default.Check,
-                                                    contentDescription = "Selected",
-                                                    tint = PrimaryBlue,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                            }
                                         }
                                     },
                                     onClick = {
@@ -551,7 +566,21 @@ fun VacantRoomsScreen(
                                 )
                             }
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                            val isAllBuildingsSelected = selectedBuilding == null
                             DropdownMenuItem(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (isAllBuildingsSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.22f) else PrimaryBlue.copy(alpha = 0.12f))
+                                        else Color.Transparent
+                                    )
+                                    .border(
+                                        width = if (isAllBuildingsSelected) 1.dp else 0.dp,
+                                        color = if (isAllBuildingsSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.5f) else PrimaryBlue.copy(alpha = 0.35f)) else Color.Transparent,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ),
                                 text = {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -561,17 +590,9 @@ fun VacantRoomsScreen(
                                         Text(
                                             text = if (selectedCampus != null) "All ${selectedCampus} Buildings" else "All Buildings",
                                             fontSize = 13.sp,
-                                            fontWeight = if (selectedBuilding == null) FontWeight.Bold else FontWeight.Normal,
-                                            color = if (selectedBuilding == null) PrimaryBlue else textPrimary
+                                            fontWeight = if (isAllBuildingsSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                            color = if (isAllBuildingsSelected) PrimaryBlue else textPrimary
                                         )
-                                        if (selectedBuilding == null) {
-                                            Icon(
-                                                Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                                tint = PrimaryBlue,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
                                     }
                                 },
                                 onClick = {
@@ -1339,7 +1360,8 @@ fun LocationDropdownSelector(
             onDismissRequest = { onExpandedChange(false) },
             offset = if (menuAlignmentEnd) androidx.compose.ui.unit.DpOffset(x = (-60).dp, y = 4.dp) else androidx.compose.ui.unit.DpOffset(x = 0.dp, y = 4.dp),
             modifier = Modifier
-                .widthIn(min = 220.dp, max = 275.dp)
+                .widthIn(min = 220.dp, max = 285.dp)
+                .heightIn(max = 280.dp)
                 .background(surfaceColor, RoundedCornerShape(14.dp)),
             properties = androidx.compose.ui.window.PopupProperties(focusable = true)
         ) {
