@@ -3,7 +3,6 @@ rules_version = '2';
 // Firestore security rules for the Lectures app (project: mustttdb).
 //
 // Design constraints, derived from the actual client code:
-//
 //  * The app NEVER signs in to Firebase Auth. There is no signInAnonymously,
 //    signInWith*, or currentUser usage anywhere in app/src/main/java. Every
 //    request therefore arrives with request.auth == null, so any rule gated on
@@ -122,17 +121,15 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------
-    // /users/{userId} — personal notes sync.
+    // /users/{userId} — personal user data sync (Auth Gated).
     //
-    // Requires an authenticated user matching the document ID. The client does
-    // not currently authenticate and startAllSync() has no call sites, so this
-    // path is inert. Left auth-gated deliberately: it holds personal notes and
-    // must not be opened up. Wiring it requires adding Firebase Auth first.
+    // Requires an authenticated user matching the document ID.
+    // Covers notes, events, assignments, settings, onboarding.
     // ---------------------------------------------------------------------
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
 
-      match /notes/{noteId} {
+      match /{allSubcollections=**} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
