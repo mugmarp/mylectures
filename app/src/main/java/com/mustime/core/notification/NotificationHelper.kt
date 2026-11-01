@@ -21,6 +21,7 @@ object NotificationHelper {
     const val CHANNEL_CLASS_ALARMS = "class_alarms"
     const val CHANNEL_DAILY_DIGEST = "daily_class_digest"
     const val CHANNEL_TIMETABLE_UPDATES = "timetable_updates"
+    const val CHANNEL_APP_UPDATES = "app_updates"
 
     private const val TAG = "NotificationHelper"
 
@@ -150,6 +151,19 @@ object NotificationHelper {
 
             // Channel 5: Timetable Updates & Publishing Announcements
             val updatesChannel = NotificationChannel(
+            // Channel 6: App Updates
+            val appUpdatesChannel = NotificationChannel(
+                CHANNEL_APP_UPDATES,
+                "App Updates",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notifications when a new app version (APK) is available for download and install."
+                enableLights(true)
+                lightColor = Color.parseColor("#4F46E5")
+                setShowBadge(true)
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+            }
+            notificationManager.createNotificationChannel(appUpdatesChannel)
                 CHANNEL_TIMETABLE_UPDATES,
                 "Timetable Updates",
                 NotificationManager.IMPORTANCE_DEFAULT
@@ -584,6 +598,73 @@ object NotificationHelper {
             Log.e(TAG, "SecurityException while posting timetable update notification: ${e.message}")
         }
     }
+
+    /**
+     * Builds and displays a notification when a new app version (APK) is available.
+     */
+    fun showAppUpdateNotification(
+        context: Context,
+        versionName: String,
+        releaseNotes: String? = null,
+        isMandatory: Boolean = false
+    ) {
+        createNotificationChannels(context)
+
+        val notificationId = 998866
+
+        val openAppIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("EXTRA_NAV_TAB", 4) // Settings tab (or custom update screen)
+        }
+        val contentPendingIntent = PendingIntent.getActivity(
+            context,
+            998866,
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val title = "App Update Available"
+        val content = "Version $versionName is ready to install"
+        val detailedText = if (!releaseNotes.isNullOrBlank()) {
+            "Version $versionName is available.\n$releaseNotes"
+        } else {
+            "A new version ($versionName) is available. Tap to update now."
+        }
+
+        val channelId = if (isMandatory) CHANNEL_CLASSES else CHANNEL_APP_UPDATES
+        val priority = if (isMandatory) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT
+        val color = if (isMandatory) Color.parseColor("#EF4444") else Color.parseColor("#4F46E5")
+
+        val builder = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.ic_stat_notification)
+            .setContentTitle(title)
+            .setContentText("Version $versionName is ready")
+            .setStyle(NotificationCompat.BigTextStyle().bigText(detailedText))
+            .setPriority(priority)
+            .setCategory(NotificationCompat.CATEGORY_SYSTEM_UPDATE)
+            .setAutoCancel(true)
+            .setContentIntent(contentPendingIntent)
+            .setColor(if (isMandatory) Color.parseColor("#EF4444") else Color.parseColor("#4F46E5"))
+            .addAction(R.drawable.ic_stat_notification, "Update Now", contentPendingIntent)
+
+        try {
+            NotificationManagerCompat.from(context).notify(998866, builder.build())
+            Log.d(TAG, "App update notification posted: v$versionName")
+            InAppNotificationStore.getInstance(context).recordNotification(
+                type = NotificationItemType.SYSTEM,
+                title = "App Update: v$versionName",
+                message = releaseNotes ?: "New version $versionName is ready to install.",
+                relatedKey = "app_update_$versionName",
+                navTab = 4
+            )
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException while posting app update notification: ${e.message}")
+        }
+    }
+
+    /**
+     * Creates the App Updates notification channel.
+     */
 
     fun cancelNotification(context: Context, notificationId: Int) {
         try {

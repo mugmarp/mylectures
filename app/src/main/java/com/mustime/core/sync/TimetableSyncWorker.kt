@@ -1,12 +1,14 @@
 package com.mustime.core.sync
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.mustime.TimetableApplication
 import com.mustime.core.database.AppDatabase
 import com.mustime.core.notification.NotificationHelper
+import com.mustime.core.update.InAppUpdateManager
 import com.mustime.features.timetable.domain.TimetableMetadata
 import com.mustime.features.timetable.domain.TimetableVersionResolver
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +22,7 @@ import java.util.concurrent.TimeUnit
  * Background WorkManager worker that periodically polls remote timetable metadata,
  * detects published updates or revisions, updates local Room cache,
  * and posts a system notification to inform students.
+ * Also checks for app version updates (APK) and notifies via InAppUpdateManager.
  */
 class TimetableSyncWorker(
     appContext: Context,
@@ -43,36 +46,76 @@ class TimetableSyncWorker(
 
             // 2. If HTTP did not produce metadata, fallback to Firestore sync repository
             if (remoteMeta == null) {
-                remoteMeta = app.syncRepository.fetchRemoteTimetableMetadata()
+                remoteMeta = app?.syncRepository?.fetchRemoteTimetableMetadata()
             }
 
             if (remoteMeta == null) {
                 Log.d(TAG, "No remote timetable metadata could be fetched at this time")
-                return@withContext Result.success()
-            }
-
-            // 3. Compare with local metadata to detect new publications
-            val isNewer = isNewerVersion(localMeta, remoteMeta)
-
-            if (isNewer) {
-                Log.i(TAG, "New timetable version detected! Local: '${localMeta?.versionLabel}', Remote: '${remoteMeta.versionLabel}'")
-                // Persist new metadata to Room
-                db.timetableDao().upsertTimetableMetadata(remoteMeta)
-
-                // Notify student via System Tray Notification and In-App notification store
-                NotificationHelper.showTimetableUpdatedNotification(
-                    context = applicationContext,
-                    versionLabel = remoteMeta.versionLabel,
-                    releaseNotes = remoteMeta.releaseNotes
-                )
             } else {
-                Log.d(TAG, "Timetable is up to date (${localMeta?.versionLabel})")
+                // 3. Compare with local metadata to detect new publications
+                val isNewer = isNewerVersion(localMeta, remoteMeta)
+
+                if (isNewer) {
+                    Log.i(TAG, "New timetable version detected! Local: '${localMeta?.versionLabel}', Remote: '${remoteMeta.versionLabel}'")
+                    // Persist new metadata to Room
+                    db.timetableDao().upsertTimetableMetadata(remoteMeta)
+
+                    // Notify student via System Tray Notification and In-App notification store
+                    NotificationHelper.showTimetableUpdatedNotification(
+                        context = applicationContext,
+                        versionLabel = remoteMeta.versionLabel,
+                        releaseNotes = remoteMeta.releaseNotes
+                    )
+                } else {
+                    Log.d(TAG, "Timetable is up to date (${localMeta?.versionLabel})")
+                }
             }
+
+            // 4. Check for app version updates (APK)
+            checkForAppUpdate()
 
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Error executing TimetableSyncWorker: ${e.message}", e)
             if (runAttemptCount < 3) Result.retry() else Result.failure()
+        }
+    }
+
+    private suspend fun checkForAppUpdate() {
+        try {
+            val prefs = applicationContext.getSharedPreferences("mustime_sync_prefs", Context.MODE_PRIVATE)
+            val versionJsonUrl = prefs.getString("app_version_json_url", DEFAULT_VERSION_JSON_URL) ?: return
+
+            val versionInfo = InAppUpdateManager.fetchVersionInfo(versionJsonUrl, BuildConfig.VERSION_CODE)
+            if (versionInfo != null) {
+                Log.i(TAG, "New app version available: ${versionInfo.versionName} (code ${versionInfo.versionCode})")
+                
+                // Store update info for UI to pick up
+                val updatePrefs = applicationContext.getSharedPreferences("app_update_prefs", Context.MODE_PRIVATE)
+                updatePrefs.edit().apply {
+                    putInt("available_version_code", versionInfo.versionCode)
+                    putString("available_version_name", versionInfo.versionName)
+                    putString("release_notes", versionInfo.releaseNotes)
+                    putString("download_url", versionInfo.downloadUrl)
+                    putLong("file_size_bytes", versionInfo.fileSizeBytes)
+                    putString("sha256", versionInfo.sha256)
+                    putBoolean("is_mandatory", versionInfo.isMandatory)
+                    putLong("checked_at", System.currentTimeMillis())
+                    apply()
+                }
+
+                // Show notification about available update
+                NotificationHelper.showAppUpdateNotification(
+                    context = applicationContext,
+                    versionName = versionInfo.versionName,
+                    releaseNotes = versionInfo.releaseNotes,
+                    isMandatory = versionInfo.isMandatory
+                )
+            } else {
+                Log.d(TAG, "App is up to date (v${BuildConfig.VERSION_NAME}, code ${BuildConfig.VERSION_CODE})")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "App version check failed: ${e.message}")
         }
     }
 
@@ -136,5 +179,6 @@ class TimetableSyncWorker(
         const val WORK_NAME = "PeriodicTimetableSyncWork"
         const val PREF_REMOTE_METADATA_URL = "remote_timetable_metadata_url"
         const val DEFAULT_METADATA_URL = "https://raw.githubusercontent.com/mustime/timetable/main/timetable_metadata.json"
+        const val DEFAULT_VERSION_JSON_URL = "https://raw.githubusercontent.com/mugmarp/mylectures/main/version.json"
     }
 }
