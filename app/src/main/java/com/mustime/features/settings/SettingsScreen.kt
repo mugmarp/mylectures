@@ -54,8 +54,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.observeAsState
-import kotlinx.coroutines.launch
-
 @Composable
 fun SettingsScreen(
     onResetOnboarding: (() -> Unit)? = null,
