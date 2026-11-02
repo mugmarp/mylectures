@@ -3,8 +3,6 @@ package com.mustime.features.settings
 import android.content.Intent
 import android.content.Context
 import com.mustime.BuildConfig
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,6 +21,10 @@ import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.mustime.ui.components.FloatingIslandTopBar
@@ -47,6 +49,7 @@ import com.mustime.ui.LocalAppTheme
 import com.mustime.ui.ThemeMode
 import kotlinx.coroutines.Dispatchers
 import com.mustime.core.update.InAppUpdateManager
+import com.mustime.core.update.UpdateViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
@@ -54,8 +57,6 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
-    currentProgramme: String = "",
-    onReconfigureAcademicProfile: () -> Unit = {},
     onResetOnboarding: (() -> Unit)? = null,
     onOpenAccount: (() -> Unit)? = null,
     onBack: (() -> Unit)? = null
@@ -104,11 +105,11 @@ fun SettingsScreen(
         )
     )
 
-// UpdateViewModel for app updates
+
+    // UpdateViewModel for app updates
     val updateScope = rememberCoroutineScope()
     val updateViewModel = remember { UpdateViewModel(updateScope) }
     val uiState by viewModel.uiState.collectAsState()
-    val appTheme = LocalAppTheme.current
 
     val onSelectThemeMode: (ThemeMode) -> Unit = { mode ->
         viewModel.setThemeMode(mode)
@@ -134,7 +135,6 @@ fun SettingsScreen(
             text = {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = "Enter how many minutes before class start you want to be reminded (e.g. 20, 30, 40):",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -588,7 +588,6 @@ fun SettingsScreen(
 
 
 
-    if (showUpdateProgressDialog) {
         updateViewModel.state.observeAsState(InAppUpdateManager.UpdateState.Idle()).value?.let { state ->
             when (state) {
                 is InAppUpdateManager.UpdateState.Downloading -> {
@@ -753,7 +752,6 @@ fun SettingsScreen(
             }
         }
     }
-    val scrollState = rememberScrollState()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
