@@ -78,7 +78,7 @@ fun SettingsScreen(
         return
     }
 
-    val context = context
+    val context = LocalContext.current
     val app = context.applicationContext as? TimetableApplication
     val repository = app?.repository
     val dataLoader = app?.dataLoader
