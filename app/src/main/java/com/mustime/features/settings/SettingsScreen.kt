@@ -52,6 +52,8 @@ import com.mustime.core.update.InAppUpdateManager
 import com.mustime.core.update.UpdateViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.observeAsState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
