@@ -32,7 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -79,7 +78,7 @@ fun SettingsScreen(
         return
     }
 
-    val context = LocalContext.current
+    val context = context
     val app = context.applicationContext as? TimetableApplication
     val repository = app?.repository
     val dataLoader = app?.dataLoader
@@ -643,7 +642,7 @@ fun SettingsScreen(
                             Button(
                                 onClick = {
                                     val apkFile = (updateViewModel.state.value as InAppUpdateManager.UpdateState.Downloaded).apkFile
-                                    updateViewModel.install(LocalContext.current, apkFile, (updateViewModel.state.value as InAppUpdateManager.UpdateState.Downloaded).versionInfo)
+                                    updateViewModel.install(context, apkFile, (updateViewModel.state.value as InAppUpdateManager.UpdateState.Downloaded).versionInfo)
                                     showUpdateProgressDialog = false
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
@@ -1476,7 +1475,7 @@ fun SettingsScreen(
                                             sha256 = sha256,
                                             isMandatory = isMandatory
                                         ),
-                                        LocalContext.current
+                                        context
                                     )
                                 },
                                 shape = RoundedCornerShape(10.dp),
