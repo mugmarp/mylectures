@@ -126,6 +126,9 @@ fun SettingsScreen(
     var customLeadInput by remember { mutableStateOf("") }
     var showVersionDetailsDialog by remember { mutableStateOf(false) }
     var showUpdateProgressDialog by remember { mutableStateOf(false) }
+
+    // Observe update state for progress dialog
+    val updateState by updateViewModel.state.observeAsState(InAppUpdateManager.UpdateState.Idle())
     // Custom Alarm Lead Time Dialog
     if (showCustomLeadDialog) {
         AlertDialog(
@@ -584,12 +587,8 @@ fun SettingsScreen(
             }
         )
     }
-
-
-
-
     if (showUpdateProgressDialog) {
-        updateViewModel.state.observeAsState(InAppUpdateManager.UpdateState.Idle()).value?.let { state ->
+        updateState?.let { state ->
             when (state) {
                 is InAppUpdateManager.UpdateState.Downloading -> {
                     AlertDialog(
@@ -598,20 +597,20 @@ fun SettingsScreen(
                         text = {
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 Text(
-                                    text = "Downloading version ${(updateViewModel.state.value as? InAppUpdateManager.UpdateState.Downloading)?.versionInfo?.versionName ?: \"\"}...",
+                                    text = "Downloading version ${(state as? InAppUpdateManager.UpdateState.Downloading)?.versionInfo?.versionName ?: \"\"}...",
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 LinearProgressIndicator(
-                                    progress = (updateViewModel.state.value as InAppUpdateManager.UpdateState.Downloading).progress,
+                                    progress = (state as InAppUpdateManager.UpdateState.Downloading).progress,
                                     modifier = Modifier.fillMaxWidth(),
                                     color = MaterialTheme.colorScheme.primary,
                                     trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "%.0f%%".format((updateViewModel.state.value as InAppUpdateManager.UpdateState.Downloading).progress * 100),
+                                    text = "%.0f%%".format((state as InAppUpdateManager.UpdateState.Downloading).progress * 100),
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center,
@@ -632,7 +631,7 @@ fun SettingsScreen(
                         title = { Text("Update Ready to Install", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
                         text = {
                             Text(
-                                text = "Version ${(updateViewModel.state.value as InAppUpdateManager.UpdateState.Downloaded).versionInfo.versionName} downloaded successfully. Tap Install to update.",
+                                text = "Version ${(state as InAppUpdateManager.UpdateState.Downloaded).versionInfo.versionName} downloaded successfully. Tap Install to update.",
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -640,8 +639,8 @@ fun SettingsScreen(
                         confirmButton = {
                             Button(
                                 onClick = {
-                                    val apkFile = (updateViewModel.state.value as InAppUpdateManager.UpdateState.Downloaded).apkFile
-                                    updateViewModel.install(context, apkFile, (updateViewModel.state.value as InAppUpdateManager.UpdateState.Downloaded).versionInfo)
+                                    val apkFile = (state as InAppUpdateManager.UpdateState.Downloaded).apkFile
+                                    updateViewModel.install(context, apkFile, (state as InAppUpdateManager.UpdateState.Downloaded).versionInfo)
                                     showUpdateProgressDialog = false
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
@@ -656,7 +655,7 @@ fun SettingsScreen(
                         onDismissRequest = { showUpdateProgressDialog = false },
                         icon = { Icon(Icons.Default.Error, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(24.dp)) },
                         title = { Text("Update Failed", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
-                        text = { Text(text = (updateViewModel.state.value as InAppUpdateManager.UpdateState.Error).message, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        text = { Text(text = (state as InAppUpdateManager.UpdateState.Error).message, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         confirmButton = {
                             Button(
                                 onClick = { showUpdateProgressDialog = false },
