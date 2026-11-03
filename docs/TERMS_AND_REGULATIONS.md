@@ -2,7 +2,7 @@
 
 **Effective Date**: September 30, 2026  
 **Application Name**: **Lectures**  
-**Author**: **Mark Paul M**  
+**Author**: **MUGENDAWALA MARK PAUL** (BSE Student at MUST)  
 **GitHub**: [@mugmarp](https://github.com/mugmarp)  
 **Website**: [https://tirallab.page](https://tirallab.page)  
 **Contact Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
@@ -12,7 +12,7 @@
 ## 1. ⚠️ Institutional Non-Affiliation Disclaimer
 
 1.1. **Independent Creation**:  
-**Lectures** is an independently conceived, designed, and developed academic companion application created by **Mark Paul M**.
+**Lectures** is an independently conceived, designed, and developed academic companion application created by **MUGENDAWALA MARK PAUL**.
 
 1.2. **No Official Affiliation or Endorsement**:  
 **Lectures is NOT an official application of, nor is it endorsed by, affiliated with, sponsored by, authorized by, or in any way officially connected to Mbarara University of Science and Technology (MUST) or any other academic university, institution, faculty, department, or administrative entity.**

@@ -391,7 +391,7 @@ fun QuickAddBottomSheet(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Time Window: Start & End Time (Tap to open circular Google Clock picker)
+                    // Time Window: Start & End Time (Tap to open circular time picker)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)

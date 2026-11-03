@@ -1,7 +1,7 @@
 # Developer Guide — Lectures
 
 **Application Name**: **Lectures**  
-**Author**: **Mark Paul M**  
+**Author**: **MUGENDAWALA MARK PAUL** (BSE Student at MUST)  
 **GitHub**: [@mugmarp](https://github.com/mugmarp) • **Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
 
 This guide assists software engineers and contributors in setting up, maintaining, and extending **Lectures**.
@@ -12,7 +12,7 @@ This guide assists software engineers and contributors in setting up, maintainin
 
 ### Required Tools
 * **JDK**: OpenJDK 17 or Eclipse Adoptium Temurin 21
-* **Android SDK**: Build tools 35.0.0, Compile SDK 35, Min SDK 26 (Android 8.0 Oreo)
+* **Android SDK**: Compile SDK 36 (minor 1), Target SDK 35, Min SDK 26 (Android 8.0 Oreo)
 * **Gradle**: Gradle 9.x using Kotlin DSL (`.gradle.kts`)
 * **IDE**: Android Studio Ladybug (2024.2+) or higher with Jetpack Compose support
 

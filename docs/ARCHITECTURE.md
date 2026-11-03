@@ -119,3 +119,43 @@
   * Schedules alerts for task due dates.
 * **`AlarmReceiver`**:
   * `BroadcastReceiver` that captures alarm triggers and emits rich Android notifications with channel groupings and deep links.
+
+---
+
+## 4. Obsidian-Grade Markdown Engine Architecture
+
+* **`MarkdownUtils` (`features/notes/MarkdownUtils.kt`)**:
+  * **AST Block Parser (`parseBlocks`)**: Parses multi-line Obsidian callouts (`CalloutType`), GitHub-flavored tables (`MarkdownBlock.Table`), math blocks (`$$...$$`), H1–H6 headers, bulleted/numbered lists, checklists, and dividers into strongly typed sealed classes.
+  * **Inline Parser (`renderInlineMarkdown`)**: Tokenizes inline styles into Compose `AnnotatedString` spans for bold, italic, strikethrough, highlights (`==`), WikiLinks (`[[`), and LaTeX math (`$`).
+  * **Live Preview Syntax Transformation (`MarkdownLiveVisualTransformation`)**: Implements `VisualTransformation` with `OffsetMapping.Identity` for Compose `BasicTextField`. Provides real-time syntax styling in the editor with 1:1 character mapping to avoid cursor drift or misalignments.
+* **`MarkdownViewer` (`features/notes/MarkdownViewer.kt`)**:
+  * Renders `Callout` cards with dynamic Material 3 color borders and iconography.
+  * Renders horizontally scrollable `Table` cards with distinct header tints and cell alignments.
+  * Formats LaTeX math containers with formula copy buttons.
+  * Renders fenced code blocks with language badges and 1-tap clipboard copying.
+
+---
+
+## 5. Google Authentication & Cloud Sync Architecture
+
+* **`AuthRepository` (`core/auth/AuthRepository.kt`)**:
+  * Integrates Google Sign-In via Android Jetpack `CredentialManager` (`GetSignInWithGoogleOption`).
+  * Exposes reactive `currentUser: StateFlow<FirebaseUser?>` to drive UI state between Guest and Authenticated modes.
+* **`SyncRepository` (`core/sync/SyncRepository.kt`) & `UserSettingsSyncManager`**:
+  * Encapsulates bidirectional synchronization between local Room SQLite and remote Firestore (`/users/{uid}/...`).
+  * **Conflict Resolution**: Tracks `updatedAt` client timestamps and server timestamps to ensure offline changes are preserved and merged seamlessly.
+  * **Clean Session Isolation**: `purgeUserDataOnSignOut(uid)` guarantees no cross-account data pollution when switching accounts.
+
+---
+
+## 6. Native In-App Update Architecture
+
+* **`InAppUpdateManager` (`core/update/InAppUpdateManager.kt`)**:
+  * Queries GitHub Releases API / version metadata without requiring Google Play Store.
+  * **Semantic Version Validation (`isNewerRelease`)**: Strictly ensures remote version is newer than `BuildConfig.VERSION_NAME` and `BuildConfig.VERSION_CODE`, preventing downgrades.
+  * **Background Download Pipeline**: Stream-based OkHttp download to app cache with live percentage progress callbacks.
+  * **Cryptographic Verification**: Evaluates SHA-256 hash against remote release metadata before prompting installation.
+  * **Native Package Installation**: Uses Android `FileProvider` to construct a secure content URI and fires `ACTION_VIEW` for the Android package installer.
+* **`AppUpdateDialog` (`core/update/AppUpdateDialog.kt`)**:
+  * Curates release highlights to filter out technical/developer jargon.
+  * Displays inline progress and handles "Install Unknown Apps" permission routing gracefully.

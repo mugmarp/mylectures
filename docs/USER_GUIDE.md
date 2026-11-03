@@ -56,31 +56,49 @@ Need to check when a friend has a lecture or verify a room without disrupting yo
 
 ---
 
-## 4. Using the Circular Clock Time Picker
+## 4. Writing & Structuring Notes with Obsidian Markdown
 
-Lectures features a Google Clock-inspired circular dial:
-1. When creating a task or personal activity, tap the **Start Time** or **End Time** card.
-2. The circular clock appears:
-   * **Hours**: Drag the clock hand to your desired hour.
-   * **Minutes**: Drag the clock hand to your desired minute.
-   * **AM/PM**: Tap the AM or PM toggle.
-3. Tap **OK** to set the time.
-4. Use the quick duration chips below (`+1 hr`, `+1.5 hrs`, `+2 hrs`) to automatically compute your end time without manual typing errors!
+Lectures features a full Obsidian-grade Markdown editor with real-time Live Preview:
+
+1. **Live Preview Highlighting**:
+   * Type Markdown directly into the editor — syntax elements like `# Headers`, `**bold**`, `*italic*`, `~~strike~~`, and `` `code` `` are highlighted in real-time as you write.
+2. **Obsidian Callouts & Admonitions**:
+   * Add callout alert boxes by typing `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, or `> [!DANGER]`.
+   * Follow with your text on lines starting with `> `.
+3. **Markdown Tables**:
+   * Write clean tables using standard Markdown pipes:
+     ```markdown
+     | Course | Room | Day |
+     |:-------|:----:|----:|
+     | BCS2101| LT 2 | Mon |
+     ```
+   * Tables format automatically into horizontally scrollable cards with distinct headers.
+4. **Math Formulas**:
+   * Write inline math with single dollar signs: `$f(x) = \sin(x)$`.
+   * Write centered block equations with double dollar signs: `$$E = mc^2$$`.
+5. **Text Highlights & WikiLinks**:
+   * Highlight key definitions with `==important term==`.
+   * Create links to other courses or topics with `[[Course Code or Concept]]`.
+6. **Smart List Auto-Continuation**:
+   * Start a checklist `- [ ] `, bullet `- `, or number `1. ` — pressing **Enter** automatically continues your list on the next line. Press Enter again on an empty line to cleanly clear it.
+7. **Cornell Template & Quick Toolbar**:
+   * Tap the **Templates** button to insert a ready-to-use Cornell note-taking structure with cues, lecture notes, math blocks, and summary tables.
+   * Tap `?` for a quick Markdown syntax reference cheat sheet.
+8. **Class Linkage & Alarms**:
+   * Tap `📚 Course` to tag with your subject.
+   * Tap `📍 Attach Class` to bind the note to a specific timetable session.
+   * Tap `⏰ Alert` to receive a pre-class notification reminder.
 
 ---
 
-## 5. Taking & Managing Lecture Notes
+## 5. Adding Personal Activities & Using the Time Picker
 
-1. Tap the **Notes** tab in the bottom floating dock.
-2. Tap the blue **Add Note** button.
-3. Enter your note title directly at the top.
-4. Tap the metadata pills below the title to customize:
-   * `📚 Course`: Link the note to one of your enrolled courses.
-   * `📍 Attach Class`: Link this note to a specific lecture from your timetable.
-   * `⏰ Alert`: Set a pre-class reminder alarm.
-   * `🏷️ Tag`: Assign a tag like *Lecture Summary*, *Assignment Notes*, or *Revision*.
-5. Type your lecture notes in the main body.
-6. Tap **Save** in the top right corner.
+1. Tap **Add Activity** from the Timetable or Calendar screens.
+2. Choose your activity category (*Study & Revision*, *Lab & Practical*, *Sports*, *Club*).
+3. Tap **Start Time** or **End Time**:
+   * The Material 3 circular dial allows smooth touch dragging to choose hours and minutes.
+   * Use the quick duration buttons (`+1 hr`, `+1.5 hrs`, `+2 hrs`) to automatically compute your end time.
+4. Tap **Add Activity** to save to your local schedule.
 
 ---
 
@@ -107,3 +125,28 @@ Lectures features a Google Clock-inspired circular dial:
 2. Filter by **Campus** (*Kihumuro* or *Town*) — the app automatically pre-selects your campus based on your degree.
 3. Filter by **Building** or set a **Minimum Study Gap** (e.g. at least 30 minutes free).
 4. Tap any room to view its complete hourly schedule, floor number, and which classes occupy it throughout the day.
+
+---
+
+## 8. Backing Up Coursework with Google Account & Cloud Sync
+
+1. Open **Settings** (gear icon in the top right).
+2. Tap **Google Account & Cloud Backup**.
+3. Tap **Sign in with Google**:
+   * Authenticate seamlessly via the Android Credential Manager sheet.
+   * Your lecture notes, assignments, custom calendar activities, and preferences sync immediately to your private cloud storage.
+4. When signed in, tap **Sync Now** anytime to force an instant backup across devices.
+5. You can sign out anytime — your data remains safely backed up in the cloud and restores automatically upon signing back in.
+
+---
+
+## 9. Appearance, Notification Sounds & Updates
+
+* **Appearance & Theme**:
+  * Tap **Settings → Appearance & Theme** to open the dedicated styling screen.
+  * Tap **Light**, **Dark**, or **System Default** for instant visual switching.
+* **Notification Sounds**:
+  * Tap **Settings → Notification Sounds** to configure Android system channel ringtones and alert priorities for class alarms and task reminders.
+* **Checking for In-App Updates**:
+  * Tap **Settings → Lectures App Releases** to check for new versions.
+  * When an update is available, review the highlights, tap **Download & Update** to download with live progress, and tap **Install & Restart** for seamless 1-tap installation.

@@ -90,57 +90,56 @@ This document details the functional specifications, user interface behaviors, a
 
 ---
 
-## 3. 🕒 Google Clock-Inspired Time Scheduler & Pickers
-
-### A. Circular Dial Time Picker (`DedicatedTimePickerDialog`)
-* **Interactive Clock Face**:
-  * Features the official Material 3 `TimePicker` circular dial modeled after Google Clock.
-  * Rotating clock hands for selecting hours (0–23 or 1–12) and minutes (00–59).
-  * Smooth circular touch dragging with visual number highlights.
-* **AM/PM Toggle & 24h Support**:
-  * Clean toggle switch between AM and PM.
-* **Safe, Non-Editable Inputs**:
-  * Start Time and End Time fields in activity sheets are structured clickable cards rather than editable text boxes. Tapping either card immediately triggers the circular clock dial, preventing manual text errors, symbols, or invalid time strings.
-* **Quick Duration Presets**:
-  * Direct duration adjustment buttons: `+1 hr`, `+1.5 hrs`, `+2 hrs` to automatically compute and set the end time relative to the start time.
-
-### B. Unified Schedule Picker (`DedicatedSchedulePickerDialog`)
-* Combines **Smart Day Selection** with **Exact Time Selection**:
-  * **Smart Day Chips**: `Today`, `Tomorrow`, `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, or custom calendar date.
-  * **Time Tiles**: Prominent side-by-side display of selected hour and minute with blinking colon.
-  * **Live Summary Badge**: Displays a formatted preview (e.g. `📅 Tomorrow · 🕔 17:00`) before confirming.
-
----
-
-## 4. 📝 Academic Lecture Notes
+## 3. 📝 Obsidian-Grade Markdown Lecture Notes
 
 ### A. Notes Dashboard (`NotesScreen`)
-* **Search & Course Filter**: Real-time search bar filtering across title and content, with horizontal course pill selectors (`All Notes`, `BCS 2101`, `BIT 2104`...).
-* **Note Cards**: Displays note title, preview snippet, associated course badge, linked timetable class badge, and alarm status.
-* **Bottom FAB Clearance**: Floating Action Button is positioned at `96.dp` above navigation bars to prevent collision with the bottom navigation dock.
+* **Real-Time Search & Course Filtering**: Search across note titles and content with horizontal course pill selectors (`All Notes`, `BCS 2101`, `BIT 2104`...).
+* **Note Cards**: Displays note title, preview snippet with stripped markdown, course code badge, linked timetable session badge, and class alarm status.
+* **Bottom Navigation Clearance**: Floating Action Button is positioned above the bottom floating pill dock.
 
-### B. Dedicated Note Editor (`NoteEditorScreen`)
-* **Distraction-Free Top Bar**: Back button, auto-save status indicator, and primary Save button.
-* **Clean Title Field**: Borderless typography (`22.sp`, bold) with a subtle placeholder `"Note Title"`.
-* **Metadata Pill Strip**:
-  * `📚 Course`: Opens course selector modal.
-  * `📍 Attach Class`: Links the note to a specific timetable session from the user's schedule.
-  * `⏰ Alert`: Sets a pre-class reminder alarm with standard or custom minute durations.
-  * `🏷️ Tag`: Assigns academic tags (e.g. `Lecture`, `Assignment`, `Revision`, `Exam Prep`).
-* **Hidden Dock**: The bottom floating navigation dock automatically hides when entering the editor, granting full screen space for typing.
+### B. Dedicated Markdown Editor (`NoteEditorScreen`) & Live Preview
+* **Live Preview Syntax Highlighting (`MarkdownLiveVisualTransformation`)**:
+  * Real-time 1:1 mapped syntax coloring inside the Compose `BasicTextField` without cursor drift or jump.
+  * Formats headers (`#` to `######`), bold (`**`), italics (`*`), strikethrough (`~~`), inline code (`` ` ``), highlights (`==`), WikiLinks (`[[`), and callouts (`>`).
+* **Obsidian Callouts & Admonitions**:
+  * Renders `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!DANGER]`, `> [!SUCCESS]`, `> [!INFO]`, `> [!QUESTION]`, `> [!EXAMPLE]`, and `> [!QUOTE]`.
+  * Displayed inside custom themed Material 3 cards with distinct accent borders, background tints, and iconography.
+* **Markdown Tables**:
+  * Formats standard GitHub-Flavored Markdown tables with column alignment markers (`:---`, `:---:`, `---:`).
+  * Horizontally scrollable container with distinct header tint and alternating row styling.
+* **LaTeX-Style Math Equations**:
+  * Inline math (`$formula$`) and centered block math (`$$equation$$`) rendered in serif italic typography with a 1-tap formula copy button.
+* **Text Highlighting & Internal WikiLinks**:
+  * Warm amber highlight tint for `==important text==`.
+  * Tappable primary underlined links for `[[Lecture Topic]]`.
+* **Smart Enter Key Auto-Continuation**:
+  * Automatically continues checklist items (`- [ ] `), bullet points (`- `, `* `), numbered lists (`1. `), and callouts (`> `).
+  * Clears the prefix when Enter is pressed on an empty item.
+* **1-Tap Copyable Code Blocks**:
+  * Fenced code blocks (` ```kotlin `) render with syntax language badge and 1-tap clipboard copy button.
+* **Quick Action Toolbar**:
+  * Insert Markdown syntax with 1 tap: Bold, Italic, Strikethrough, Heading, Bullets, Checklists, Highlight (`==`), Callout (`[!Note]`), Table, Math (`$$`), and Link (`[[]]`).
+* **Cornell Note-Taking Template**:
+  * Pre-structured template with cues, notes, math block, summary table, and action items.
+* **Session & Pre-Class Alarm Linkage**:
+  * Link notes to specific timetable lectures with pre-class reminder alarms (10m, 15m, 30m, 45m, 60m).
 
 ---
 
-## 5. 📆 Academic Calendar
+## 4. 📆 Academic Calendar & Custom Activities
 
 * **Month Grid**: Interactive monthly calendar with weekday headers (`Mo` to `Su`).
-* **Today Quick-Jump Chip**: Dedicated action chip (`Icons.Outlined.Event`) in the top bar to immediately jump back to today's date from any month.
+* **Today Quick-Jump Chip**: Dedicated action chip in the top bar to immediately jump back to today's date from any month.
 * **Day Matrix Badges**: Dates with scheduled classes or custom activities display distinct colored dot indicators.
 * **Unified Daily Agenda**: Merges university timetable lectures and personal custom activities into a chronological timeline for the selected day.
+* **Fluid Material 3 Time & Schedule Pickers**:
+  * Interactive circular dial time picker for selecting exact hours and minutes without manual text typing errors.
+  * Quick duration preset chips (`+1 hr`, `+1.5 hrs`, `+2 hrs`) automatically compute end times.
+  * Unified day+time scheduler picker (`DedicatedSchedulePickerDialog`) with live preview badge.
 
 ---
 
-## 6. ✅ Tasks, Deadlines & Dashboard
+## 5. ✅ Tasks, Deadlines & Dashboard
 
 * **Add Task Course Unit Selector**:
   * Implemented as a read-only `ExposedDropdownMenuBox` populating exclusively from the student's enrolled academic courses.
@@ -151,13 +150,12 @@ This document details the functional specifications, user interface behaviors, a
   * **Weekly Breakdown Stacked Bar Chart**: Visualizes completed vs pending tasks for each day from Monday to Sunday.
 * **Notification Permission Prompt**:
   * Includes an explicit `X` dismissal button (`isNotificationBannerDismissed`) and a direct fallback to Android App Notification Settings (`Settings.ACTION_APP_NOTIFICATION_SETTINGS`).
-  * In-app notification popups simulating push alerts have been removed, relying purely on Android's native system notification tray.
 * **Bottom Navigation Clearance**:
   * Content padding has been extended with an explicit spacer (`listBottomPadding + 96.dp`) so task items and action buttons are never obscured behind the bottom dock or FAB.
 
 ---
 
-## 7. 🏫 Campus Vacant Rooms Finder
+## 6. 🏫 Campus Vacant Rooms Finder
 
 * **Coverage**: **92 rooms across 7 buildings and 2 campuses**, derived from the university's
   own room allocation timetable (2026/2027 Semester I).
@@ -172,29 +170,55 @@ This document details the functional specifications, user interface behaviors, a
 * **Minimum Study Gap**: `30 min (default)` / `15` / `45` / `1 hour` / `Any free`. Prevents
   suggesting a room that is free for only a minute or two between back-to-back classes.
 * **Suggestion Ranking**: Results are ordered by *how much new information* a suggestion carries —
-  lecture rooms and labs first (their availability is the unknown), **libraries last** (everyone
-  already assumes the library is free). Then by longest free window, then by room code.
-  A `Hide Library` toggle removes libraries entirely.
+  lecture rooms and labs first, libraries last. Then by longest free window, then by room code.
 * **Status Indicators**:
   * **Vacant Now** — green, with time until the next class (`Free until 14:30 (1h 45m)`)
   * **Occupied** — red, with the active course code, programme group, and end time
-  * **Permanently Vacant** — blue, for the 19 rooms with no scheduled sessions this semester
-    (`Free all semester (no scheduled classes)`)
-* **Landmark Marking**: Library cards carry a `Known` badge, signalling the suggestion carries
-  no new information.
-* **Search**: Matches room name, code, and aliases (so `DS LAB 4`, `LR1`, `CR3`, `S204` all work).
+  * **Permanently Vacant** — blue, for rooms with no scheduled sessions this semester
 * **Room Detail**: Tap any room to see its full day schedule — every session with times, course
-  codes, programme groups, plus the building, level, and which faculties use the room.
-* **Day & Time Picker**: Query "now" or any day/time combination via the circular clock and
-  day pickers.
+  codes, programme groups, plus building, level, and faculties.
 
 ---
 
-## 8. ⚙️ Settings, Regulations & Developer Attribution
+## 7. ⚙️ Settings, Theming & Legal Regulations
 
-* **Academic Profile Reconfiguration**: Change faculty, enrolled programme, and semester anytime.
-* **Display Theming**: Choose between System Default, AMOLED Pure Dark, and Clean Light mode.
-* **Legal Regulations & Disclaimer Dialogs**:
-  * Independent Developer Attribution to **Mark Paul M**.
-  * Full institutional non-affiliation disclaimer stating that Lectures is NOT an official app of Mbarara University of Science and Technology (MUST).
-  * Direct access to Terms of Service and Privacy Policy.
+* **Academic Profile Management**:
+  * Clean, typography-first card displaying enrolled degree, cohort code, and faculty.
+  * Rapid "Switch" modal to preview or reconfigure academic enrollment without avatar clutter.
+* **Dedicated Appearance & Theme Sub-Screen**:
+  * Standalone clutter-free view focusing purely on theme switching.
+  * Interactive selection between **Light Mode** (bright & crisp), **Dark Mode** (night contrast), and **System Default** (auto adapt).
+* **Notification Sounds & Ringtone Configuration**:
+  * One-tap access to Android system channel settings for class alarms and task notifications.
+  * Clear lead time presets (10m, 15m, 30m, 45m, 60m, custom) for upcoming lecture reminders.
+* **Developer, Regulations & Disclaimer Section**:
+  * Clean, chevron-free interface with Material 3 surface action badges ("Profile", "Open", "View").
+  * Independent Developer Attribution to **MUGENDAWALA MARK PAUL** (BSE Student at MUST).
+  * Institutional non-affiliation disclaimer, terms of service, and local-first privacy policy dialogs.
+  * Anonymous feedback and bug reporting with stateless offline queuing.
+
+---
+
+## 8. ☁️ Google Account & Cloud Synchronization
+
+* **Offline-First Guest Mode**: The entire app functions with zero network connection and no account required.
+* **Jetpack Credential Manager Sign-In**: Optional, seamless Google Sign-In with official Google Identity services.
+* **Bidirectional Cloud Sync**: Automatically backs up lecture notes, assignments, custom calendar activities, and schedule preferences to secure Firestore user documents.
+* **Smart Conflict Resolution**: Client timestamp tracking prevents data loss and merges offline changes cleanly when reconnecting.
+* **Privacy & Session Management**:
+  * Displays user profile monogram and email.
+  * Preserved data counter pill showing synced vs local records.
+  * Clean "Sync Now" on-demand trigger and "Sign Out" confirmation with automatic local user-data isolation.
+
+---
+
+## 9. 🔄 Native In-App Update Engine
+
+* **Sideload Update Management**: Keeps students on the latest release outside the Google Play Store.
+* **Remote Version Inspection**: Checks GitHub Releases API / version metadata.
+* **Strict Downgrade Prevention**: Uses semantic version comparison (`isNewerRelease`) to strictly forbid installing older builds.
+* **Clean In-App Experience**:
+  * Background APK downloading with real-time percentage progress bar.
+  * SHA-256 cryptographic checksum verification before prompting install.
+  * Concise, curated release highlights filtering out developer and backend jargon.
+  * 1-tap installation via Android `FileProvider` with guidance for unknown source permissions.

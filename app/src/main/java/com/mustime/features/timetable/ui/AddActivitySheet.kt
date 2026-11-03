@@ -217,7 +217,7 @@ fun AddActivitySheet(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Time range row (Tap to open circular Google Clock picker)
+                // Time range row (Tap to open circular time picker)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)

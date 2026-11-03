@@ -37,8 +37,8 @@ import java.util.Calendar
 import java.util.Locale
 
 /**
- * Dedicated Time Picker Dialog featuring the official Google Clock circular dial clock (TimePicker),
- * with interactive circular clock face, rotating clock hand for hours and minutes, and AM/PM toggle.
+ * Dedicated Time Picker Dialog featuring the Material 3 circular dial TimePicker,
+ * with interactive clock face, rotating clock hand for hours and minutes, and AM/PM toggle.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,7 +88,7 @@ fun DedicatedTimePickerDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Circular Clock Dial (Google Clock style)
+                // Circular Clock Dial (Material 3 TimePicker)
                 TimePicker(
                     state = timePickerState
                 )
@@ -481,7 +481,7 @@ fun DedicatedCalendarDatePickerDialog(
 }
 
 /**
- * Unified Google Clock inspired Schedule Picker Dialog that handles BOTH Day and Time atomically.
+ * Unified Schedule Picker Dialog that handles BOTH Day and Time atomically.
  * Prevents raw typing of "Tomorrow • 17:00" and ensures the time scheduler handles the whole flow.
  */
 @Composable
@@ -545,7 +545,7 @@ fun DedicatedSchedulePickerDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Unified Result Preview Tile (Clickable to open circular Google Clock picker)
+                // Unified Result Preview Tile (Clickable to open circular time picker)
                 Surface(
                     onClick = { showTimeDialog = true },
                     shape = RoundedCornerShape(16.dp),

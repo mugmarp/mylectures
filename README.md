@@ -72,17 +72,25 @@ Derived from the university's own room allocation data: **92 rooms across 7 buil
 - "Free until 14:30" — tells you when the next class arrives, not just that it's empty now
 - Ranked by usefulness: lecture rooms and labs first, libraries last (you already know the library is free)
 
-### 📝 Lecture notes
-Distraction-free editor. Link a note to a specific class session or course, tag it, and attach a pre-class reminder.
+### 📝 Obsidian-Grade Lecture Notes
+Distraction-free Markdown editor equipped with an Obsidian-style reading and editing experience:
+- **Live Preview Syntax Highlighting**: Real-time syntax coloring inside the editor for headers, bold, italics, code, strikethrough, highlights, and WikiLinks.
+- **Obsidian Callouts & Admonitions**: Styled cards for `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!DANGER]`, and `> [!SUCCESS]`.
+- **Formatted Tables & Math Equations**: Alignment-aware tables (`| Header |`) and LaTeX-style math formulas (`$inline$` and `$$block$$`).
+- **Smart Formatting**: Text highlights (`==key term==`), internal WikiLinks (`[[Course Unit]]`), smart Enter continuation for checklists and lists, Cornell note-taking template, and 1-tap copyable code blocks.
+- **Course & Class Linking**: Attach notes to specific lectures or course codes with pre-class alarms.
 
 ### ✅ Tasks & deadlines
-Assignments across Urgent / High / Medium / Low with completion toggles, deadline alarms, read-only enrolled course dropdowns, and an interactive weekly progress dashboard with daily breakdown stacked charts.
+Assignments organized across Urgent / High / Medium / Low priority with completion toggles, deadline alarms, read-only enrolled course dropdowns, and an interactive weekly progress dashboard with daily breakdown stacked charts.
 
 ### 📆 Academic calendar
-Merges your timetable with personal study activities into one day view, with a month grid and quick "today" jump.
+Merges your timetable with personal study activities into one day view, with a month grid, dot matrices, and quick "today" jump.
 
-### 🕒 Material 3 pickers
-Circular clock dial for times, unified day+time picker for tasks, and `+1 hr` / `+1.5 hrs` / `+2 hrs` duration presets — no manual typing, no malformed input.
+### ☁️ Google Cloud Backup & Cross-Device Sync
+100% functional offline by default in Guest mode. Optional Google Sign-In via Jetpack Credential Manager allows students to back up and sync their notes, coursework tasks, and schedule preferences across devices with bidirectional conflict resolution.
+
+### 🔄 Native In-App Updates
+Outside Google Play, Lectures includes a dedicated updater that checks verified releases, displays concise student-friendly changelogs, downloads APKs with a live progress bar, verifies SHA-256 integrity, strictly prevents downgrades, and triggers native 1-tap installation.
 
 ---
 
@@ -127,7 +135,7 @@ The only data that leaves the device is **pseudonymous technical diagnostics**: 
 - Launch count and enrolled programme code
 - Aggregate feature usage counters
 
-No names, emails, phone numbers, note contents, or personal data of any kind is collected. The `INTERNET` and `ACCESS_NETWORK_STATE` permissions exist solely for this telemetry and the future opt-in cloud sync.
+No names, emails, phone numbers, note contents, or personal data of any kind is collected without explicit consent. The `INTERNET` and `ACCESS_NETWORK_STATE` permissions exist solely for timetable metadata updates, pseudonymous service diagnostics, anonymous feedback, and optional Google account cloud backup.
 
 ### Permissions
 
@@ -138,7 +146,7 @@ No names, emails, phone numbers, note contents, or personal data of any kind is 
 | `RECEIVE_BOOT_COMPLETED` | Re-arm alarms after a restart |
 | `WAKE_LOCK` | Deliver an alarm while the device is asleep |
 | `VIBRATE` | Alarm vibration |
-| `INTERNET`, `ACCESS_NETWORK_STATE` | Required by the bundled Firebase SDKs — **no request is currently made** |
+| `INTERNET`, `ACCESS_NETWORK_STATE` | Required for timetable sync, anonymous feedback, and optional Google cloud backup |
 
 ---
 
@@ -186,7 +194,7 @@ Room DAOs return `Flow<List<T>>`, so any write propagates to the UI without manu
 | Persistence | Room (SQLite), DataStore for preferences |
 | Background | `AlarmManager` (exact, Doze-resilient) + `BootReceiver` re-arming |
 | Build | Gradle 9.3.1, AGP 9.1.1, KSP |
-| Min / Target SDK | 26 (Android 8.0) / 34 |
+| Min / Target SDK | 26 (Android 8.0) / 35 (Compile SDK 36) |
 | CI | GitHub Actions — compiles, assembles, tests, uploads APK |
 
 ---
@@ -269,9 +277,9 @@ The sync architecture is:
 
 1. **On launch** — `startTimetableSync()` observes the central `/timetable` and `/timetable/metadata` Firestore documents. New drafts or the final timetable are detected automatically and written to local Room storage.
 2. **Manual refresh** — Settings → Sync Now queries the live Firestore metadata on demand, falling back to local caching when offline.
-3. **Offline-first** — the app is fully functional without a connection. Sync only updates the timetable version label and metadata; your notes, tasks, and alarms always work locally.
+### Cloud Backup & Synchronization
 
-There is also a **partial, unwired** user-sync layer (`SyncRepository.startAllSync()`) for per-user notes and tasks via Firestore. It requires authentication and is not yet started — a sign-in flow and merge strategy are needed before it can be enabled.
+Students can optionally link their Google Account (via Jetpack Credential Manager) under **Settings → Google Account & Cloud Backup**. This securely backs up lecture notes, assignments, and calendar events to Firestore with bidirectional merge and conflict resolution, keeping coursework synchronized across devices while preserving full offline functionality.
 
 ---
 
@@ -301,7 +309,7 @@ All university names, faculty titles, and course codes are referenced solely to 
 ## Developer
 
 **Mark Paul MUGENDAWALA** · [@mugmarp](https://github.com/mugmarp)
-- Year 2 2026 SWE Student at MUST
+- BSE Student at MUST
 ---
 
 ## License
