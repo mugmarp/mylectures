@@ -126,31 +126,16 @@ This document details the functional specifications, user interface behaviors, a
 
 ---
 
-## 4. 📆 Academic Calendar & Semester Horizon
+## 4. 📆 Academic Calendar & Custom Activities
 
-The Academic Calendar is the student's unified macro-planning horizon, bridging official university academic milestones, coursework deadlines, scheduled classes, and personal study sessions.
-
-* **Dual-Mode Planner Switcher**:
-  * **Month Planner**: Interactive monthly matrix displaying workload indicators, multi-category badges, and a day agenda.
-  * **Semester Milestones**: Chronological roadmap of the academic year (Orientation, Teaching Commencement, Add/Drop Deadlines, Continuous Assessment Tests, Revision Week, Final Examinations, and Recess).
-* **Academic Calendar Engine (`AcademicCalendarEngine`)**:
-  * Automatically resolves teaching weeks (Weeks 1 to 17), semester phase (`Teaching`, `Mid-Sem Tests`, `Revision`, `Exams`, `Recess`), and university milestones for any date.
-  * Context-aware: Suppresses recurring timetable classes on official non-instructional days (recess and public holidays), preventing misleading class display.
-* **Month Matrix Multi-Category Badging**:
-  * **🔴 Deadlines / Assignments Due**: Prominent red/amber indicator for assignments due on that date.
-  * **🔵 Scheduled Lectures**: Primary blue indicator for instructional class days.
-  * **🟢 Personal Activities**: Forest green indicator for study sessions, lab prep, and revision blocks.
-  * **🟣 Official Milestones / Holidays**: Purple badge for university dates and national holidays.
-* **Daily Workload Diagnostic**:
-  * Instant metric breakdown for the selected day: Total Lecture Contact Hours (`Xh Ym`), Pending Deadlines count (`X Due`), and Planned Activities count.
-* **Priority "Deadlines Due Today" Section**:
-  * Deadlines are hoisted above the chronological timeline with priority chips, remaining time, and checkbox completion, ensuring urgent coursework is never missed.
-* **Chronological Day Agenda**:
-  * Clean, typography-first Material 3 cards for classes and custom activities.
-  * Tap to view session details, campus floor badges, or edit study activities.
-* **Today Quick-Jump & Month Navigation**:
-  * Dedicated "Today" chip in the top bar to instantly jump back to today's date from any month.
-  * Smooth month and day transition controls.
+* **Month Grid**: Interactive monthly calendar with weekday headers (`Mo` to `Su`).
+* **Today Quick-Jump Chip**: Dedicated action chip in the top bar to immediately jump back to today's date from any month.
+* **Day Matrix Badges**: Dates with scheduled classes or custom activities display distinct colored dot indicators.
+* **Unified Daily Agenda**: Merges university timetable lectures and personal custom activities into a chronological timeline for the selected day.
+* **Fluid Material 3 Time & Schedule Pickers**:
+  * Interactive circular dial time picker for selecting exact hours and minutes without manual text typing errors.
+  * Quick duration preset chips (`+1 hr`, `+1.5 hrs`, `+2 hrs`) automatically compute end times.
+  * Unified day+time scheduler picker (`DedicatedSchedulePickerDialog`) with live preview badge.
 
 ---
 
