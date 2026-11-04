@@ -3,6 +3,10 @@ package com.lectures.features.calendar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.lectures.core.alarm.AlarmScheduler
+import com.lectures.core.alarm.TaskAlarmScheduler
+import com.lectures.core.alarm.TaskDateTimeParser
+import com.lectures.core.util.TimeUtil
 import com.lectures.features.timetable.data.TimetableRepository
 import com.lectures.features.timetable.domain.Assignment
 import com.lectures.features.timetable.domain.CustomEvent
@@ -12,19 +16,41 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.lectures.core.alarm.AlarmScheduler
-import com.lectures.core.alarm.TaskAlarmScheduler
-import com.lectures.core.alarm.TaskDateTimeParser
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
+enum class CalendarTabMode {
+    MONTH_PLANNER,
+    SEMESTER_MILESTONES
+}
+
 enum class CalendarFilter(val label: String) {
-        ALL("All Events"),
-        LECTURES("Lectures"),
-        ACTIVITIES("Activities"),
-        TASKS("Tasks")
-    }
+    ALL("All Events"),
+    LECTURES("Lectures"),
+    ACTIVITIES("Activities"),
+    TASKS("Deadlines")
+}
+
+data class DayWorkload(
+    val totalLectureMinutes: Int = 0,
+    val lectureCount: Int = 0,
+    val deadlineCount: Int = 0,
+    val activityCount: Int = 0,
+    val primaryMilestone: AcademicMilestone? = null
+) {
+    val totalHoursText: String
+        get() {
+            val hours = totalLectureMinutes / 60
+            val mins = totalLectureMinutes % 60
+            return when {
+                hours > 0 && mins > 0 -> "${hours}h ${mins}m"
+                hours > 0 -> "${hours}h"
+                mins > 0 -> "${mins}m"
+                else -> "0h"
+            }
+        }
+}
 
 data class CalendarUiState(
     val isLoading: Boolean = true,
@@ -33,13 +59,16 @@ data class CalendarUiState(
     val assignments: List<Assignment> = emptyList(),
     val customEvents: List<CustomEvent> = emptyList(),
     val selectedFilter: CalendarFilter = CalendarFilter.ALL,
+    val activeTabMode: CalendarTabMode = CalendarTabMode.MONTH_PLANNER,
     val yearMonthText: String = "",
     val currentYear: Int = 2026,
     val currentMonth: Int = 0,
     val daysInMonth: Int = 30,
     val firstDayOfWeekOffset: Int = 0,
     val selectedDay: Int = 1,
-    val selectedDayOfWeek: String = "Monday"
+    val selectedDayOfWeek: String = "Monday",
+    val academicContext: DayAcademicContext = AcademicCalendarEngine.getAcademicContextForDate(2026, 0, 1),
+    val milestones: List<AcademicMilestone> = AcademicCalendarEngine.getMilestonesForAcademicYear()
 )
 
 class CalendarViewModel(
@@ -69,7 +98,7 @@ class CalendarViewModel(
     private var scheduleJob: Job? = null
 
     init {
-        // Initialize calendar state
+        // Initialize calendar state to current day
         val initialDay = calendar.get(Calendar.DAY_OF_MONTH)
         recalculateMonth(selectedDay = initialDay)
 
@@ -100,6 +129,10 @@ class CalendarViewModel(
                 _uiState.value = _uiState.value.copy(customEvents = events)
             }
         }
+    }
+
+    fun setTabMode(mode: CalendarTabMode) {
+        _uiState.value = _uiState.value.copy(activeTabMode = mode)
     }
 
     fun addCustomEvent(event: CustomEvent) {
@@ -148,6 +181,12 @@ class CalendarViewModel(
         val dayOfWeekFormat = SimpleDateFormat("EEEE", Locale.getDefault())
         val selectedDayOfWeek = dayOfWeekFormat.format(temp.time)
 
+        val academicContext = AcademicCalendarEngine.getAcademicContextForDate(
+            currentYear,
+            currentMonth,
+            validSelectedDay
+        )
+
         _uiState.value = _uiState.value.copy(
             yearMonthText = yearMonthText,
             currentYear = currentYear,
@@ -155,7 +194,8 @@ class CalendarViewModel(
             daysInMonth = daysInMonth,
             firstDayOfWeekOffset = firstDayOfWeekOffset,
             selectedDay = validSelectedDay,
-            selectedDayOfWeek = selectedDayOfWeek
+            selectedDayOfWeek = selectedDayOfWeek,
+            academicContext = academicContext
         )
     }
 
@@ -169,6 +209,44 @@ class CalendarViewModel(
         }
         val dayOfWeekName = getDayOfWeekNameForDay(day)
         return assignment.dueDate.contains(dayOfWeekName, ignoreCase = true)
+    }
+
+    fun getDayWorkload(
+        day: Int,
+        dayOfWeek: String,
+        lectures: List<TimetableEntry>,
+        activities: List<CustomEvent>,
+        assignments: List<Assignment>
+    ): DayWorkload {
+        val academic = AcademicCalendarEngine.getAcademicContextForDate(
+            _uiState.value.currentYear,
+            _uiState.value.currentMonth,
+            day
+        )
+
+        // Only count lectures if it's an instructional day
+        val dayLectures = if (academic.isInstructionalDay) {
+            lectures.filter { it.dayOfWeek.equals(dayOfWeek, ignoreCase = true) }
+        } else {
+            emptyList()
+        }
+
+        val totalMins = dayLectures.sumOf { entry ->
+            val start = TimeUtil.toMinutes(entry.startTime)
+            val end = TimeUtil.toMinutes(entry.endTime)
+            if (end > start) end - start else 60
+        }
+
+        val dayActivities = activities.filter { it.dayOfWeek.equals(dayOfWeek, ignoreCase = true) }
+        val dueTasks = assignments.filter { !it.completed && isTaskDueOnDay(it, day) }
+
+        return DayWorkload(
+            totalLectureMinutes = totalMins,
+            lectureCount = dayLectures.size,
+            deadlineCount = dueTasks.size,
+            activityCount = dayActivities.size,
+            primaryMilestone = academic.primaryMilestone
+        )
     }
 
     fun toggleTaskComplete(task: Assignment) {
@@ -223,9 +301,16 @@ class CalendarViewModel(
         val dayOfWeekFormat = SimpleDateFormat("EEEE", Locale.getDefault())
         val selectedDayOfWeek = dayOfWeekFormat.format(temp.time)
 
+        val academicContext = AcademicCalendarEngine.getAcademicContextForDate(
+            _uiState.value.currentYear,
+            _uiState.value.currentMonth,
+            validDay
+        )
+
         _uiState.value = _uiState.value.copy(
             selectedDay = validDay,
-            selectedDayOfWeek = selectedDayOfWeek
+            selectedDayOfWeek = selectedDayOfWeek,
+            academicContext = academicContext
         )
     }
 

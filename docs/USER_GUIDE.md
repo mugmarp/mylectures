@@ -91,14 +91,20 @@ Lectures features a full Obsidian-grade Markdown editor with real-time Live Prev
 
 ---
 
-## 5. Adding Personal Activities & Using the Time Picker
+## 5. Using the Academic Calendar & Semester Horizon
 
-1. Tap **Add Activity** from the Timetable or Calendar screens.
-2. Choose your activity category (*Study & Revision*, *Lab & Practical*, *Sports*, *Club*).
-3. Tap **Start Time** or **End Time**:
-   * The Material 3 circular dial allows smooth touch dragging to choose hours and minutes.
-   * Use the quick duration buttons (`+1 hr`, `+1.5 hrs`, `+2 hrs`) to automatically compute your end time.
-4. Tap **Add Activity** to save to your local schedule.
+1. Tap the **Calendar** tab in the bottom floating dock.
+2. **Switching Modes**:
+   * **Month Planner**: View the monthly matrix with colored workload indicators (Red for Deadlines, Blue for Lectures, Green for Activities, Purple for Milestones). Tap any day to inspect its schedule and workload diagnostic pills.
+   * **Semester Milestones**: Tap to open the full academic year roadmap (Orientation, Teaching Commencement, Continuous Assessment Tests, Revision Week, Final Examinations, and Recess). Tap any milestone to immediately jump to its start date on the calendar.
+3. **Deadlines Due Today**:
+   * Any assignments due on the selected date appear prominently in the **Deadlines Due Today** banner at the top of the agenda. Check the checkbox to mark completed.
+4. **Scheduling Personal Activities**:
+   * Tap **Schedule Activity** (or the `+` FAB).
+   * Choose your activity category (*Study & Revision*, *Lab & Practical*, *Sports*, *Club*).
+   * Set your start and end times or use the duration chips (`+1 hr`, `+1.5 hrs`, `+2 hrs`).
+   * Tap **Save Activity** to add it to your agenda.
+5. **Jump to Today**: Tap the **Today** chip in the top bar from any month to return to the current date.
 
 ---
 
