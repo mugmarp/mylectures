@@ -67,7 +67,9 @@ data class CalendarUiState(
     val firstDayOfWeekOffset: Int = 0,
     val selectedDay: Int = 1,
     val selectedDayOfWeek: String = "Monday",
+    val todayDay: Int? = null,
     val academicContext: DayAcademicContext = AcademicCalendarEngine.getAcademicContextForDate(2026, 0, 1),
+    val monthAcademicContexts: Map<Int, DayAcademicContext> = emptyMap(),
     val milestones: List<AcademicMilestone> = AcademicCalendarEngine.getMilestonesForAcademicYear()
 )
 
@@ -181,7 +183,21 @@ class CalendarViewModel(
         val dayOfWeekFormat = SimpleDateFormat("EEEE", Locale.getDefault())
         val selectedDayOfWeek = dayOfWeekFormat.format(temp.time)
 
-        val academicContext = AcademicCalendarEngine.getAcademicContextForDate(
+        // Determine if viewed month contains today
+        val realNow = Calendar.getInstance()
+        val todayDay = if (realNow.get(Calendar.YEAR) == currentYear && realNow.get(Calendar.MONTH) == currentMonth) {
+            realNow.get(Calendar.DAY_OF_MONTH)
+        } else {
+            null
+        }
+
+        // Precompute day academic context for all days in the month once (zero UI-thread allocations)
+        val monthContexts = HashMap<Int, DayAcademicContext>(daysInMonth)
+        for (d in 1..daysInMonth) {
+            monthContexts[d] = AcademicCalendarEngine.getAcademicContextForDate(currentYear, currentMonth, d)
+        }
+
+        val academicContext = monthContexts[validSelectedDay] ?: AcademicCalendarEngine.getAcademicContextForDate(
             currentYear,
             currentMonth,
             validSelectedDay
@@ -195,7 +211,9 @@ class CalendarViewModel(
             firstDayOfWeekOffset = firstDayOfWeekOffset,
             selectedDay = validSelectedDay,
             selectedDayOfWeek = selectedDayOfWeek,
-            academicContext = academicContext
+            todayDay = todayDay,
+            academicContext = academicContext,
+            monthAcademicContexts = monthContexts
         )
     }
 
@@ -214,22 +232,15 @@ class CalendarViewModel(
     fun getDayWorkload(
         day: Int,
         dayOfWeek: String,
-        lectures: List<TimetableEntry>,
+        dayLectures: List<TimetableEntry>,
         activities: List<CustomEvent>,
         assignments: List<Assignment>
     ): DayWorkload {
-        val academic = AcademicCalendarEngine.getAcademicContextForDate(
+        val academic = _uiState.value.monthAcademicContexts[day] ?: AcademicCalendarEngine.getAcademicContextForDate(
             _uiState.value.currentYear,
             _uiState.value.currentMonth,
             day
         )
-
-        // Only count lectures if it's an instructional day
-        val dayLectures = if (academic.isInstructionalDay) {
-            lectures.filter { it.dayOfWeek.equals(dayOfWeek, ignoreCase = true) }
-        } else {
-            emptyList()
-        }
 
         val totalMins = dayLectures.sumOf { entry ->
             val start = TimeUtil.toMinutes(entry.startTime)
@@ -284,13 +295,31 @@ class CalendarViewModel(
     }
 
     fun previousMonth() {
+        // Anchor to day 1 before adding/subtracting months to eliminate day-31 drift
+        calendar.set(Calendar.DAY_OF_MONTH, 1)
         calendar.add(Calendar.MONTH, -1)
         recalculateMonth(selectedDay = 1)
     }
 
     fun nextMonth() {
+        // Anchor to day 1 before adding/subtracting months to eliminate day-31 drift
+        calendar.set(Calendar.DAY_OF_MONTH, 1)
         calendar.add(Calendar.MONTH, 1)
         recalculateMonth(selectedDay = 1)
+    }
+
+    /**
+     * Navigates directly to an exact target date (year, month, day), ensuring
+     * full synchronization across month boundaries when jumping from milestones.
+     */
+    fun navigateToDate(year: Int, month: Int, day: Int) {
+        calendar.set(Calendar.YEAR, year)
+        calendar.set(Calendar.MONTH, month)
+        calendar.set(Calendar.DAY_OF_MONTH, 1)
+        val maxDays = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+        val validDay = day.coerceIn(1, maxDays)
+        calendar.set(Calendar.DAY_OF_MONTH, validDay)
+        recalculateMonth(selectedDay = validDay)
     }
 
     fun selectDay(day: Int) {
@@ -301,7 +330,7 @@ class CalendarViewModel(
         val dayOfWeekFormat = SimpleDateFormat("EEEE", Locale.getDefault())
         val selectedDayOfWeek = dayOfWeekFormat.format(temp.time)
 
-        val academicContext = AcademicCalendarEngine.getAcademicContextForDate(
+        val academicContext = _uiState.value.monthAcademicContexts[validDay] ?: AcademicCalendarEngine.getAcademicContextForDate(
             _uiState.value.currentYear,
             _uiState.value.currentMonth,
             validDay
@@ -318,8 +347,10 @@ class CalendarViewModel(
         if (_uiState.value.selectedDay > 1) {
             selectDay(_uiState.value.selectedDay - 1)
         } else {
+            calendar.set(Calendar.DAY_OF_MONTH, 1)
             calendar.add(Calendar.MONTH, -1)
             val prevDays = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+            calendar.set(Calendar.DAY_OF_MONTH, prevDays)
             recalculateMonth(selectedDay = prevDays)
         }
     }
@@ -328,7 +359,9 @@ class CalendarViewModel(
         if (_uiState.value.selectedDay < _uiState.value.daysInMonth) {
             selectDay(_uiState.value.selectedDay + 1)
         } else {
+            calendar.set(Calendar.DAY_OF_MONTH, 1)
             calendar.add(Calendar.MONTH, 1)
+            calendar.set(Calendar.DAY_OF_MONTH, 1)
             recalculateMonth(selectedDay = 1)
         }
     }
@@ -340,10 +373,7 @@ class CalendarViewModel(
     }
 
     fun isToday(day: Int): Boolean {
-        val now = Calendar.getInstance()
-        return now.get(Calendar.YEAR) == calendar.get(Calendar.YEAR) &&
-                now.get(Calendar.MONTH) == calendar.get(Calendar.MONTH) &&
-                now.get(Calendar.DAY_OF_MONTH) == day
+        return _uiState.value.todayDay == day
     }
 
     fun selectToday() {

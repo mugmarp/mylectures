@@ -386,7 +386,8 @@ fun CalendarScreen(
                 }
 
                 items(uiState.milestones, key = { it.id }) { milestone ->
-                    val isCurrentMilestone = milestone.contains(
+                    val isLiveNow = remember { milestone.isLiveNow() }
+                    val isSelectedDate = milestone.contains(
                         uiState.currentYear,
                         uiState.currentMonth,
                         uiState.selectedDay
@@ -397,22 +398,27 @@ fun CalendarScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp, vertical = 6.dp)
                             .clickable {
-                                // Jump directly to milestone start date in Month Planner
-                                val start = milestone.startCal
-                                viewModel.selectDay(start.get(Calendar.DAY_OF_MONTH))
+                                // Jump directly to milestone start date in Month Planner with accurate year & month
+                                viewModel.navigateToDate(
+                                    milestone.startYear,
+                                    milestone.startMonth,
+                                    milestone.startDay
+                                )
                                 viewModel.setTabMode(CalendarTabMode.MONTH_PLANNER)
                             },
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isCurrentMilestone) {
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-                            } else {
-                                MaterialTheme.colorScheme.surface
+                            containerColor = when {
+                                isLiveNow -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                                isSelectedDate -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                                else -> MaterialTheme.colorScheme.surface
                             }
                         ),
-                        border = if (isCurrentMilestone) {
-                            BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
-                        } else null
+                        border = when {
+                            isLiveNow -> BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
+                            isSelectedDate -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                            else -> null
+                        }
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(
@@ -447,11 +453,24 @@ fun CalendarScreen(
                                     )
                                 }
 
-                                if (isCurrentMilestone) {
+                                if (isLiveNow) {
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = Color(0xFF10B981).copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            text = "Ongoing Now",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF10B981),
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                } else if (isSelectedDate) {
                                     Text(
-                                        text = "Active Now",
+                                        text = "Selected Date",
                                         fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -616,7 +635,7 @@ fun CalendarScreen(
                                         val cellDayName = viewModel.getDayOfWeekNameForDay(dayNum)
                                         val cellDayLower = cellDayName.lowercase(Locale.ROOT)
 
-                                        val cellAcademic = AcademicCalendarEngine.getAcademicContextForDate(
+                                        val cellAcademic = uiState.monthAcademicContexts[dayNum] ?: AcademicCalendarEngine.getAcademicContextForDate(
                                             uiState.currentYear,
                                             uiState.currentMonth,
                                             dayNum

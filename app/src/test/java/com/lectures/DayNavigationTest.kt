@@ -90,4 +90,39 @@ class DayNavigationTest {
         // Should navigate to day 1 of next month
         assertEquals(1, calendarViewModel.uiState.value.selectedDay)
     }
+
+    @Test
+    fun testNavigateToDateCrossMonthAndYear() {
+        // Navigate across year and month boundary (e.g. jumping to Semester 2 start date)
+        calendarViewModel.navigateToDate(2027, java.util.Calendar.JANUARY, 18)
+
+        val state = calendarViewModel.uiState.value
+        assertEquals(2027, state.currentYear)
+        assertEquals(java.util.Calendar.JANUARY, state.currentMonth)
+        assertEquals(18, state.selectedDay)
+        assertEquals(2, state.academicContext.semesterNumber)
+        assertEquals("Monday", state.selectedDayOfWeek)
+        assertTrue(state.academicContext.isInstructionalDay)
+    }
+
+    @Test
+    fun testAcademicCalendarEngineMilestoneLookup() {
+        val milestones = com.lectures.features.calendar.AcademicCalendarEngine.getMilestonesForAcademicYear()
+        assertTrue(milestones.isNotEmpty())
+
+        // Check Mid-Semester Assessment date: Oct 20, 2026
+        val midsemContext = com.lectures.features.calendar.AcademicCalendarEngine.getAcademicContextForDate(
+            2026, java.util.Calendar.OCTOBER, 20
+        )
+        assertEquals(com.lectures.features.calendar.AcademicPhase.MID_SEM_TESTS, midsemContext.phase)
+        assertNotNull(midsemContext.primaryMilestone)
+        assertEquals("sem1_midsem", midsemContext.primaryMilestone?.id)
+
+        // Check Christmas / Recess date: Dec 28, 2026
+        val recessContext = com.lectures.features.calendar.AcademicCalendarEngine.getAcademicContextForDate(
+            2026, java.util.Calendar.DECEMBER, 28
+        )
+        assertEquals(com.lectures.features.calendar.AcademicPhase.RECESS, recessContext.phase)
+        assertTrue(!recessContext.isInstructionalDay)
+    }
 }
