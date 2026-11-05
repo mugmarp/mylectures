@@ -30,7 +30,7 @@ DEFAULT_SCHEMA_DIR = REPO / "app" / "schemas"
 JSON_ASSET = REPO / "app" / "src" / "main" / "assets" / "timetable_export.json"
 METADATA_ASSET = REPO / "app" / "src" / "main" / "assets" / "timetable_metadata.json"
 ROOM_DIRECTORY = (
-    REPO / "app" / "src" / "main" / "java" / "com" / "mustime"
+    REPO / "app" / "src" / "main" / "java" / "com" / "lectures"
     / "features" / "rooms" / "RoomDirectory.kt"
 )
 OUTPUT_DB = REPO / "app" / "src" / "main" / "assets" / "mustime_prepopulated.db"
@@ -146,7 +146,7 @@ def resolve_floor(room: str | None, rooms: list[tuple[set[str], int]]) -> int | 
 # --------------------------------------------------------------------------
 
 def load_schema(schema_dir: Path) -> dict:
-    path = schema_dir / "com.mustime.core.database.AppDatabase" / f"{DB_VERSION}.json"
+    path = schema_dir / "com.lectures.core.database.AppDatabase" / f"{DB_VERSION}.json"
     if not path.exists():
         sys.exit(
             f"ERROR: exported schema not found at {path}\n"
