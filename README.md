@@ -309,7 +309,7 @@ All university names, faculty titles, and course codes are referenced solely to 
 ## Developer
 
 **Mark Paul MUGENDAWALA** · [@mugmarp](https://github.com/mugmarp)
-- BSE Student at MUST
+
 ---
 
 ## License

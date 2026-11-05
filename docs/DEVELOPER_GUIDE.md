@@ -1,7 +1,7 @@
 # Developer Guide — Lectures
 
 **Application Name**: **Lectures**  
-**Author**: **MUGENDAWALA MARK PAUL** (BSE Student at MUST)  
+**Author**: **MUGENDAWALA MARK PAUL**  
 **GitHub**: [@mugmarp](https://github.com/mugmarp) • **Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
 
 This guide assists software engineers and contributors in setting up, maintaining, and extending **Lectures**.

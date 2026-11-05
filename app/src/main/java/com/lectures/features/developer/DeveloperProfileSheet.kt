@@ -45,6 +45,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -68,7 +69,6 @@ fun DeveloperProfileSheet(
 
     val devName = "MUGENDAWALA MARK PAUL"
     val studentRole = "Software Developer and Creator"
-    val labUrl = "https://tirallab.page"
     val githubUrl = "https://github.com/mugmarp"
     val emailContact = "markpaulmu@gmail.com"
 
@@ -136,7 +136,7 @@ fun DeveloperProfileSheet(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Student at MUST • Crafted independently with passion for students. Fast, responsive, and 100% offline-first.",
+                        text = "BSE student at MUST. Built the Lectures app as a fast, offline-first companion for class schedules and vacant campus rooms.",
                         fontSize = 12.sp,
                         lineHeight = 16.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -156,23 +156,11 @@ fun DeveloperProfileSheet(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // 1. Website: tirallab.page
+            // 1. GitHub
             DeveloperLinkRow(
-                icon = Icons.Default.Language,
-                title = "tirallab.page",
-                subtitle = "Official lab and personal project website",
-                onClick = {
-                    openBrowser(context, labUrl)
-                }
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-            // 2. GitHub
-            DeveloperLinkRow(
-                icon = Icons.Default.Code,
                 title = "GitHub Account",
                 subtitle = "github.com/mugmarp",
+                actionLabel = "View",
                 onClick = {
                     openBrowser(context, githubUrl)
                 }
@@ -182,9 +170,9 @@ fun DeveloperProfileSheet(
 
             // 3. Mailto for Contributions & Collaboration
             DeveloperLinkRow(
-                icon = Icons.Default.Email,
                 title = "Contribute & Collaborate",
                 subtitle = "markpaulmu@gmail.com",
+                actionLabel = "Email",
                 badge = "Open for PRs",
                 onClick = {
                     val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
@@ -218,9 +206,9 @@ fun DeveloperProfileSheet(
 
 @Composable
 private fun DeveloperLinkRow(
-    icon: ImageVector,
     title: String,
     subtitle: String,
+    actionLabel: String = "Open",
     badge: String? = null,
     onClick: () -> Unit
 ) {
@@ -229,26 +217,9 @@ private fun DeveloperLinkRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+            .padding(vertical = 10.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.width(14.dp))
-
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -269,6 +240,7 @@ private fun DeveloperLinkRow(
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subtitle,
                 fontSize = 12.sp,
@@ -276,12 +248,18 @@ private fun DeveloperLinkRow(
             )
         }
 
-        Icon(
-            Icons.AutoMirrored.Filled.ArrowForward,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(16.dp)
-        )
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+        ) {
+            Text(
+                text = actionLabel,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+            )
+        }
     }
 }
 

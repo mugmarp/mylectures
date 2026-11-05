@@ -2,9 +2,8 @@
 
 **Effective Date**: September 30, 2026  
 **Application Name**: **Lectures**  
-**Author**: **MUGENDAWALA MARK PAUL** (BSE Student at MUST)  
+**Author**: **MUGENDAWALA MARK PAUL**  
 **GitHub**: [@mugmarp](https://github.com/mugmarp)  
-**Website**: [https://tirallab.page](https://tirallab.page)  
 **Contact Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
 
 ---
@@ -93,5 +92,4 @@ The developer reserves the right to modify these Regulations and Terms at any ti
 For questions or inquiries regarding these terms, please contact:
 * **Developer**: Mark Paul M
 * **Email**: [markpaulmu@gmail.com](mailto:markpaulmu@gmail.com)
-* **Website**: [https://tirallab.page](https://tirallab.page)
 * **GitHub**: [https://github.com/mugmarp](https://github.com/mugmarp)
