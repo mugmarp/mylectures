@@ -364,369 +364,10 @@ fun VacantRoomsScreen(
         ) {
             item(key = "header_spacer") { Spacer(modifier = Modifier.height(2.dp)) }
 
-            // SECTION 1: LOCATION DROPDOWNS (Campus on left, Building on right)
-            item(key = "location_dropdowns") {
+            // STREAMLINED SEARCH AND COMPACT QUICK FILTERS
+            item(key = "search_and_quick_filters") {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val campusSelector = @Composable { mod: Modifier ->
-                        val campusDisplayText = selectedCampus?.let { cName ->
-                            Campus.entries.firstOrNull { it.displayName == cName }?.shortName ?: cName
-                        } ?: "All Campuses"
-
-                        LocationDropdownSelector(
-                            label = "Campus",
-                            value = campusDisplayText,
-                            icon = Icons.Outlined.School,
-                            expanded = campusDropdownExpanded,
-                            onExpandedChange = { 
-                                if (it) buildingDropdownExpanded = false
-                                campusDropdownExpanded = it 
-                            },
-                            modifier = mod,
-                            isDark = isDark,
-                            badgeText = if (selectedCampus == defaultScope.campus) "Default" else null
-                        ) {
-                            Campus.entries.forEach { campus ->
-                                val isSelected = selectedCampus == campus.displayName
-                                val isDefault = campus.displayName.equals(defaultScope.campus, ignoreCase = true)
-                                DropdownMenuItem(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 4.dp, vertical = 2.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(
-                                            if (isSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.22f) else PrimaryBlue.copy(alpha = 0.12f))
-                                            else Color.Transparent
-                                        )
-                                        .border(
-                                            width = if (isSelected) 1.dp else 0.dp,
-                                            color = if (isSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.5f) else PrimaryBlue.copy(alpha = 0.35f)) else Color.Transparent,
-                                            shape = RoundedCornerShape(8.dp)
-                                        ),
-                                    text = {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = campus.displayName,
-                                                    fontSize = 13.sp,
-                                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
-                                                    color = if (isSelected) PrimaryBlue else textPrimary
-                                                )
-                                                Text(
-                                                    text = if (campus == Campus.KIHUMURO) "FAST, FCI · 3 Buildings" else "Medicine, Science, Business · 4 Buildings",
-                                                    fontSize = 10.5.sp,
-                                                    color = if (isSelected) PrimaryBlue.copy(alpha = 0.8f) else textMuted
-                                                )
-                                            }
-                                            if (isDefault) {
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Box(
-                                                    modifier = Modifier
-                                                        .background(PrimaryBlue.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                                        .padding(horizontal = 5.dp, vertical = 2.dp)
-                                                ) {
-                                                    Text(
-                                                        text = "Default",
-                                                        fontSize = 10.sp,
-                                                        color = PrimaryBlue,
-                                                        fontWeight = FontWeight.Bold
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    },
-                                    onClick = {
-                                        selectedCampus = campus.displayName
-                                        if (campus.displayName.equals(defaultScope.campus, ignoreCase = true)) {
-                                            selectedBuilding = defaultScope.buildingCode
-                                        } else {
-                                            selectedBuilding = UniversityDirectory.buildingsForCampus(campus.displayName).firstOrNull()?.code
-                                        }
-                                        campusDropdownExpanded = false
-                                    }
-                                )
-                            }
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                            val isAllCampusesSelected = selectedCampus == null
-                            DropdownMenuItem(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 4.dp, vertical = 2.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(
-                                        if (isAllCampusesSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.22f) else PrimaryBlue.copy(alpha = 0.12f))
-                                        else Color.Transparent
-                                    )
-                                    .border(
-                                        width = if (isAllCampusesSelected) 1.dp else 0.dp,
-                                        color = if (isAllCampusesSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.5f) else PrimaryBlue.copy(alpha = 0.35f)) else Color.Transparent,
-                                        shape = RoundedCornerShape(8.dp)
-                                    ),
-                                text = {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "All Campuses",
-                                            fontSize = 13.sp,
-                                            fontWeight = if (isAllCampusesSelected) FontWeight.ExtraBold else FontWeight.Medium,
-                                            color = if (isAllCampusesSelected) PrimaryBlue else textPrimary
-                                        )
-                                    }
-                                },
-                                onClick = {
-                                    selectedCampus = null
-                                    selectedBuilding = null
-                                    campusDropdownExpanded = false
-                                }
-                            )
-                        }
-                    }
-
-                    val buildingSelector = @Composable { mod: Modifier ->
-                        val currentBuildingObj = UniversityDirectory.BUILDINGS.firstOrNull { it.code == selectedBuilding }
-                        val displayBuildingName = currentBuildingObj?.name ?: "All Buildings"
-                        val isFacultyBuildingSelected = selectedBuilding == defaultScope.buildingCode && selectedCampus == defaultScope.campus
-
-                        LocationDropdownSelector(
-                            label = "Building",
-                            value = displayBuildingName,
-                            icon = Icons.Outlined.Domain,
-                            expanded = buildingDropdownExpanded,
-                            onExpandedChange = { 
-                                if (it) campusDropdownExpanded = false
-                                buildingDropdownExpanded = it 
-                            },
-                            modifier = mod,
-                            isDark = isDark,
-                            badgeText = if (isFacultyBuildingSelected) "Faculty" else null,
-                            menuAlignmentEnd = true
-                        ) {
-                            campusBuildings.forEach { b ->
-                                val isSelected = selectedBuilding == b.code
-                                val isMyFaculty = b.code == defaultScope.buildingCode && (selectedCampus == null || selectedCampus == defaultScope.campus)
-                                DropdownMenuItem(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 4.dp, vertical = 2.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(
-                                            if (isSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.22f) else PrimaryBlue.copy(alpha = 0.12f))
-                                            else Color.Transparent
-                                        )
-                                        .border(
-                                            width = if (isSelected) 1.dp else 0.dp,
-                                            color = if (isSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.5f) else PrimaryBlue.copy(alpha = 0.35f)) else Color.Transparent,
-                                            shape = RoundedCornerShape(8.dp)
-                                        ),
-                                    text = {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = b.name,
-                                                    fontSize = 13.sp,
-                                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
-                                                    color = if (isSelected) PrimaryBlue else textPrimary,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                                Text(
-                                                    text = "${b.totalRooms} rooms on catalog",
-                                                    fontSize = 10.5.sp,
-                                                    color = if (isSelected) PrimaryBlue.copy(alpha = 0.8f) else textMuted
-                                                )
-                                            }
-                                            if (isMyFaculty) {
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Box(
-                                                    modifier = Modifier
-                                                        .background(PrimaryBlue.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
-                                                        .padding(horizontal = 5.dp, vertical = 2.dp)
-                                                ) {
-                                                    Text(
-                                                        text = "My Faculty ★",
-                                                        fontSize = 10.sp,
-                                                        color = PrimaryBlue,
-                                                        fontWeight = FontWeight.Bold
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    },
-                                    onClick = {
-                                        selectedBuilding = b.code
-                                        if (selectedCampus == null) {
-                                            selectedCampus = b.campus
-                                        }
-                                        buildingDropdownExpanded = false
-                                    }
-                                )
-                            }
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                            val isAllBuildingsSelected = selectedBuilding == null
-                            DropdownMenuItem(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 4.dp, vertical = 2.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(
-                                        if (isAllBuildingsSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.22f) else PrimaryBlue.copy(alpha = 0.12f))
-                                        else Color.Transparent
-                                    )
-                                    .border(
-                                        width = if (isAllBuildingsSelected) 1.dp else 0.dp,
-                                        color = if (isAllBuildingsSelected) (if (isDark) PrimaryBlue.copy(alpha = 0.5f) else PrimaryBlue.copy(alpha = 0.35f)) else Color.Transparent,
-                                        shape = RoundedCornerShape(8.dp)
-                                    ),
-                                text = {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = if (selectedCampus != null) "All ${selectedCampus} Buildings" else "All Buildings",
-                                            fontSize = 13.sp,
-                                            fontWeight = if (isAllBuildingsSelected) FontWeight.ExtraBold else FontWeight.Medium,
-                                            color = if (isAllBuildingsSelected) PrimaryBlue else textPrimary
-                                        )
-                                    }
-                                },
-                                onClick = {
-                                    selectedBuilding = null
-                                    buildingDropdownExpanded = false
-                                }
-                            )
-                        }
-                    }
-
-                    if (windowInfo.filtersStacked) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            campusSelector(Modifier.fillMaxWidth())
-                            buildingSelector(Modifier.fillMaxWidth())
-                        }
-                    } else {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            campusSelector(Modifier.weight(1f))
-                            buildingSelector(Modifier.weight(1f))
-                        }
-                    }
-
-                    // Reset to Faculty Default indicator bar (dismissible)
-                    val isAwayFromDefaults = !isDefaultResetDismissed && (defaultScope.campus != selectedCampus ||
-                            (defaultScope.buildingCode != null && selectedBuilding != defaultScope.buildingCode))
-                    if (isAwayFromDefaults) {
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = PrimaryBlue.copy(alpha = if (isDark) 0.18f else 0.08f),
-                            border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.25f)),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(start = 12.dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clickable {
-                                            selectedCampus = defaultScope.campus
-                                            selectedBuilding = defaultScope.buildingCode
-                                        },
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.RestartAlt,
-                                        contentDescription = null,
-                                        tint = PrimaryBlue,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "Reset to default: ",
-                                        fontSize = 11.5.sp,
-                                        color = textPrimary
-                                    )
-                                    Text(
-                                        text = "${defaultScope.buildingName} (${if (defaultScope.campus.contains("Kihumuro", ignoreCase = true)) "Kihumuro" else "Town"})",
-                                        fontSize = 11.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = PrimaryBlue,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                                IconButton(
-                                    onClick = { isDefaultResetDismissed = true },
-                                    modifier = Modifier.size(30.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Dismiss reset banner",
-                                        tint = textMuted,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // SECTION 2: CATEGORY FILTER CHIPS & SEARCH BAR
-            item(key = "room_categories_and_search") {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Category filter chips above the search bar
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(categories) { cat ->
-                            val isSelected = selectedCategory == cat
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { selectedCategory = cat },
-                                label = {
-                                    Text(
-                                        text = when (cat) {
-                                            "Room" -> "Lecture Room"
-                                            "Lab" -> "Lab"
-                                            "Library" -> "Library"
-                                            else -> "All Spaces"
-                                        },
-                                        fontSize = 11.5.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                    )
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = PrimaryBlue.copy(alpha = 0.15f),
-                                    selectedLabelColor = PrimaryBlue
-                                ),
-                                border = FilterChipDefaults.filterChipBorder(
-                                    enabled = true,
-                                    selected = isSelected,
-                                    borderColor = if (isSelected) PrimaryBlue else borderSubtle
-                                )
-                            )
-                        }
-                    }
-
+                    // 1. Sleek Search Bar
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
@@ -752,65 +393,384 @@ fun VacantRoomsScreen(
                         )
                     )
 
-                    // Compact Quick Status Summary & Free-Only Toggle
-                    Row(
+                    // 2. Single Unified Horizontal Chip Row for Campus, Building, Free Only & Categories
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(7.dp)
-                                    .background(if (isLiveNow) StatusGreenLive else Color(0xFFF59E0B), CircleShape)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (isLiveNow) "$freeCount free now" else "$queryDay $queryTime · $freeCount free",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isDark) Color(0xFF86EFAC) else Color(0xFF15803D)
-                            )
-                            if (occupiedCount > 0) {
-                                Text(
-                                    text = " · $occupiedCount in use",
-                                    fontSize = 12.sp,
-                                    color = textMuted,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                        // Campus Chip & Dropdown
+                        item(key = "chip_campus") {
+                            Box {
+                                val campusShort = selectedCampus?.let { cName ->
+                                    Campus.entries.firstOrNull { it.displayName == cName }?.shortName ?: cName
+                                } ?: "All Campuses"
+
+                                FilterChip(
+                                    selected = selectedCampus != null,
+                                    onClick = { campusDropdownExpanded = true },
+                                    label = {
+                                        Text(
+                                            text = "Campus: $campusShort",
+                                            fontSize = 11.5.sp,
+                                            fontWeight = if (selectedCampus != null) FontWeight.Bold else FontWeight.Medium
+                                        )
+                                    },
+                                    trailingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowDropDown,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = PrimaryBlue.copy(alpha = 0.14f),
+                                        selectedLabelColor = PrimaryBlue
+                                    ),
+                                    border = FilterChipDefaults.filterChipBorder(
+                                        enabled = true,
+                                        selected = selectedCampus != null,
+                                        borderColor = if (selectedCampus != null) PrimaryBlue else borderSubtle
+                                    )
                                 )
+
+                                DropdownMenu(
+                                    expanded = campusDropdownExpanded,
+                                    onDismissRequest = { campusDropdownExpanded = false },
+                                    modifier = Modifier
+                                        .widthIn(min = 220.dp, max = 285.dp)
+                                        .heightIn(max = 280.dp)
+                                        .background(surfaceColor, RoundedCornerShape(14.dp))
+                                ) {
+                                    Campus.entries.forEach { campus ->
+                                        val isSelected = selectedCampus == campus.displayName
+                                        val isDefault = campus.displayName.equals(defaultScope.campus, ignoreCase = true)
+                                        DropdownMenuItem(
+                                            text = {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Column(modifier = Modifier.weight(1f)) {
+                                                        Text(
+                                                            text = campus.displayName,
+                                                            fontSize = 13.sp,
+                                                            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                                            color = if (isSelected) PrimaryBlue else textPrimary
+                                                        )
+                                                        Text(
+                                                            text = if (campus == Campus.KIHUMURO) "FAST, FCI · 3 Buildings" else "Medicine, Science, Business · 4 Buildings",
+                                                            fontSize = 10.5.sp,
+                                                            color = if (isSelected) PrimaryBlue.copy(alpha = 0.8f) else textMuted
+                                                        )
+                                                    }
+                                                    if (isDefault) {
+                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .background(PrimaryBlue.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                                                .padding(horizontal = 5.dp, vertical = 2.dp)
+                                                        ) {
+                                                            Text(
+                                                                text = "Default",
+                                                                fontSize = 10.sp,
+                                                                color = PrimaryBlue,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            onClick = {
+                                                selectedCampus = campus.displayName
+                                                if (campus.displayName.equals(defaultScope.campus, ignoreCase = true)) {
+                                                    selectedBuilding = defaultScope.buildingCode
+                                                } else {
+                                                    selectedBuilding = UniversityDirectory.buildingsForCampus(campus.displayName).firstOrNull()?.code
+                                                }
+                                                campusDropdownExpanded = false
+                                            }
+                                        )
+                                    }
+                                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                    val isAllCampusesSelected = selectedCampus == null
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = "All Campuses",
+                                                fontSize = 13.sp,
+                                                fontWeight = if (isAllCampusesSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                                color = if (isAllCampusesSelected) PrimaryBlue else textPrimary
+                                            )
+                                        },
+                                        onClick = {
+                                            selectedCampus = null
+                                            selectedBuilding = null
+                                            campusDropdownExpanded = false
+                                        }
+                                    )
+                                }
                             }
                         }
 
-                        FilterChip(
-                            selected = freeOnly,
-                            onClick = { freeOnly = !freeOnly },
-                            label = {
-                                Text(
-                                    text = "Free only",
-                                    fontSize = 11.sp,
-                                    fontWeight = if (freeOnly) FontWeight.Bold else FontWeight.Medium
+                        // Building Chip & Dropdown
+                        item(key = "chip_building") {
+                            Box {
+                                val currentBuildingObj = UniversityDirectory.BUILDINGS.firstOrNull { it.code == selectedBuilding }
+
+                                FilterChip(
+                                    selected = selectedBuilding != null,
+                                    onClick = { buildingDropdownExpanded = true },
+                                    label = {
+                                        Text(
+                                            text = "Building: ${currentBuildingObj?.code ?: "All"}",
+                                            fontSize = 11.5.sp,
+                                            fontWeight = if (selectedBuilding != null) FontWeight.Bold else FontWeight.Medium
+                                        )
+                                    },
+                                    trailingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowDropDown,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = PrimaryBlue.copy(alpha = 0.14f),
+                                        selectedLabelColor = PrimaryBlue
+                                    ),
+                                    border = FilterChipDefaults.filterChipBorder(
+                                        enabled = true,
+                                        selected = selectedBuilding != null,
+                                        borderColor = if (selectedBuilding != null) PrimaryBlue else borderSubtle
+                                    )
                                 )
-                            },
-                            leadingIcon = if (freeOnly) {
-                                { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(12.dp)) }
-                            } else null,
-                            shape = RoundedCornerShape(8.dp),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PrimaryBlue.copy(alpha = 0.15f),
-                                selectedLabelColor = PrimaryBlue,
-                                selectedLeadingIconColor = PrimaryBlue
-                            ),
-                            border = FilterChipDefaults.filterChipBorder(
-                                enabled = true,
+
+                                DropdownMenu(
+                                    expanded = buildingDropdownExpanded,
+                                    onDismissRequest = { buildingDropdownExpanded = false },
+                                    modifier = Modifier
+                                        .widthIn(min = 220.dp, max = 285.dp)
+                                        .heightIn(max = 280.dp)
+                                        .background(surfaceColor, RoundedCornerShape(14.dp))
+                                ) {
+                                    campusBuildings.forEach { b ->
+                                        val isSelected = selectedBuilding == b.code
+                                        val isMyFaculty = b.code == defaultScope.buildingCode && (selectedCampus == null || selectedCampus == defaultScope.campus)
+                                        DropdownMenuItem(
+                                            text = {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Column(modifier = Modifier.weight(1f)) {
+                                                        Text(
+                                                            text = b.name,
+                                                            fontSize = 13.sp,
+                                                            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                                            color = if (isSelected) PrimaryBlue else textPrimary,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis
+                                                        )
+                                                        Text(
+                                                            text = "${b.totalRooms} rooms on catalog",
+                                                            fontSize = 10.5.sp,
+                                                            color = if (isSelected) PrimaryBlue.copy(alpha = 0.8f) else textMuted
+                                                        )
+                                                    }
+                                                    if (isMyFaculty) {
+                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .background(PrimaryBlue.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+                                                                .padding(horizontal = 5.dp, vertical = 2.dp)
+                                                        ) {
+                                                            Text(
+                                                                text = "Faculty ★",
+                                                                fontSize = 10.sp,
+                                                                color = PrimaryBlue,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            onClick = {
+                                                selectedBuilding = b.code
+                                                if (selectedCampus == null) {
+                                                    selectedCampus = b.campus
+                                                }
+                                                buildingDropdownExpanded = false
+                                            }
+                                        )
+                                    }
+                                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                    val isAllBuildingsSelected = selectedBuilding == null
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = if (selectedCampus != null) "All ${selectedCampus} Buildings" else "All Buildings",
+                                                fontSize = 13.sp,
+                                                fontWeight = if (isAllBuildingsSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                                color = if (isAllBuildingsSelected) PrimaryBlue else textPrimary
+                                            )
+                                        },
+                                        onClick = {
+                                            selectedBuilding = null
+                                            buildingDropdownExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        // Free Only Quick Toggle Chip
+                        item(key = "chip_free_only") {
+                            FilterChip(
                                 selected = freeOnly,
-                                borderColor = if (freeOnly) PrimaryBlue else borderSubtle
+                                onClick = { freeOnly = !freeOnly },
+                                label = {
+                                    Text(
+                                        text = "Free now",
+                                        fontSize = 11.5.sp,
+                                        fontWeight = if (freeOnly) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                },
+                                leadingIcon = if (freeOnly) {
+                                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(13.dp)) }
+                                } else null,
+                                shape = RoundedCornerShape(10.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = StatusGreenLive.copy(alpha = 0.15f),
+                                    selectedLabelColor = if (isDark) Color(0xFF86EFAC) else Color(0xFF15803D),
+                                    selectedLeadingIconColor = if (isDark) Color(0xFF86EFAC) else Color(0xFF15803D)
+                                ),
+                                border = FilterChipDefaults.filterChipBorder(
+                                    enabled = true,
+                                    selected = freeOnly,
+                                    borderColor = if (freeOnly) StatusGreenLive else borderSubtle
+                                )
                             )
-                        )
+                        }
+
+                        // Space Category Chips
+                        items(categories) { cat ->
+                            val isSelected = selectedCategory == cat
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { selectedCategory = cat },
+                                label = {
+                                    Text(
+                                        text = when (cat) {
+                                            "Room" -> "Lecture Room"
+                                            "Lab" -> "Lab"
+                                            "Library" -> "Library"
+                                            else -> "All Spaces"
+                                        },
+                                        fontSize = 11.5.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = PrimaryBlue.copy(alpha = 0.15f),
+                                    selectedLabelColor = PrimaryBlue
+                                ),
+                                border = FilterChipDefaults.filterChipBorder(
+                                    enabled = true,
+                                    selected = isSelected,
+                                    borderColor = if (isSelected) PrimaryBlue else borderSubtle
+                                )
+                            )
+                        }
+
+                        // Faculty Reset Shortcut (if away from faculty default)
+                        val isAwayFromDefaults = !isDefaultResetDismissed && (defaultScope.campus != selectedCampus ||
+                                (defaultScope.buildingCode != null && selectedBuilding != defaultScope.buildingCode))
+                        if (isAwayFromDefaults) {
+                            item(key = "chip_reset_faculty") {
+                                SuggestionChip(
+                                    onClick = {
+                                        selectedCampus = defaultScope.campus
+                                        selectedBuilding = defaultScope.buildingCode
+                                    },
+                                    label = {
+                                        Text(
+                                            text = "Reset Faculty (${defaultScope.buildingCode ?: "Default"})",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = PrimaryBlue
+                                        )
+                                    },
+                                    icon = {
+                                        Icon(
+                                            imageVector = Icons.Outlined.RestartAlt,
+                                            contentDescription = null,
+                                            tint = PrimaryBlue,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = SuggestionChipDefaults.suggestionChipColors(
+                                        containerColor = PrimaryBlue.copy(alpha = 0.1f)
+                                    ),
+                                    border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.3f))
+                                )
+                            }
+                        }
                     }
+                }
+            }
+
+            // Compact Real-Time Status & Scope Summary Strip
+            item(key = "status_summary_row") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 2.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(7.dp)
+                                .background(if (isLiveNow) StatusGreenLive else Color(0xFFF59E0B), CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isLiveNow) "$freeCount free now" else "$queryDay $queryTime · $freeCount free",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDark) Color(0xFF86EFAC) else Color(0xFF15803D)
+                        )
+                        if (occupiedCount > 0) {
+                            Text(
+                                text = " · $occupiedCount in use",
+                                fontSize = 12.sp,
+                                color = textMuted,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    val scopeSummary = selectedBuilding ?: selectedCampus ?: "All University"
+                    Text(
+                        text = scopeSummary,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = textMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
 

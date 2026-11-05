@@ -224,7 +224,7 @@ fun NotesScreen(
                                     "Academic Notes",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 17.sp,
-                                    color = if (isDark) Color.White else Color(0xFF0F172A)
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Box(
@@ -246,7 +246,7 @@ fun NotesScreen(
                                 Text(
                                     uiState.userProgramme,
                                     fontSize = 12.sp,
-                                    color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -270,7 +270,7 @@ fun NotesScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(if (isDark) DarkSurfaceBase else Color(0xFFF8FAFC))
+                .background(if (isDark) DarkSurfaceBase else MaterialTheme.colorScheme.background)
                 .padding(top = innerPadding.calculateTopPadding())
         ) {
             Spacer(modifier = Modifier.height(10.dp))
@@ -282,22 +282,22 @@ fun NotesScreen(
                     .padding(horizontal = 20.dp),
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = if (isDark) DarkSurfaceCard else Color.White),
-                border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else Color(0xFFE2E8F0)),
+                border = BorderStroke(1.dp, if (isDark) DarkBorderSubtle else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         Icons.Default.Search,
                         contentDescription = "Search",
-                        tint = Color(0xFF94A3B8),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     TextField(
                         value = uiState.searchQuery,
                         onValueChange = { viewModel.onSearchQueryChanged(it) },
@@ -305,7 +305,7 @@ fun NotesScreen(
                             Text(
                                 "Search notes, tags, or courses...",
                                 fontSize = 14.sp,
-                                color = Color(0xFF94A3B8)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
                         colors = TextFieldDefaults.colors(
@@ -313,8 +313,8 @@ fun NotesScreen(
                             unfocusedContainerColor = Color.Transparent,
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent,
-                            focusedTextColor = if (isDark) Color.White else Color(0xFF0F172A),
-                            unfocusedTextColor = if (isDark) Color.White else Color(0xFF0F172A)
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         modifier = Modifier.weight(1f),
                         singleLine = true
@@ -331,18 +331,11 @@ fun NotesScreen(
                             Icon(
                                 Icons.Default.Close,
                                 contentDescription = "Clear search",
-                                tint = Color(0xFF94A3B8),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(6.dp))
                     }
-                    Icon(
-                        Icons.Default.Mic,
-                        contentDescription = "Voice search",
-                        tint = Color(0xFF94A3B8),
-                        modifier = Modifier.size(20.dp)
-                    )
                 }
             }
 
@@ -356,15 +349,15 @@ fun NotesScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp, vertical = 4.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFDCFCE7))
+                        colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF064E3B) else Color(0xFFDCFCE7))
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(msg, color = Color(0xFF15803D), fontSize = 13.sp, modifier = Modifier.weight(1f))
+                            Text(msg, color = if (isDark) Color(0xFFA7F3D0) else Color(0xFF15803D), fontSize = 13.sp, modifier = Modifier.weight(1f))
                             IconButton(onClick = { viewModel.clearFeedback() }, modifier = Modifier.size(24.dp)) {
-                                Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = Color(0xFF15803D), modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = if (isDark) Color(0xFFA7F3D0) else Color(0xFF15803D), modifier = Modifier.size(16.dp))
                             }
                         }
                     }
@@ -421,7 +414,7 @@ fun NotesScreen(
                                 uiState.searchQuery.isNotBlank() || uiState.selectedFilter != "All Notes" ->
                                     "Try adjusting your query or resetting your course filter to find what you're looking for."
                                 else ->
-                                    "Tap '+ New Note' to write rich lecture summaries, link classes from your timetable, and set reminder alarms."
+                                    "Write rich lecture summaries, link classes from your timetable, and set reminder alarms."
                             },
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -439,6 +432,20 @@ fun NotesScreen(
                                 shape = RoundedCornerShape(20.dp)
                             ) {
                                 Text("Clear Search & Filters", fontSize = 13.sp)
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = {
+                                    noteToEdit = null
+                                    isEditing = true
+                                },
+                                shape = RoundedCornerShape(20.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Create Note", fontWeight = FontWeight.SemiBold, fontSize = 13.5.sp)
                             }
                         }
                     }

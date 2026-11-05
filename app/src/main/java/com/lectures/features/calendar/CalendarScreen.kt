@@ -688,9 +688,9 @@ fun CalendarScreen(
 
                                                 // Multi-category indicator dots
                                                 if (hasClassesThisDay || hasActivitiesThisDay || hasDeadlinesThisDay || hasMilestoneThisDay) {
-                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Spacer(modifier = Modifier.height(1.5.dp))
                                                     Row(
-                                                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                                        horizontalArrangement = Arrangement.spacedBy(1.5.dp),
                                                         verticalAlignment = Alignment.CenterVertically
                                                     ) {
                                                         // Deadlines / Assignments Due (Red/Amber)
@@ -1275,7 +1275,7 @@ private fun WorkloadPill(
 private fun CalendarDot(color: Color) {
     Box(
         modifier = Modifier
-            .size(5.dp)
+            .size(4.dp)
             .background(color, CircleShape)
     )
 }

@@ -639,15 +639,28 @@ fun TasksScreen(
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(14.dp))
+                                val emptyTitle = when {
+                                    uiState.searchQuery.isNotBlank() -> "No tasks match \"${uiState.searchQuery}\""
+                                    uiState.selectedFilter == "Overdue" -> "No overdue tasks"
+                                    uiState.selectedFilter == "Completed" -> "No completed tasks yet"
+                                    uiState.selectedFilter == "High Priority" -> "No high-priority tasks pending"
+                                    uiState.selectedFilter == "Pending" -> "No pending tasks"
+                                    else -> "No tasks scheduled"
+                                }
+                                val emptySubtitle = when {
+                                    uiState.selectedFilter == "Overdue" -> "You're all caught up with your deadlines!"
+                                    uiState.selectedFilter == "Completed" -> "Tasks you check off will appear here."
+                                    else -> "Tap the '+' button to schedule an assignment, set deadlines, and configure reminders."
+                                }
                                 Text(
-                                    if (uiState.searchQuery.isNotBlank()) "No tasks match '${uiState.searchQuery}'" else "No ${uiState.selectedFilter.lowercase()} tasks",
+                                    text = emptyTitle,
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = textPrimary
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    "Click the '+' button to schedule an assignment with an exact AlarmManager reminder.",
+                                    text = emptySubtitle,
                                     fontSize = 13.sp,
                                     color = textSecondary,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -979,6 +992,8 @@ fun TaskCard(
                     .padding(start = 36.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val isOverdueAndHigh = !task.completed && dueStatus == TaskDueStatus.OVERDUE && task.priority.equals("high", ignoreCase = true)
+
                 // 1. Status Chip (Overdue, Due Today, Due Tomorrow, Done)
                 if (task.completed) {
                     Surface(
@@ -1024,7 +1039,7 @@ fun TaskCard(
                                 )
                                 Spacer(Modifier.width(3.dp))
                                 Text(
-                                    "Overdue",
+                                    if (isOverdueAndHigh) "Overdue • High Priority" else "Overdue",
                                     color = if (isDark) Color(0xFFFCA5A5) else Color(0xFFB91C1C),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
@@ -1088,33 +1103,35 @@ fun TaskCard(
                     else -> {}
                 }
 
-                // 2. Priority Badge
-                val (badgeBg, badgeText) = when (task.priority.lowercase(Locale.ROOT)) {
-                    "high" -> {
-                        if (isDark) Color(0xFF7F1D1D).copy(alpha = 0.5f) to Color(0xFFFCA5A5)
-                        else Color(0xFFFFE4E6) to Color(0xFFE11D48)
+                // 2. Priority Badge (suppressed if merged into Overdue • High Priority)
+                if (!isOverdueAndHigh) {
+                    val (badgeBg, badgeText) = when (task.priority.lowercase(Locale.ROOT)) {
+                        "high" -> {
+                            if (isDark) Color(0xFF7F1D1D).copy(alpha = 0.5f) to Color(0xFFFCA5A5)
+                            else Color(0xFFFFE4E6) to Color(0xFFE11D48)
+                        }
+                        "medium" -> {
+                            if (isDark) Color(0xFF78350F).copy(alpha = 0.5f) to Color(0xFFFCD34D)
+                            else Color(0xFFFEF3C7) to Color(0xFFD97706)
+                        }
+                        else -> {
+                            if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) to Color(0xFF93C5FD)
+                            else Color(0xFFEFF6FF) to Color(0xFF2563EB)
+                        }
                     }
-                    "medium" -> {
-                        if (isDark) Color(0xFF78350F).copy(alpha = 0.5f) to Color(0xFFFCD34D)
-                        else Color(0xFFFEF3C7) to Color(0xFFD97706)
-                    }
-                    else -> {
-                        if (isDark) Color(0xFF1E3A8A).copy(alpha = 0.5f) to Color(0xFF93C5FD)
-                        else Color(0xFFEFF6FF) to Color(0xFF2563EB)
-                    }
-                }
 
-                Box(
-                    modifier = Modifier
-                        .background(badgeBg, RoundedCornerShape(6.dp))
-                        .padding(horizontal = 7.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        task.priority.replaceFirstChar { it.uppercase() },
-                        color = badgeText,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Box(
+                        modifier = Modifier
+                            .background(badgeBg, RoundedCornerShape(6.dp))
+                            .padding(horizontal = 7.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            task.priority.replaceFirstChar { it.uppercase() },
+                            color = badgeText,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
