@@ -10,7 +10,7 @@ plugins {
 }
 
 android {
-  namespace = "com.mustime"
+  namespace = "com.lectures"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {

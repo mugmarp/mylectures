@@ -1,0 +1,394 @@
+package com.lectures.ui
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.zIndex
+import com.lectures.core.notification.InAppNotificationItem
+import com.lectures.core.notification.InAppNotificationStore
+import com.lectures.core.notification.NotificationItemType
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Notes
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.TaskAlt
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Notes
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.lectures.TimetableApplication
+import com.lectures.features.calendar.CalendarScreen
+import com.lectures.features.notes.NotesScreen
+import com.lectures.features.onboarding.*
+import com.lectures.features.settings.SettingsScreen
+import com.lectures.features.tasks.TasksScreen
+import com.lectures.features.timetable.ui.TimetableRoute
+import com.lectures.features.timetable.ui.WelcomeScreen
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+
+sealed class AppNavState {
+    data object Welcome : AppNavState()
+    data object FacultySelection : AppNavState()
+    data class ProgrammeSelection(val faculty: Faculty) : AppNavState()
+    data class ClassGroupSelection(val faculty: Faculty, val programme: Programme) : AppNavState()
+    data object MainApp : AppNavState()
+}
+
+@Composable
+fun MainScaffold(
+    initialTab: Int = 0,
+    notificationIntentFlow: SharedFlow<Pair<Int, Long?>>? = null
+) {
+    val context = LocalContext.current
+    val app = context.applicationContext as? TimetableApplication
+    val repository = app?.repository
+
+    if (repository == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+        return
+    }
+
+    val scope = rememberCoroutineScope()
+    val initialProg = remember { repository.getInitialProgramme() }
+    val savedProgramme by repository.programmePref.collectAsState(initial = initialProg)
+    val initialOnboarding = remember { repository.isOnboardingCompleted() }
+    val onboardingCompleted by repository.onboardingCompletedPref.collectAsState(initial = initialOnboarding)
+
+    var navState by remember {
+        mutableStateOf<AppNavState>(
+            if (initialOnboarding) AppNavState.MainApp else AppNavState.Welcome
+        )
+    }
+    var selectedTab by remember { mutableIntStateOf(initialTab) }
+    var isNotesEditing by remember { mutableStateOf(false) }
+    var pendingHighlightTaskId by remember { mutableStateOf<Long?>(null) }
+
+    // Handle notification deep-link intents.
+    LaunchedEffect(notificationIntentFlow) {
+        notificationIntentFlow?.collect { (tab, taskId) ->
+            if (navState is AppNavState.MainApp) {
+                selectedTab = tab
+                pendingHighlightTaskId = taskId
+            }
+        }
+    }
+
+    // First app launch resolution via DataStore / Preferences
+    LaunchedEffect(onboardingCompleted) {
+        if (onboardingCompleted && (navState is AppNavState.Welcome || navState is AppNavState.FacultySelection)) {
+            navState = AppNavState.MainApp
+        }
+    }
+
+    when (val state = navState) {
+        is AppNavState.Welcome -> {
+            WelcomeScreen(
+                onGetStarted = { navState = AppNavState.FacultySelection }
+            )
+        }
+        is AppNavState.FacultySelection -> {
+            BackHandler {
+                navState = if (onboardingCompleted == true) AppNavState.MainApp else AppNavState.Welcome
+            }
+            FacultySelectionScreen(
+                onSelectFaculty = { faculty -> navState = AppNavState.ProgrammeSelection(faculty) },
+                onBack = {
+                    navState = if (onboardingCompleted == true) AppNavState.MainApp else AppNavState.Welcome
+                }
+            )
+        }
+        is AppNavState.ProgrammeSelection -> {
+            BackHandler {
+                navState = AppNavState.FacultySelection
+            }
+            ProgrammeSelectionScreen(
+                faculty = state.faculty,
+                onSelectProgramme = { prog -> navState = AppNavState.ClassGroupSelection(state.faculty, prog) },
+                onBack = { navState = AppNavState.FacultySelection }
+            )
+        }
+        is AppNavState.ClassGroupSelection -> {
+            BackHandler {
+                navState = AppNavState.ProgrammeSelection(state.faculty)
+            }
+            val allEntries by repository.getAllEntries().collectAsState(initial = emptyList())
+            val liveCohortCounts by repository.getCohortCounts(state.programme.code).collectAsState(initial = emptyMap())
+            val calculatedCounts = remember(state.programme, allEntries, liveCohortCounts) {
+                state.programme.allGroups.associateWith { g ->
+                    com.lectures.features.timetable.domain.TimetableMatcher.getGroupCount(
+                        group = g,
+                        entries = allEntries,
+                        cohortCounts = liveCohortCounts
+                    )
+                }
+            }
+            ClassGroupSelectionScreen(
+                programme = state.programme,
+                faculty = state.faculty,
+                entryCounts = calculatedCounts,
+                onConfirm = { chosenGroup ->
+                    scope.launch {
+                        repository.setProgrammePref(chosenGroup)
+                        repository.setOnboardingCompleted(true)
+                        com.lectures.core.alarm.ReminderScheduler(context).scheduleDailyReminder()
+                        navState = AppNavState.MainApp
+                    }
+                },
+                onBack = { navState = AppNavState.ProgrammeSelection(state.faculty) }
+            )
+        }
+        is AppNavState.MainApp -> {
+            var isSettingsOpen by remember { mutableStateOf(false) }
+            var isVacantRoomsOpen by remember { mutableStateOf(false) }
+            var isAccountOpen by remember { mutableStateOf(false) }
+
+            val haptic = LocalHapticFeedback.current
+            val tabs = listOf("Timetable", "Calendar", "Notes", "Tasks")
+            val filledIcons = listOf(
+                Icons.Filled.CalendarToday,
+                Icons.Filled.CalendarMonth,
+                Icons.Filled.Notes,
+                Icons.Filled.TaskAlt
+            )
+            val outlinedIcons = listOf(
+                Icons.Outlined.CalendarToday,
+                Icons.Outlined.CalendarMonth,
+                Icons.Outlined.Notes,
+                Icons.Outlined.TaskAlt
+            )
+
+            val isDark = com.lectures.ui.LocalAppTheme.current.isDark
+            val navBg = if (isDark) com.lectures.features.timetable.ui.DarkSurfaceCard else Color.White
+            val navBorder = if (isDark) com.lectures.features.timetable.ui.DarkBorderSubtle else com.lectures.features.timetable.ui.BorderSubtleLight
+            val primaryBlue = com.lectures.features.timetable.ui.PrimaryBlue
+            val textMuted = if (isDark) Color(0xFF94A3B8) else com.lectures.features.timetable.ui.TextMutedLight
+
+            val classAlarmScheduler = remember(context) { com.lectures.core.alarm.AlarmScheduler(context) }
+            val taskAlarmScheduler = remember(context) { com.lectures.core.alarm.TaskAlarmScheduler(context) }
+            val timetableViewModel: com.lectures.features.timetable.ui.TimetableViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                factory = com.lectures.features.timetable.ui.TimetableViewModel.provideFactory(repository, taskAlarmScheduler, classAlarmScheduler)
+            )
+
+            val onPeekProgrammeAndGoToTimetable: (String) -> Unit = { group ->
+                timetableViewModel.peekProgramme(group)
+                selectedTab = 0
+            }
+            val onSetOfficialProgrammeAndGoToTimetable: (String) -> Unit = { group ->
+                timetableViewModel.setOfficialProgramme(group)
+                selectedTab = 0
+            }
+
+            if (isVacantRoomsOpen) {
+                BackHandler {
+                    isVacantRoomsOpen = false
+                }
+                com.lectures.features.rooms.ui.VacantRoomsScreen(
+                    onBack = { isVacantRoomsOpen = false },
+                    enrolledProgramme = savedProgramme
+                )
+            } else if (isAccountOpen) {
+                BackHandler {
+                    isAccountOpen = false
+                }
+                com.lectures.features.account.AccountScreen(
+                    onBack = { isAccountOpen = false }
+                )
+            } else if (isSettingsOpen) {
+                BackHandler {
+                    isSettingsOpen = false
+                }
+                SettingsScreen(
+                    currentProgramme = savedProgramme ?: "",
+                    onReconfigureAcademicProfile = {
+                        isSettingsOpen = false
+                        navState = AppNavState.FacultySelection
+                    },
+                    onOpenAccount = {
+                        isAccountOpen = true
+                    },
+                    onResetOnboarding = {
+                        scope.launch {
+                            repository.setOnboardingCompleted(false)
+                            isSettingsOpen = false
+                            navState = AppNavState.Welcome
+                        }
+                    },
+                    onBack = { isSettingsOpen = false }
+                )
+            } else {
+                BackHandler(enabled = selectedTab != 0) {
+                    selectedTab = 0
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                ) {
+                    // Main Screen Content — only the selected tab is composed.
+                    // ViewModels are Activity-scoped so they survive; only composition dies.
+                    // This avoids: 4x POST_NOTIFICATIONS requests, heavy init, competing BackHandlers.
+                    when (selectedTab) {
+                        0 -> TimetableRoute(
+                            onSettingsClick = { isSettingsOpen = true },
+                            onNavigateToNotes = { selectedTab = 2 },
+                            onNavigateToCalendar = { selectedTab = 1 },
+                            onNavigateToTasks = { selectedTab = 3 },
+                            onReconfigureAcademicProfile = {
+                                isSettingsOpen = false
+                                navState = AppNavState.FacultySelection
+                            },
+                            onOpenVacantRooms = { isVacantRoomsOpen = true }
+                        )
+                        1 -> CalendarScreen(
+                            onBack = null,
+                            onSettingsClick = { isSettingsOpen = true },
+                            onReconfigureAcademicProfile = {
+                                isSettingsOpen = false
+                                navState = AppNavState.FacultySelection
+                            },
+                            onNavigateToTimetable = { selectedTab = 0 },
+                            onPeekProgramme = onPeekProgrammeAndGoToTimetable,
+                            onSetOfficialProgramme = onSetOfficialProgrammeAndGoToTimetable
+                        )
+                        2 -> NotesScreen(
+                            onBack = null,
+                            onSettingsClick = { isSettingsOpen = true },
+                            onReconfigureAcademicProfile = {
+                                isSettingsOpen = false
+                                navState = AppNavState.FacultySelection
+                            },
+                            onNavigateToTimetable = { selectedTab = 0 },
+                            onPeekProgramme = onPeekProgrammeAndGoToTimetable,
+                            onSetOfficialProgramme = onSetOfficialProgrammeAndGoToTimetable,
+                            onEditingChanged = { isNotesEditing = it }
+                        )
+                        3 -> TasksScreen(
+                            onBack = null,
+                            onSettingsClick = { isSettingsOpen = true },
+                            onReconfigureAcademicProfile = {
+                                isSettingsOpen = false
+                                navState = AppNavState.FacultySelection
+                            },
+                            onNavigateToTimetable = { selectedTab = 0 },
+                            onPeekProgramme = onPeekProgrammeAndGoToTimetable,
+                            onSetOfficialProgramme = onSetOfficialProgrammeAndGoToTimetable,
+                            highlightTaskId = pendingHighlightTaskId
+                        )
+                    }
+
+                    val windowInfo = rememberLecturesWindow()
+
+                    // Floating Pill Dock (overlaid above content, letting unoccupied space reveal content behind - hidden when in dedicated Note Editor or when soft keyboard is up)
+                    if (!isNotesEditing && !windowInfo.isImeVisible) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .navigationBarsPadding()
+                                .padding(start = Chrome.DockSideInset, end = Chrome.DockSideInset, bottom = Chrome.DockBottomGap),
+                            contentAlignment = Alignment.Center
+                        ) {
+                        Surface(
+                            shape = RoundedCornerShape(24.dp),
+                            color = navBg.copy(alpha = 0.96f),
+                            tonalElevation = 6.dp,
+                            shadowElevation = 8.dp,
+                            border = BorderStroke(1.dp, navBorder),
+                            modifier = Modifier
+                                .widthIn(max = 440.dp)
+                                .fillMaxWidth()
+                                .height(Chrome.DockHeight)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                tabs.forEachIndexed { index, tab ->
+                                    val isSelected = selectedTab == index
+                                    val icon = if (isSelected) filledIcons[index] else outlinedIcons[index]
+
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
+                                            .clip(RoundedCornerShape(20.dp))
+                                            .clickable {
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                selectedTab = index
+                                            }
+                                            .testTag("nav_${tab.lowercase()}"),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(14.dp))
+                                                    .background(if (isSelected) primaryBlue.copy(alpha = 0.12f) else Color.Transparent)
+                                                    .padding(horizontal = if (windowInfo.dockIconOnly) 16.dp else 10.dp, vertical = if (windowInfo.dockIconOnly) 6.dp else 2.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = icon,
+                                                    contentDescription = tab,
+                                                    tint = if (isSelected) primaryBlue else textMuted,
+                                                    modifier = Modifier.size(if (windowInfo.dockIconOnly) 24.dp else 21.dp)
+                                                )
+                                            }
+                                            if (!windowInfo.dockIconOnly) {
+                                                Spacer(modifier = Modifier.height(1.dp))
+                                                Text(
+                                                    text = tab,
+                                                    fontSize = 10.sp,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    color = if (isSelected) primaryBlue else textMuted,
+                                                    maxLines = 1,
+                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                }
+            }
+        }
+    }
+}
