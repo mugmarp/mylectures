@@ -52,8 +52,8 @@ import com.lectures.core.update.InAppUpdateManager
 import com.lectures.core.update.UpdateViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.observeAsState
+import kotlinx.coroutines.flow.collectAsState
+
 import androidx.compose.ui.platform.LocalContext
 @Composable
 fun SettingsScreen(
@@ -132,7 +132,7 @@ fun SettingsScreen(
     var showUpdateProgressDialog by remember { mutableStateOf(false) }
 
     // Observe update state for progress dialog
-    val updateState by updateViewModel.state.observeAsState(InAppUpdateManager.UpdateState.Idle())
+    val updateState by updateViewModel.state.collectAsState()
     // Custom Alarm Lead Time Dialog
     if (showCustomLeadDialog) {
         AlertDialog(

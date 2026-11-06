@@ -10,8 +10,10 @@ import android.os.Environment
 import android.provider.Settings
 import androidx.core.content.FileProvider
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.observe
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectAsState
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -243,8 +245,8 @@ object InAppUpdateManager {
  * UI helper for observing update state in Compose.
  */
 class UpdateViewModel(private val scope: CoroutineScope) {
-    private val _state = MutableLiveData<InAppUpdateManager.UpdateState>(InAppUpdateManager.UpdateState.Idle())
-    val state = _state
+    private val _state = MutableStateFlow<InAppUpdateManager.UpdateState>(InAppUpdateManager.UpdateState.Idle())
+    val state = _state.asStateFlow()
 
     private var job: Job? = null
 
@@ -255,16 +257,16 @@ class UpdateViewModel(private val scope: CoroutineScope) {
         job?.cancel()
         job = scope.launch {
             val versionInfo = InAppUpdateManager.fetchVersionInfo(versionJsonUrl, currentVersionCode)
-            _state.postValue(if (versionInfo != null) {
+            _state.update { if (versionInfo != null) {
                 InAppUpdateManager.UpdateState.Idle(true, versionInfo)
             } else {
                 InAppUpdateManager.UpdateState.Idle(false, null)
-            })
+            } }
         }
     }
 
     fun startDownload(versionInfo: InAppUpdateManager.VersionInfo, context: Context) {
-        _state.postValue(InAppUpdateManager.UpdateState.Downloading(0f, versionInfo))
+        _state.update { InAppUpdateManager.UpdateState.Downloading(0f, versionInfo) }
         job?.cancel()
         job = scope.launch {
             val apkFile = InAppUpdateManager.downloadApk(
@@ -272,23 +274,23 @@ class UpdateViewModel(private val scope: CoroutineScope) {
                 downloadUrl = versionInfo.downloadUrl,
                 expectedSha256 = versionInfo.sha256,
                 onProgress = { progress ->
-                    _state.postValue(InAppUpdateManager.UpdateState.Downloading(progress, versionInfo))
+                    _state.update { InAppUpdateManager.UpdateState.Downloading(progress, versionInfo) }
                 }
             )
-            _state.postValue(if (apkFile != null) {
+            _state.update { if (apkFile != null) {
                 InAppUpdateManager.UpdateState.Downloaded(apkFile, versionInfo)
             } else {
                 InAppUpdateManager.UpdateState.Error("Download failed or checksum mismatch")
-            })
+            } }
         }
     }
 
     fun install(context: Context, apkFile: File, versionInfo: InAppUpdateManager.VersionInfo) {
-        _state.postValue(InAppUpdateManager.UpdateState.Installing(versionInfo))
+        _state.update { InAppUpdateManager.UpdateState.Installing(versionInfo) }
         InAppUpdateManager.triggerInstall(context, apkFile)
     }
 
     fun clearError() {
-        _state.postValue(InAppUpdateManager.UpdateState.Idle())
+        _state.update { InAppUpdateManager.UpdateState.Idle() }
     }
 }
