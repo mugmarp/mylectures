@@ -54,6 +54,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.observeAsState
+import androidx.compose.ui.platform.LocalContext
 @Composable
 fun SettingsScreen(
     onResetOnboarding: (() -> Unit)? = null,
@@ -107,8 +108,11 @@ fun SettingsScreen(
 
     // UpdateViewModel for app updates
     val updateScope = rememberCoroutineScope()
+
     val updateViewModel = remember { UpdateViewModel(updateScope) }
     val uiState by viewModel.uiState.collectAsState()
+
+    val appTheme = LocalAppTheme.current
 
     val onSelectThemeMode: (ThemeMode) -> Unit = { mode ->
         viewModel.setThemeMode(mode)
