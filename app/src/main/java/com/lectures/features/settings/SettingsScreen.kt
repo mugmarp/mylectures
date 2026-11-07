@@ -56,6 +56,10 @@ enum class SettingsSubScreen {
     MAIN,
     APPEARANCE
 }
+import com.lectures.core.update.InAppUpdateManager.UpdateViewModel
+import androidx.lifecycle.compose.collectAsState
+
+
 
 @Composable
 fun SettingsScreen(
