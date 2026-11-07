@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.Default.ArrowForward
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.MusicNote
@@ -1369,10 +1370,10 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = when (updateState) {
+                                text = when (val s = updateState) {
                                     is InAppUpdateManager.UpdateState.Idle -> {
-                                        if (it.hasUpdate) {
-                                            "Update available: v${it.versionInfo?.versionName} · Tap to install"
+                                        if (s.hasUpdate) {
+                                            "Update available: v${s.versionInfo?.versionName} · Tap to install"
                                         } else {
                                             "v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE}) · Tap to check updates"
                                         }
@@ -1380,12 +1381,12 @@ fun SettingsScreen(
                                     is InAppUpdateManager.UpdateState.Downloading -> "Downloading update..."
                                     is InAppUpdateManager.UpdateState.Downloaded -> "Update ready to install · Tap to install"
                                     is InAppUpdateManager.UpdateState.Installing -> "Installing update..."
-                                    is InAppUpdateManager.UpdateState.Error -> "Error: ${it.message}"
+                                    is InAppUpdateManager.UpdateState.Error -> "Error: ${s.message}"
                                     else -> "Unknown state"
                                 },
                                 fontSize = 12.sp,
-                                color = when (updateState) {
-                                    is InAppUpdateManager.UpdateState.Idle -> if (it.hasUpdate) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = when (val s = updateState) {
+                                    is InAppUpdateManager.UpdateState.Idle -> if (s.hasUpdate) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                     is InAppUpdateManager.UpdateState.Downloading -> MaterialTheme.colorScheme.primary
                                     is InAppUpdateManager.UpdateState.Downloaded -> MaterialTheme.colorScheme.primary
                                     is InAppUpdateManager.UpdateState.Installing -> MaterialTheme.colorScheme.primary
@@ -1394,7 +1395,7 @@ fun SettingsScreen(
                                 }
                             )
                         }
-                        when (updateState) {
+                        when (val s = updateState) {
                             is InAppUpdateManager.UpdateState.Downloading -> {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(18.dp),
@@ -1426,7 +1427,7 @@ fun SettingsScreen(
                             }
                             else -> {
                                 Icon(
-                                    Icons.AutoMirrored.Filled.ArrowForward,
+                                    Icons.Default.ArrowForward,
                                     contentDescription = "Check for updates",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(20.dp)
@@ -1689,9 +1690,6 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(48.dp))
         }
     }
-}
-
-
 }
 
 @Composable
