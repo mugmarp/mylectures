@@ -1,5 +1,7 @@
 package com.lectures.features.settings
 
+import com.lectures.core.update.UpdateViewModel
+import androidx.lifecycle.compose.collectAsState
 import android.content.Intent
 import android.provider.Settings
 import android.widget.Toast
@@ -56,8 +58,6 @@ enum class SettingsSubScreen {
     MAIN,
     APPEARANCE
 }
-import com.lectures.core.update.InAppUpdateManager.UpdateViewModel
-import androidx.lifecycle.compose.collectAsState
 
 
 
