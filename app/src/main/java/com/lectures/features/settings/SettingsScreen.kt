@@ -134,7 +134,11 @@ fun SettingsScreen(
     var showCustomLeadDialog by remember { mutableStateOf(false) }
     var customLeadInput by remember { mutableStateOf("") }
     var showVersionDetailsDialog by remember { mutableStateOf(false) }
-    // Update state is managed by UpdateViewModel (updateState)
+    var showVersionDetailsDialog by remember { mutableStateOf(false) }
+    // Update state is managed by UpdateViewModel
+    val updateScope = rememberCoroutineScope()
+    val updateViewModel = remember { UpdateViewModel(updateScope) }
+    val updateState by updateViewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
 
 
@@ -1373,6 +1377,7 @@ fun SettingsScreen(
                                     is InAppUpdateManager.UpdateState.Downloaded -> "Update ready to install · Tap to install"
                                     is InAppUpdateManager.UpdateState.Installing -> "Installing update..."
                                     is InAppUpdateManager.UpdateState.Error -> "Error: ${it.message}"
+                                    else -> "Unknown state"
                                 },
                                 fontSize = 12.sp,
                                 color = when (updateState) {
@@ -1381,6 +1386,7 @@ fun SettingsScreen(
                                     is InAppUpdateManager.UpdateState.Downloaded -> MaterialTheme.colorScheme.primary
                                     is InAppUpdateManager.UpdateState.Installing -> MaterialTheme.colorScheme.primary
                                     is InAppUpdateManager.UpdateState.Error -> MaterialTheme.colorScheme.error
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                                 }
                             )
                         }
