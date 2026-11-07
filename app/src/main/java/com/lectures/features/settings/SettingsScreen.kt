@@ -53,6 +53,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.lectures.core.update.InAppUpdateManager
 import com.lectures.core.update.UpdateViewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 
 enum class SettingsSubScreen {
     MAIN,
