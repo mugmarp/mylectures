@@ -19,7 +19,7 @@ class TimetableRepository(
     val dao: TimetableDao,
     private val eventDao: CustomEventDao,
     private val assignmentDao: AssignmentDao,
-    private val etagStore: ETagStore,
+    val etagStore: ETagStore,
     val onboardingDataStore: OnboardingDataStore? = null,
     val syncRepository: com.lectures.core.sync.SyncRepository? = null,
     val userSettingsSyncManager: com.lectures.core.sync.UserSettingsSyncManager = com.lectures.core.sync.UserSettingsSyncManager(etagStore, onboardingDataStore)

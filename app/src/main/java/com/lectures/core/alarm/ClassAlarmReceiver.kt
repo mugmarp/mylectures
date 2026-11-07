@@ -67,6 +67,13 @@ class ClassAlarmReceiver : BroadcastReceiver() {
         val naturalKey = intent.getStringExtra("NATURAL_KEY")
         val dayOfWeek = intent.getStringExtra("DAY_OF_WEEK")
 
+        val etagStore = (context.applicationContext as? com.lectures.TimetableApplication)?.etagStore
+            ?: com.lectures.features.timetable.data.ETagStore(context)
+        if (!etagStore.isNotificationsEnabled() && !isTest) {
+            Log.d("ClassAlarmReceiver", "Notifications disabled in settings; suppressing alert for $courseCode")
+            return
+        }
+
         Log.d("ClassAlarmReceiver", "Class alert fired (isAlarm=$isAlarm, isRecurring=$isRecurring, isSnoozed=$isSnoozed) for $courseCode in $room at $startTime")
 
         if (isAlarm) {
@@ -94,8 +101,8 @@ class ClassAlarmReceiver : BroadcastReceiver() {
             )
         }
 
-        // Reschedule recurring alarm for next week (+7 days)
-        if (isAlarm && isRecurring && !isTest && !naturalKey.isNullOrBlank() && !dayOfWeek.isNullOrBlank()) {
+        // Reschedule recurring alarm/reminder for next week (+7 days)
+        if (isRecurring && !isTest && !naturalKey.isNullOrBlank() && !dayOfWeek.isNullOrBlank()) {
             try {
                 val syntheticEntry = TimetableEntry(
                     natural_key = naturalKey,
@@ -110,8 +117,8 @@ class ClassAlarmReceiver : BroadcastReceiver() {
                     lecturer = lecturer,
                     room = room
                 )
-                AlarmScheduler(context).scheduleClassAlarm(syntheticEntry, minutesBefore)
-                Log.d("ClassAlarmReceiver", "Successfully re-armed weekly class alarm for $courseCode on next $dayOfWeek")
+                AlarmScheduler(context).scheduleClassAlarm(syntheticEntry, minutesBefore, isAlarm)
+                Log.d("ClassAlarmReceiver", "Successfully re-armed weekly class alert for $courseCode on next $dayOfWeek (isAlarm=$isAlarm)")
             } catch (e: Exception) {
                 Log.e("ClassAlarmReceiver", "Failed to reschedule weekly class alarm: ${e.message}")
             }

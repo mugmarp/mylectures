@@ -12,6 +12,7 @@ import com.lectures.features.timetable.data.TimetableRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 class TimetableApplication : Application() {
@@ -105,6 +106,13 @@ class TimetableApplication : Application() {
             analyticsManager.recordAppLaunch(prog, this)
             if (etagStore.isOnboardingCompleted()) {
                 com.lectures.core.alarm.ReminderScheduler(this@TimetableApplication).scheduleDailyReminder()
+                if (prog.isNotEmpty() && etagStore.isNotificationsEnabled()) {
+                    val enrolledClasses = repository.getLocalSchedule(prog).firstOrNull() ?: emptyList()
+                    if (enrolledClasses.isNotEmpty()) {
+                        val leadMinutes = etagStore.getClassAlarmLeadMinutes()
+                        com.lectures.core.alarm.AlarmScheduler(this@TimetableApplication).scheduleAllEnrolledClassAlarms(enrolledClasses, leadMinutes)
+                    }
+                }
             }
         }
     }

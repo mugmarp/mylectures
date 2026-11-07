@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lectures.core.util.TimeUtil
+import com.lectures.core.util.rememberLiveClockPulse
 import com.lectures.features.timetable.domain.TimetableEntry
 import com.lectures.ui.components.RoomFloorBadge
 
@@ -35,7 +36,8 @@ import com.lectures.ui.components.RoomFloorBadge
 @Composable
 fun NextUpCard(entry: TimetableEntry, minutesUntil: Int, onClick: () -> Unit) {
     val style = sessionStyle(entry.sessionType, entry.room ?: "", entry.courseTitle)
-    val progress = remember(entry.startTime, entry.endTime, entry.dayOfWeek) {
+    val clockPulse = rememberLiveClockPulse()
+    val progress = remember(entry.startTime, entry.endTime, entry.dayOfWeek, clockPulse) {
         TimeUtil.calculateProgress(entry.startTime, entry.endTime, entry.dayOfWeek)
     }
 

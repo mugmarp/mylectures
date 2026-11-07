@@ -675,6 +675,7 @@ fun TasksScreen(
                             task = task,
                             isDark = isDark,
                             isHighlighted = task.id == highlightTaskId,
+                            modifier = Modifier.animateItem(),
                             onToggleComplete = { viewModel.toggleComplete(task) },
                             onEdit = {
                                 taskToEdit = task
@@ -812,6 +813,7 @@ fun TaskCard(
     task: Assignment,
     isDark: Boolean,
     isHighlighted: Boolean = false,
+    modifier: Modifier = Modifier,
     onToggleComplete: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
@@ -840,7 +842,7 @@ fun TaskCard(
                 }
             )
         ),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onEdit)
     ) {

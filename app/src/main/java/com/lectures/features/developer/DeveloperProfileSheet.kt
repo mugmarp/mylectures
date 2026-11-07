@@ -136,7 +136,7 @@ fun DeveloperProfileSheet(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "BSE student at MUST. Built the Lectures app as a fast, offline-first companion for class schedules and vacant campus rooms.",
+                        text = "BSE student at MUST. Built Lectures App as a fast, offline-first app for schedule access and campus room availability.",
                         fontSize = 12.sp,
                         lineHeight = 16.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

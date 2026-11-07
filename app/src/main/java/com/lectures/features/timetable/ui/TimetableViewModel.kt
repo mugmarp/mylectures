@@ -135,6 +135,11 @@ class TimetableViewModel(
                     entries = entries,
                     isLoading = false
                 )
+                // When loading the official enrolled timetable, ensure recurring class alarms are active
+                if (!_uiState.value.isPeeking && entries.isNotEmpty() && repository.etagStore.isNotificationsEnabled()) {
+                    val leadMinutes = repository.etagStore.getClassAlarmLeadMinutes()
+                    classAlarmScheduler?.scheduleAllEnrolledClassAlarms(entries, leadMinutes)
+                }
             }
         }
     }
@@ -189,6 +194,11 @@ class TimetableViewModel(
         val clean = newProgramme.trim()
         if (clean.isEmpty()) return
         viewModelScope.launch {
+            // Cancel previous programme alarms cleanly
+            val previousEntries = _uiState.value.entries
+            if (previousEntries.isNotEmpty()) {
+                classAlarmScheduler?.cancelAllEnrolledClassAlarms(previousEntries)
+            }
             repository.setProgrammePref(clean)
             _uiState.value = _uiState.value.copy(
                 enrolledProgramme = clean,

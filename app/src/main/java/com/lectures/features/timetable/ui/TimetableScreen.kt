@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lectures.core.util.SessionProgress
 import com.lectures.core.util.TimeUtil
+import com.lectures.core.util.rememberLiveClockPulse
 import com.lectures.features.timetable.domain.Assignment
 import com.lectures.features.timetable.domain.CustomEvent
 import com.lectures.features.timetable.domain.LectureNote
@@ -163,11 +164,17 @@ fun TimetableScreen(
         }
     }
 
+    val clockPulse = rememberLiveClockPulse()
+
+    // Ensure todayName always syncs on clock pulse (e.g. crossing midnight or waking from sleep)
+    val realTodayName = TimeUtil.todayName()
+    if (!todayName.equals(realTodayName, ignoreCase = true)) {
+        todayName = realTodayName
+    }
+
     // Real-time clock pulse to re-evaluate next-up, countdowns, and progress bars periodically.
-    // Kept in the smallest possible composable so only that strip recomposes every 15s,
-    // not the entire TimetableScreen.
-    var globalNextUp by remember(entries, todayName) {
-        mutableStateOf(findActualNextUp(entries, todayName))
+    val globalNextUp = remember(entries, todayName, clockPulse) {
+        findActualNextUp(entries, todayName)
     }
 
     // 3. Filter sessions for the selected day from the real Room database
@@ -213,16 +220,18 @@ fun TimetableScreen(
             ?: SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date())
     }
 
-    var allTodayClassesCompleted by remember { mutableStateOf(false) }
-
-    NextUpTicker(
-        entries = entries,
-        todayEntries = todayEntries,
-        currentDayName = todayName,
-        onDayChanged = { todayName = it },
-        onCompletedChanged = { allTodayClassesCompleted = it },
-        onNextUpChanged = { globalNextUp = it }
-    )
+    val allTodayClassesCompleted = remember(todayEntries, clockPulse) {
+        if (todayEntries.isEmpty()) {
+            false
+        } else {
+            val now = Calendar.getInstance()
+            val curMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+            todayEntries.all { entry ->
+                val endMin = TimeUtil.toMinutes(entry.endTime)
+                endMin > 0 && endMin <= curMin
+            }
+        }
+    }
 
     // Horizontal drag gesture tracking for swiping between days
     var dragTotal by remember { mutableFloatStateOf(0f) }
@@ -531,11 +540,12 @@ fun TimetableScreen(
                         val note = notes[entry.naturalKey]
 
                         if (currentNextUp.isLive) {
+                            val liveProg = TimeUtil.calculateProgress(entry.startTime, entry.endTime, entry.dayOfWeek)
                             val session = entry.toSpecClassSession(
                                 currentProgramme = programme,
                                 note = note,
                                 isLive = true,
-                                progress = currentNextUp.progress
+                                progress = if (liveProg.isOngoing) liveProg else currentNextUp.progress
                             )
                             HappeningNowHeroCard(
                                 session = session,
@@ -739,17 +749,25 @@ fun TimetableScreen(
                         val entryNote = notes[entry.naturalKey]
                         val hasConflict = com.lectures.features.timetable.domain.TimetableConflictDetector
                             .hasConflict(entry, dayEntries)
+                        val startsIn = if (isViewingToday) {
+                            val now = Calendar.getInstance()
+                            val curMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+                            val startMin = TimeUtil.toMinutes(entry.startTime)
+                            val endMin = TimeUtil.toMinutes(entry.endTime)
+                            val diff = startMin - curMin
+                            when {
+                                endMin > startMin && curMin in startMin until endMin -> "Live now"
+                                diff in 1..120 -> "in ${diff}m"
+                                else -> null
+                            }
+                        } else null
+
                         val specSession = entry.toSpecClassSession(
                             currentProgramme = programme,
                             hasConflict = hasConflict,
                             note = entryNote,
-                            startsInText = if (isViewingToday) {
-                                val now = Calendar.getInstance()
-                                val curMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
-                                val startMin = TimeUtil.toMinutes(entry.startTime)
-                                val diff = startMin - curMin
-                                if (diff in 1..120) "in ${diff}m" else null
-                            } else null
+                            progress = if (isViewingToday) TimeUtil.calculateProgress(entry.startTime, entry.endTime, entry.dayOfWeek) else null,
+                            startsInText = startsIn
                         )
                         TimelineClassCard(
                             session = specSession,
@@ -762,13 +780,15 @@ fun TimetableScreen(
                             onClick = {
                                 selectedEntryForDetail = entry
                             },
-                            modifier = Modifier.padding(vertical = 5.dp)
+                            modifier = Modifier
+                                .padding(vertical = 5.dp)
+                                .animateItem()
                         )
                     }
 
                     // Render custom student events
                     items(dayCustomEvents, key = { "custom_event_${it.id}" }) { event ->
-                        PaddingBox(top = 4.dp, bottom = 6.dp) {
+                        PaddingBox(top = 4.dp, bottom = 6.dp, modifier = Modifier.animateItem()) {
                             ActivityCard(
                                 event = event,
                                 onClick = { selectedActivityForDetail = event },
@@ -948,10 +968,11 @@ fun TimetableScreen(
 private fun PaddingBox(
     top: androidx.compose.ui.unit.Dp = 0.dp,
     bottom: androidx.compose.ui.unit.Dp = 0.dp,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .padding(top = top, bottom = bottom)

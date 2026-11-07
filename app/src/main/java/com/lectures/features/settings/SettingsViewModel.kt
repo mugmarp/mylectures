@@ -297,6 +297,7 @@ class SettingsViewModel(
 
                 val tasks = repository.getAssignments().firstOrNull() ?: emptyList()
                 val notesWithAlarms = repository.getNotesWithAlarms()
+                val prog = _uiState.value.currentProgramme.ifBlank { repository.getInitialProgramme() ?: "" }
 
                 if (enabled) {
                     var count = 0
@@ -318,15 +319,26 @@ class SettingsViewModel(
                         if (ok) classCount++
                     }
 
+                    var enrolledCount = 0
+                    if (prog.isNotEmpty()) {
+                        val enrolledClasses = repository.getLocalSchedule(prog).firstOrNull() ?: emptyList()
+                        val leadMinutes = _uiState.value.classAlarmLeadMinutes
+                        enrolledCount = classAlarmScheduler?.scheduleAllEnrolledClassAlarms(enrolledClasses, leadMinutes) ?: 0
+                    }
+
                     reminderScheduler?.scheduleDailyReminder()
 
                     _uiState.value = _uiState.value.copy(
-                        successMessage = "Reminders active. $count task alerts, $classCount class alarms, and daily digest enabled."
+                        successMessage = "Reminders active. $enrolledCount class reminders, $count task alerts, $classCount custom alarms, and daily digest enabled."
                     )
                 } else {
                     alarmScheduler?.cancelAllTaskReminders(tasks)
                     notesWithAlarms.forEach { note ->
                         classAlarmScheduler?.cancelClassAlarm(note.naturalKey)
+                    }
+                    if (prog.isNotEmpty()) {
+                        val enrolledClasses = repository.getLocalSchedule(prog).firstOrNull() ?: emptyList()
+                        classAlarmScheduler?.cancelAllEnrolledClassAlarms(enrolledClasses)
                     }
                     reminderScheduler?.cancelDailyReminder()
 
@@ -344,9 +356,15 @@ class SettingsViewModel(
         viewModelScope.launch {
             try {
                 repository.setClassAlarmLeadMinutes(minutes)
+                val prog = _uiState.value.currentProgramme.ifBlank { repository.getInitialProgramme() ?: "" }
+                var reArmedCount = 0
+                if (prog.isNotEmpty() && _uiState.value.notificationsEnabled) {
+                    val enrolledClasses = repository.getLocalSchedule(prog).firstOrNull() ?: emptyList()
+                    reArmedCount = classAlarmScheduler?.scheduleAllEnrolledClassAlarms(enrolledClasses, minutes) ?: 0
+                }
                 _uiState.value = _uiState.value.copy(
                     classAlarmLeadMinutes = minutes,
-                    successMessage = "Lecture reminder updated to $minutes minutes before."
+                    successMessage = if (reArmedCount > 0) "Lecture reminders updated to $minutes minutes before ($reArmedCount classes armed)." else "Lecture reminder updated to $minutes minutes before."
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(errorMessage = "Failed to update class reminder: ${e.message}")
@@ -443,10 +461,18 @@ class SettingsViewModel(
                     if (ok) classCount++
                 }
 
+                val prog = _uiState.value.currentProgramme.ifBlank { repository.getInitialProgramme() ?: "" }
+                var enrolledCount = 0
+                if (prog.isNotEmpty() && _uiState.value.notificationsEnabled) {
+                    val enrolledClasses = repository.getLocalSchedule(prog).firstOrNull() ?: emptyList()
+                    val leadMinutes = _uiState.value.classAlarmLeadMinutes
+                    enrolledCount = classAlarmScheduler?.scheduleAllEnrolledClassAlarms(enrolledClasses, leadMinutes) ?: 0
+                }
+
                 reminderScheduler?.scheduleDailyReminder()
 
                 _uiState.value = _uiState.value.copy(
-                    successMessage = "Rescheduled $scheduledCount task alerts, $classCount class alarms, and morning digest."
+                    successMessage = "Rescheduled $enrolledCount class reminders, $scheduledCount task alerts, $classCount custom alarms, and morning digest."
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(errorMessage = "Failed to reschedule alarms: ${e.message}")

@@ -397,6 +397,7 @@ fun CalendarScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp, vertical = 6.dp)
+                            .animateItem()
                             .clickable {
                                 // Jump directly to milestone start date in Month Planner with accurate year & month
                                 viewModel.navigateToDate(
@@ -916,7 +917,7 @@ fun CalendarScreen(
                     }
 
                     items(selectedDayDeadlines, key = { "deadline_${it.id}" }) { task ->
-                        Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
+                        Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp).animateItem()) {
                             TaskCard(
                                 task = task,
                                 isDark = isDark,
@@ -1017,7 +1018,7 @@ fun CalendarScreen(
                             is CalendarTimelineItem.Activity -> "act_${item.event.id}"
                         }
                     }) { item ->
-                        Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
+                        Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp).animateItem()) {
                             when (item) {
                                 is CalendarTimelineItem.Lecture -> {
                                     LectureCard(

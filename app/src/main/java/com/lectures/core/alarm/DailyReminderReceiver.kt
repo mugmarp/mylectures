@@ -62,6 +62,16 @@ class DailyReminderReceiver : BroadcastReceiver() {
                     dayOfWeek = dayOfWeek,
                     classes = classes
                 )
+
+                // Self-healing daily safety net: Ensure today's and this week's enrolled class alarms are armed
+                if (programme.isNotEmpty() && !isTest) {
+                    val allCohortClasses = repository.getLocalSchedule(programme).firstOrNull() ?: emptyList()
+                    if (allCohortClasses.isNotEmpty()) {
+                        val leadMinutes = etagStore.getClassAlarmLeadMinutes()
+                        AlarmScheduler(context).scheduleAllEnrolledClassAlarms(allCohortClasses, leadMinutes)
+                        Log.d(TAG, "Daily morning check armed enrolled class alarms with lead=$leadMinutes min")
+                    }
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Error generating daily schedule digest: ${e.message}", e)
             } finally {

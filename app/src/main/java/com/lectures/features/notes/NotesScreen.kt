@@ -500,6 +500,7 @@ fun NotesScreen(
                                 note = note,
                                 courseCode = courseCode,
                                 isDark = isDark,
+                                modifier = Modifier.animateItem(),
                                 onOpen = {
                                     focusManager.clearFocus()
                                     keyboardController?.hide()
@@ -592,6 +593,7 @@ fun NoteCardItem(
     note: LectureNote,
     courseCode: String,
     isDark: Boolean = false,
+    modifier: Modifier = Modifier,
     onOpen: () -> Unit,
     onTogglePin: () -> Unit,
     onDelete: () -> Unit
@@ -610,7 +612,7 @@ fun NoteCardItem(
     }
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onOpen),
         shape = RoundedCornerShape(16.dp),

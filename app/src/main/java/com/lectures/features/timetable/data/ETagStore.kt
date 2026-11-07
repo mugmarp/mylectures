@@ -114,6 +114,7 @@ class ETagStore(context: Context) {
 
     private val _notificationsEnabledPref = MutableStateFlow(prefs.getBoolean(NOTIFICATIONS_ENABLED_KEY, true))
     val notificationsEnabledPref: Flow<Boolean> = _notificationsEnabledPref.asStateFlow()
+    fun isNotificationsEnabled(): Boolean = prefs.getBoolean(NOTIFICATIONS_ENABLED_KEY, true)
 
     private val _lastSyncPref = MutableStateFlow<String?>(prefs.getString(LAST_SYNC_KEY, "Up to date"))
     val lastSyncPref: Flow<String?> = _lastSyncPref.asStateFlow()

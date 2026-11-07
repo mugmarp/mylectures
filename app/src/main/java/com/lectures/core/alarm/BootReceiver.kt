@@ -64,7 +64,17 @@ class BootReceiver : BroadcastReceiver() {
                         if (ok) classCount++
                     }
 
-                    Log.d(TAG, "Boot reschedule complete: $taskCount tasks, $classCount class alarms, and daily digest scheduled.")
+                    // 4. Re-arm Enrolled Programme Class Alarms
+                    val etagStore = app.etagStore
+                    val savedProgramme = etagStore.getSavedProgramme()?.trim() ?: repository.getInitialProgramme()?.trim() ?: ""
+                    var enrolledClassCount = 0
+                    if (savedProgramme.isNotEmpty() && etagStore.isNotificationsEnabled()) {
+                        val enrolledClasses = repository.getLocalSchedule(savedProgramme).firstOrNull() ?: emptyList()
+                        val leadMinutes = etagStore.getClassAlarmLeadMinutes()
+                        enrolledClassCount = classScheduler.scheduleAllEnrolledClassAlarms(enrolledClasses, leadMinutes)
+                    }
+
+                    Log.d(TAG, "Boot reschedule complete: $taskCount tasks, $classCount custom notes, $enrolledClassCount enrolled classes, and daily digest scheduled.")
                 } catch (e: Exception) {
                     Log.e(TAG, "Error rescheduling alarms on boot: ${e.message}", e)
                 } finally {

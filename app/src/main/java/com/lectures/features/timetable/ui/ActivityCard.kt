@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lectures.core.util.TimeUtil
+import com.lectures.core.util.rememberLiveClockPulse
 import com.lectures.features.timetable.domain.ActivityCategory
 import com.lectures.features.timetable.domain.CustomEvent
 import com.lectures.ui.components.RoomFloorBadge
@@ -39,7 +40,8 @@ fun ActivityCard(
         ActivityCategory.colorForHex(event.colorTag.ifBlank { category.colorHex })
     }
 
-    val progress = remember(event.startTime, event.endTime, event.dayOfWeek) {
+    val clockPulse = rememberLiveClockPulse()
+    val progress = remember(event.startTime, event.endTime, event.dayOfWeek, clockPulse) {
         TimeUtil.calculateProgress(event.startTime, event.endTime, event.dayOfWeek)
     }
 

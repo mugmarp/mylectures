@@ -13,7 +13,22 @@ class AlarmScheduler(private val context: Context) {
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
     private val TAG = "AlarmScheduler"
 
-    fun scheduleClassAlarm(entry: TimetableEntry, minutesBefore: Int): Boolean {
+    private fun parseStartTime(rawTime: String): Pair<Int, Int>? {
+        val clean = rawTime.trim().uppercase()
+        val isPm = clean.endsWith("PM")
+        val isAm = clean.endsWith("AM")
+        val stripped = clean.removeSuffix("PM").removeSuffix("AM").trim()
+        val parts = stripped.split(":")
+        if (parts.size != 2) return null
+        var hour = parts[0].trim().toIntOrNull() ?: return null
+        val minute = parts[1].trim().toIntOrNull() ?: return null
+        if (isPm && hour < 12) hour += 12
+        if (isAm && hour == 12) hour = 0
+        if (hour !in 0..23 || minute !in 0..59) return null
+        return Pair(hour, minute)
+    }
+
+    fun scheduleClassAlarm(entry: TimetableEntry, minutesBefore: Int, isAlarm: Boolean = true): Boolean {
         if (alarmManager == null) {
             Log.e(TAG, "AlarmManager service not available")
             return false
@@ -34,13 +49,12 @@ class AlarmScheduler(private val context: Context) {
             return false
         }
 
-        val timeParts = entry.startTime.split(":")
-        val hour = timeParts.getOrNull(0)?.trim()?.toIntOrNull()
-        val minute = timeParts.getOrNull(1)?.trim()?.toIntOrNull()
-        if (hour == null || minute == null || hour !in 0..23 || minute !in 0..59) {
+        val time = parseStartTime(entry.startTime)
+        if (time == null) {
             Log.e(TAG, "Cannot schedule alarm: invalid startTime '${entry.startTime}' for ${entry.courseCode}")
             return false
         }
+        val (hour, minute) = time
 
         val cal = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, hour)
@@ -52,7 +66,7 @@ class AlarmScheduler(private val context: Context) {
 
         val currentDow = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)
         var daysDiff = (targetDow - currentDow + 7) % 7
-        if (daysDiff == 0 && cal.timeInMillis <= System.currentTimeMillis()) {
+        if (daysDiff == 0 && cal.timeInMillis <= System.currentTimeMillis() + 60_000L) {
             daysDiff = 7
         }
         cal.add(Calendar.DAY_OF_YEAR, daysDiff)
@@ -67,7 +81,7 @@ class AlarmScheduler(private val context: Context) {
             putExtra("START_TIME", entry.startTime)
             putExtra("LECTURER", entry.lecturer ?: "")
             putExtra("MINUTES_BEFORE", minutesBefore)
-            putExtra("IS_ALARM", true)
+            putExtra("IS_ALARM", isAlarm)
             putExtra("IS_RECURRING", true)
             putExtra("IS_TEST", false)
         }
@@ -214,6 +228,37 @@ class AlarmScheduler(private val context: Context) {
         alarmManager.cancel(pendingIntent)
         pendingIntent.cancel()
         Log.d(TAG, "Cancelled class alarm for $naturalKey")
+    }
+
+    /**
+     * Automatically arms recurring class reminders/alarms for all lectures
+     * in the student's enrolled academic programme.
+     */
+    fun scheduleAllEnrolledClassAlarms(classes: List<TimetableEntry>, leadMinutes: Int, isAlarm: Boolean = true): Int {
+        if (alarmManager == null || classes.isEmpty()) return 0
+        val uniqueClasses = classes.distinctBy {
+            if (it.naturalKey.isNotBlank()) it.naturalKey else "${it.courseCode}|${it.dayOfWeek}|${it.startTime}"
+        }
+        var scheduledCount = 0
+        for (entry in uniqueClasses) {
+            val ok = scheduleClassAlarm(entry, leadMinutes, isAlarm)
+            if (ok) scheduledCount++
+        }
+        Log.d(TAG, "Scheduled $scheduledCount enrolled class alarms (lead = ${leadMinutes}m) out of ${uniqueClasses.size} unique lectures")
+        return scheduledCount
+    }
+
+    /**
+     * Cancels alarms for all given timetable entries (e.g. on programme switch or quiet mode).
+     */
+    fun cancelAllEnrolledClassAlarms(classes: List<TimetableEntry>) {
+        if (alarmManager == null || classes.isEmpty()) return
+        classes.distinctBy {
+            if (it.naturalKey.isNotBlank()) it.naturalKey else "${it.courseCode}|${it.dayOfWeek}|${it.startTime}"
+        }.forEach {
+            cancelClassAlarm(it.naturalKey)
+        }
+        Log.d(TAG, "Cancelled alarms for ${classes.size} enrolled class entries")
     }
 
     fun scheduleSnoozeAlarm(

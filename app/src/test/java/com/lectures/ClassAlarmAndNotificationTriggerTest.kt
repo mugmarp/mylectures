@@ -311,4 +311,71 @@ class ClassAlarmAndNotificationTriggerTest {
         assertEquals(1, store.notifications.value.size)
         assertEquals("Snoozed Class Alert: CSC1201", store.notifications.value.first().title)
     }
+
+    @Test
+    fun testScheduleAllEnrolledClassAlarmsAndCancelAll() {
+        val entry1 = sampleEntry
+        val entry2 = TimetableEntry(
+            natural_key = "BCS I|CSC1202|Tuesday|14:00|Lab 1",
+            program_group = "BCS I",
+            day = "Tuesday",
+            time_slot = "14:00 - 16:00",
+            start_time = "14:00",
+            end_time = "16:00",
+            course_code = "CSC1202",
+            course_title = "Operating Systems",
+            session_type = "Lab",
+            lecturer = "Dr. Mugisha",
+            room = "Comp Lab 1",
+            shared_with = emptyList()
+        )
+        val entry3 = TimetableEntry(
+            natural_key = "BCS I|CSC1203|Wednesday|11:00 AM|Hall 2",
+            program_group = "BCS I",
+            day = "Wednesday",
+            time_slot = "11:00 - 13:00",
+            start_time = "11:00 AM", // Test 12-hour AM format
+            end_time = "13:00",
+            course_code = "CSC1203",
+            course_title = "Computer Networks",
+            session_type = "Lecture",
+            lecturer = "Eng. Moses",
+            room = "Hall 2",
+            shared_with = emptyList()
+        )
+
+        val scheduledCount = alarmScheduler.scheduleAllEnrolledClassAlarms(listOf(entry1, entry2, entry3), leadMinutes = 30)
+        assertEquals(3, scheduledCount)
+        assertEquals(3, shadowAlarmManager.scheduledAlarms.size)
+
+        // Cancel all
+        alarmScheduler.cancelAllEnrolledClassAlarms(listOf(entry1, entry2, entry3))
+        assertTrue("All alarms should be cancelled", shadowAlarmManager.scheduledAlarms.isEmpty())
+    }
+
+    @Test
+    fun testQuietModeSuppressesClassAlertNotification() {
+        val etagStore = com.lectures.features.timetable.data.ETagStore(context)
+        kotlinx.coroutines.runBlocking {
+            etagStore.setNotificationsEnabled(false)
+        }
+
+        val receiver = ClassAlarmReceiver()
+        val broadcastIntent = Intent(context, ClassAlarmReceiver::class.java).apply {
+            putExtra("COURSE_CODE", "CSC1201")
+            putExtra("COURSE_TITLE", "Data Structures")
+            putExtra("ROOM", "Hall 3")
+            putExtra("START_TIME", "09:00")
+            putExtra("IS_ALARM", true)
+            putExtra("IS_TEST", false)
+        }
+
+        receiver.onReceive(context, broadcastIntent)
+        assertTrue("Notification should be suppressed in quiet mode", shadowNotificationManager.allNotifications.isEmpty())
+
+        // Re-enable notifications for other tests
+        kotlinx.coroutines.runBlocking {
+            etagStore.setNotificationsEnabled(true)
+        }
+    }
 }

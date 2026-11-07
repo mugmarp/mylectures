@@ -90,6 +90,36 @@ fun VacantRoomsScreen(
     var queryTime by remember { mutableStateOf(initialTimeStr) }
     var isLiveNow by remember { mutableStateOf(true) }
 
+    // Immediate re-sync when returning to foreground from Home screen
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME || event == androidx.lifecycle.Lifecycle.Event.ON_START) {
+                if (isLiveNow) {
+                    val nowCal = Calendar.getInstance()
+                    queryDay = TimeUtil.todayName()
+                    queryTime = "%02d:%02d".format(nowCal.get(Calendar.HOUR_OF_DAY), nowCal.get(Calendar.MINUTE))
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    // Live continuous minute ticker when isLiveNow is active
+    LaunchedEffect(isLiveNow) {
+        if (isLiveNow) {
+            while (true) {
+                kotlinx.coroutines.delay(60_000L)
+                val nowCal = Calendar.getInstance()
+                queryDay = TimeUtil.todayName()
+                queryTime = "%02d:%02d".format(nowCal.get(Calendar.HOUR_OF_DAY), nowCal.get(Calendar.MINUTE))
+            }
+        }
+    }
+
     // Day-scoped query: only load entries for the selected day instead of all 1304 rows.
     val allEntries by remember(queryDay) {
         app?.database?.timetableDao()?.getScheduleForDay(queryDay)
@@ -832,6 +862,7 @@ fun VacantRoomsScreen(
                         isDark = isDark,
                         showCampus = selectedCampus == null,
                         selectedBuilding = selectedBuilding,
+                        modifier = Modifier.animateItem(),
                         onClick = { selectedRoomForSchedule = status }
                     )
                 }
@@ -1361,6 +1392,7 @@ fun RoomVacancyCard(
     isDark: Boolean,
     showCampus: Boolean = false,
     selectedBuilding: String? = null,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     val room = status.room
@@ -1381,7 +1413,7 @@ fun RoomVacancyCard(
         shape = RoundedCornerShape(16.dp),
         color = surfaceColor,
         border = BorderStroke(1.dp, borderSubtle),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() }
     ) {
