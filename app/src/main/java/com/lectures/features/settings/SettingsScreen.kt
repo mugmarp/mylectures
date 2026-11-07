@@ -1,5 +1,6 @@
 package com.lectures.features.settings
 
+import com.lectures.core.update.InAppUpdateManager
 import com.lectures.core.update.UpdateViewModel
 import androidx.lifecycle.compose.collectAsState
 import android.content.Intent
@@ -1433,18 +1434,6 @@ fun SettingsScreen(
                             }
                         }
                     }
-                            ) {
-                                Text(
-                                    text = "CHECK",
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-                }
-            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
