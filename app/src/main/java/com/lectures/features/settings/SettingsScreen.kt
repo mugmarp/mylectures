@@ -1,8 +1,5 @@
 package com.lectures.features.settings
 
-import com.lectures.core.update.InAppUpdateManager
-import com.lectures.core.update.UpdateViewModel
-import androidx.lifecycle.compose.collectAsState
 import android.content.Intent
 import android.provider.Settings
 import android.widget.Toast
@@ -23,7 +20,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.Default.ArrowForward
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.MusicNote
@@ -60,8 +56,6 @@ enum class SettingsSubScreen {
     MAIN,
     APPEARANCE
 }
-
-
 
 @Composable
 fun SettingsScreen(
@@ -140,13 +134,27 @@ fun SettingsScreen(
     var showCustomLeadDialog by remember { mutableStateOf(false) }
     var customLeadInput by remember { mutableStateOf("") }
     var showVersionDetailsDialog by remember { mutableStateOf(false) }
-    // Update state is managed by UpdateViewModel
-    val updateScope = rememberCoroutineScope()
-    val updateViewModel = remember { UpdateViewModel(updateScope) }
-    val updateState by updateViewModel.state.collectAsState()
+    var availableUpdateInfo by remember { mutableStateOf<com.lectures.core.update.AppUpdateInfo?>(null) }
+    var isCheckingForAppUpdate by remember { mutableStateOf(false) }
+    var showAppUpdateDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-
+    val checkUpdateAction = {
+        if (!isCheckingForAppUpdate) {
+            isCheckingForAppUpdate = true
+            scope.launch {
+                val result = com.lectures.core.update.InAppUpdateManager.checkForUpdate(context)
+                isCheckingForAppUpdate = false
+                val update = result.getOrNull()
+                if (update != null) {
+                    availableUpdateInfo = update
+                    showAppUpdateDialog = true
+                } else {
+                    Toast.makeText(context, "Lectures is up to date (v${BuildConfig.VERSION_NAME})", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     // Custom Alarm Lead Time Dialog
     if (showCustomLeadDialog) {
@@ -1340,10 +1348,11 @@ fun SettingsScreen(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
                             .clickable {
-                                updateViewModel.checkForUpdate(
-                                    versionJsonUrl = "https://raw.githubusercontent.com/mugmarp/mylectures/main/version.json",
-                                    currentVersionCode = BuildConfig.VERSION_CODE
-                                )
+                                if (availableUpdateInfo != null) {
+                                    showAppUpdateDialog = true
+                                } else {
+                                    checkUpdateAction()
+                                }
                             }
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -1370,71 +1379,51 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = when (val s = updateState) {
-                                    is InAppUpdateManager.UpdateState.Idle -> {
-                                        if (s.hasUpdate) {
-                                            "Update available: v${s.versionInfo?.versionName} · Tap to install"
-                                        } else {
-                                            "v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE}) · Tap to check updates"
-                                        }
-                                    }
-                                    is InAppUpdateManager.UpdateState.Downloading -> "Downloading update..."
-                                    is InAppUpdateManager.UpdateState.Downloaded -> "Update ready to install · Tap to install"
-                                    is InAppUpdateManager.UpdateState.Installing -> "Installing update..."
-                                    is InAppUpdateManager.UpdateState.Error -> "Error: ${s.message}"
-                                    else -> "Unknown state"
+                                text = if (availableUpdateInfo != null) {
+                                    "Update available: v${availableUpdateInfo?.versionName} · Tap to install"
+                                } else {
+                                    "v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE}) · Tap to check updates"
                                 },
                                 fontSize = 12.sp,
-                                color = when (val s = updateState) {
-                                    is InAppUpdateManager.UpdateState.Idle -> if (s.hasUpdate) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                    is InAppUpdateManager.UpdateState.Downloading -> MaterialTheme.colorScheme.primary
-                                    is InAppUpdateManager.UpdateState.Downloaded -> MaterialTheme.colorScheme.primary
-                                    is InAppUpdateManager.UpdateState.Installing -> MaterialTheme.colorScheme.primary
-                                    is InAppUpdateManager.UpdateState.Error -> MaterialTheme.colorScheme.error
-                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                }
+                                color = if (availableUpdateInfo != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        when (val s = updateState) {
-                            is InAppUpdateManager.UpdateState.Downloading -> {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.primary
+                        if (isCheckingForAppUpdate) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else if (availableUpdateInfo != null) {
+                            Box(
+                                modifier = Modifier
+                                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "UPDATE",
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
-                            is InAppUpdateManager.UpdateState.Downloaded -> {
-                                Box(
-                                    modifier = Modifier
-                                        .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
-                                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = "READY",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
-                                }
-                            }
-                            is InAppUpdateManager.UpdateState.Error -> {
-                                Icon(
-                                    Icons.Default.Error,
-                                    contentDescription = "Error",
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            else -> {
-                                Icon(
-                                    Icons.Default.ArrowForward,
-                                    contentDescription = "Check for updates",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp)
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "CHECK",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
                     }
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -1689,6 +1678,14 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
         }
+    }
+}
+
+    if (showAppUpdateDialog && availableUpdateInfo != null) {
+        com.lectures.core.update.AppUpdateDialog(
+            updateInfo = availableUpdateInfo!!,
+            onDismiss = { showAppUpdateDialog = false }
+        )
     }
 }
 
