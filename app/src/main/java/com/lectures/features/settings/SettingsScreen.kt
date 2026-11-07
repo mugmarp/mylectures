@@ -134,7 +134,6 @@ fun SettingsScreen(
     var showCustomLeadDialog by remember { mutableStateOf(false) }
     var customLeadInput by remember { mutableStateOf("") }
     var showVersionDetailsDialog by remember { mutableStateOf(false) }
-    var showVersionDetailsDialog by remember { mutableStateOf(false) }
     // Update state is managed by UpdateViewModel
     val updateScope = rememberCoroutineScope()
     val updateViewModel = remember { UpdateViewModel(updateScope) }
