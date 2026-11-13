@@ -189,9 +189,21 @@ class AlarmDeliveryTest {
         NotificationHelper.showTaskReminderNotification(app, 60L, "Lab", "CSC", "Tomorrow", "High")
         val manager = app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notification = shadowOf(manager).allNotifications.single()
-        val actions = notification.actions.map { shadowOf(it.actionIntent).savedIntent.data }
-        assertEquals(actions.size, actions.toSet().size)
-        assertFalse(actions.contains(shadowOf(notification.contentIntent).savedIntent.data))
+        val done = notification.actions.single { it.title.toString() == "Mark Done" }
+        val dismiss = notification.actions.single { it.title.toString() == "Dismiss" }
+        val view = notification.actions.single { it.title.toString() == "View Tasks" }
+        val doneIntent = shadowOf(done.actionIntent).savedIntent
+        val dismissIntent = shadowOf(dismiss.actionIntent).savedIntent
+        val viewIntent = shadowOf(notification.contentIntent).savedIntent
+        assertEquals(TaskActionReceiver.ACTION_MARK_TASK_DONE, doneIntent.action)
+        assertEquals(60L, doneIntent.getLongExtra(TaskActionReceiver.EXTRA_TASK_ID, -1))
+        assertEquals(ClassAlarmReceiver.ACTION_DISMISS_CLASS_ALARM, dismissIntent.action)
+        assertNotEquals(doneIntent.data, dismissIntent.data)
+        assertNotEquals(doneIntent.data, viewIntent.data)
+        assertNotEquals(dismissIntent.data, viewIntent.data)
+        assertEquals(notification.contentIntent, view.actionIntent)
+        assertEquals(3, viewIntent.getIntExtra("EXTRA_NAV_TAB", -1))
+        assertEquals(60L, viewIntent.getLongExtra("EXTRA_TASK_ID", -1))
     }
 
     @Test
