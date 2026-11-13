@@ -147,7 +147,7 @@ fun NotesScreen(
     // Main Academic Notes Dashboard Screen
     val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
+    val listBottomPadding = Chrome.listBottomPadding(navBarBottom, windowInfo.useNavigationRail)
     val listState = rememberLazyListState()
 
     Scaffold(
@@ -167,7 +167,7 @@ fun NotesScreen(
                     elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
                     modifier = Modifier
                         .navigationBarsPadding()
-                        .padding(bottom = Chrome.fabBottomPadding())
+                        .padding(bottom = Chrome.fabBottomPadding(windowInfo.useNavigationRail))
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Add Note", modifier = Modifier.size(24.dp))
                 }
@@ -185,7 +185,7 @@ fun NotesScreen(
                     elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
                     modifier = Modifier
                         .navigationBarsPadding()
-                        .padding(bottom = Chrome.fabBottomPadding())
+                        .padding(bottom = Chrome.fabBottomPadding(windowInfo.useNavigationRail))
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Add Note", modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))

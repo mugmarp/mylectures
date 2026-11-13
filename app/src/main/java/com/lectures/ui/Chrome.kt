@@ -34,31 +34,39 @@ object Chrome {
     const val TopBarGlassAlpha: Float = 0.96f
     const val DockAlpha: Float = 0.96f
 
+    val NavigationRailWidth: Dp = 76.dp
+
     /**
      * Total bottom padding required for scrollable list content to clear both the floating dock
-     * and the Floating Action Button (FAB) that sits above it.
-     * Guarantees that the last item in lists across Timetable, Tasks, Notes, and Calendar
-     * can scroll fully into view without being obstructed by the FAB or dock.
+     * (or NavigationRail in tablet mode) and the Floating Action Button (FAB).
      */
-    fun listBottomPadding(navBarBottom: Dp): Dp =
-        navBarBottom + DockHeight + FabAboveDockGap + FabHeight + ContentAboveDockGap
+    fun listBottomPadding(navBarBottom: Dp, useNavigationRail: Boolean = false): Dp =
+        if (useNavigationRail) {
+            navBarBottom + FabHeight + ContentAboveDockGap + 8.dp
+        } else {
+            navBarBottom + DockHeight + FabAboveDockGap + FabHeight + ContentAboveDockGap
+        }
 
     /**
      * Total bottom padding required for scrollable list content when no FAB is present.
      */
-    fun listBottomPaddingDockOnly(navBarBottom: Dp): Dp =
-        navBarBottom + DockHeight + ContentAboveDockGap
+    fun listBottomPaddingDockOnly(navBarBottom: Dp, useNavigationRail: Boolean = false): Dp =
+        if (useNavigationRail) {
+            navBarBottom + ContentAboveDockGap
+        } else {
+            navBarBottom + DockHeight + ContentAboveDockGap
+        }
 
     /**
      * Bottom padding for FAB placed inside a layout using navigationBarsPadding().
-     * (60.dp dock + 12.dp above-dock gap = 72.dp)
+     * (60.dp dock + 12.dp above-dock gap = 72.dp on phone; 16.dp on tablet rail).
      */
-    fun fabBottomPadding(): Dp =
-        DockHeight + FabAboveDockGap
+    fun fabBottomPadding(useNavigationRail: Boolean = false): Dp =
+        if (useNavigationRail) 16.dp else DockHeight + FabAboveDockGap
 }
 
 /**
- * Responsive viewport metrics and density modes for Lectures on Android phone screens.
+ * Responsive viewport metrics and density modes for Lectures across phone, foldable, and tablet screens.
  */
 data class LecturesWindow(
     val widthDp: Int,
@@ -76,6 +84,20 @@ data class LecturesWindow(
     /** True when system font scaling is enlarged by the user (>= 1.15x). */
     val isTightFont: Boolean get() = fontScale >= 1.15f
 
+    /** Material 3 WindowSizeClass width classifications. */
+    val isCompact: Boolean get() = widthDp < 600
+    val isMedium: Boolean get() = widthDp in 600..839
+    val isExpanded: Boolean get() = widthDp >= 840
+
+    /** True for tablets, foldables unfolded, and desktop viewports (width >= 600dp). */
+    val isTablet: Boolean get() = widthDp >= 600
+
+    /** True when the shell should switch from a bottom pill dock to an ergonomic leading NavigationRail. */
+    val useNavigationRail: Boolean get() = isTablet && heightDp >= 440
+
+    /** True when screens should render dual-pane master-detail or side-by-side layouts (Expanded width >= 840dp). */
+    val isDualPane: Boolean get() = isExpanded
+
     /** True when dock tab labels would be cramped and should switch to icon-only. */
     val dockIconOnly: Boolean get() = isNarrow || isTightFont
 
@@ -89,7 +111,7 @@ data class LecturesWindow(
     val filtersStacked: Boolean get() = isNarrow
 
     /** True when FAB should collapse to an icon-only button to conserve vertical viewport. */
-    val collapseFab: Boolean get() = isShort
+    val collapseFab: Boolean get() = isShort && !useNavigationRail
 }
 
 /**

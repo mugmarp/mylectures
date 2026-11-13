@@ -5,6 +5,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.*
@@ -20,6 +22,8 @@ import com.lectures.core.notification.InAppNotificationStore
 import com.lectures.core.notification.NotificationItemType
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Notes
+import androidx.compose.material.icons.filled.MeetingRoom
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -304,246 +308,244 @@ fun MainScaffold(
                         )
                     }
                     MainScreenDestination.TABS -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.background)
-                        ) {
-                            // Fluid animated tab switching along navigation direction
-                            AnimatedContent(
-                                targetState = selectedTab,
-                                transitionSpec = {
-                                    val direction = if (targetState > initialState) 1 else -1
-                                    (slideInHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> (direction * width * 0.14f).toInt() } +
-                                            fadeIn(animationSpec = tween(180)))
-                                        .togetherWith(
-                                            slideOutHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> (-direction * width * 0.14f).toInt() } +
-                                                    fadeOut(animationSpec = tween(120))
-                                        )
-                                },
-                                label = "MainTabsTransition"
-                            ) { tabIndex ->
-                                when (tabIndex) {
-                                    0 -> TimetableRoute(
-                                        onSettingsClick = { currentDestination = MainScreenDestination.SETTINGS },
-                                        onNavigateToNotes = { selectedTab = 2 },
-                                        onNavigateToCalendar = { selectedTab = 1 },
-                                        onNavigateToTasks = { selectedTab = 3 },
-                                        onReconfigureAcademicProfile = {
-                                            currentDestination = MainScreenDestination.SETTINGS
-                                            navState = AppNavState.FacultySelection
-                                        },
-                                        onOpenVacantRooms = { currentDestination = MainScreenDestination.VACANT_ROOMS }
-                                    )
-                                    1 -> CalendarScreen(
-                                        onBack = null,
-                                        onSettingsClick = { currentDestination = MainScreenDestination.SETTINGS },
-                                        onReconfigureAcademicProfile = {
-                                            currentDestination = MainScreenDestination.SETTINGS
-                                            navState = AppNavState.FacultySelection
-                                        },
-                                        onNavigateToTimetable = { selectedTab = 0 },
-                                        onPeekProgramme = onPeekProgrammeAndGoToTimetable,
-                                        onSetOfficialProgramme = onSetOfficialProgrammeAndGoToTimetable
-                                    )
-                                    2 -> NotesScreen(
-                                        onBack = null,
-                                        onSettingsClick = { currentDestination = MainScreenDestination.SETTINGS },
-                                        onReconfigureAcademicProfile = {
-                                            currentDestination = MainScreenDestination.SETTINGS
-                                            navState = AppNavState.FacultySelection
-                                        },
-                                        onNavigateToTimetable = { selectedTab = 0 },
-                                        onPeekProgramme = onPeekProgrammeAndGoToTimetable,
-                                        onSetOfficialProgramme = onSetOfficialProgrammeAndGoToTimetable,
-                                        onEditingChanged = { isNotesEditing = it }
-                                    )
-                                    3 -> TasksScreen(
-                                        onBack = null,
-                                        onSettingsClick = { currentDestination = MainScreenDestination.SETTINGS },
-                                        onReconfigureAcademicProfile = {
-                                            currentDestination = MainScreenDestination.SETTINGS
-                                            navState = AppNavState.FacultySelection
-                                        },
-                                        onNavigateToTimetable = { selectedTab = 0 },
-                                        onPeekProgramme = onPeekProgrammeAndGoToTimetable,
-                                        onSetOfficialProgramme = onSetOfficialProgrammeAndGoToTimetable,
-                                        highlightTaskId = pendingHighlightTaskId
-                                    )
-                                }
-                            }
+                        val windowInfo = rememberLecturesWindow()
 
-                            // Real-time Foreground Heads-Up Alert Toast Banner
-                            AnimatedVisibility(
-                                visible = activeForegroundAlert != null,
-                                enter = slideInVertically(
-                                    initialOffsetY = { -it },
-                                    animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMedium)
-                                ) + fadeIn(),
-                                exit = slideOutVertically(
-                                    targetOffsetY = { -it },
-                                    animationSpec = tween(180)
-                                ) + fadeOut(),
-                                modifier = Modifier
-                                    .align(Alignment.TopCenter)
-                                    .statusBarsPadding()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                                    .zIndex(100f)
-                            ) {
-                                activeForegroundAlert?.let { alert ->
-                                    Surface(
-                                        shape = RoundedCornerShape(16.dp),
-                                        color = if (isDark) com.lectures.features.timetable.ui.DarkSurfaceCard else Color.White,
-                                        border = BorderStroke(1.dp, primaryBlue.copy(alpha = 0.4f)),
-                                        shadowElevation = 8.dp,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                alert.navTab?.let { selectedTab = it }
-                                                activeForegroundAlert = null
-                                            }
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                            verticalAlignment = Alignment.CenterVertically
+                        @Composable
+                        fun MainTabsContent(modifier: Modifier = Modifier) {
+                            Box(modifier = modifier) {
+                                // Fluid animated tab switching along navigation direction
+                                AnimatedContent(
+                                    targetState = selectedTab,
+                                    transitionSpec = {
+                                        val direction = if (targetState > initialState) 1 else -1
+                                        (slideInHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> (direction * width * 0.14f).toInt() } +
+                                                fadeIn(animationSpec = tween(180)))
+                                            .togetherWith(
+                                                slideOutHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> (-direction * width * 0.14f).toInt() } +
+                                                        fadeOut(animationSpec = tween(120))
+                                            )
+                                    },
+                                    label = "MainTabsTransition"
+                                ) { tabIndex ->
+                                    when (tabIndex) {
+                                        0 -> TimetableRoute(
+                                            onSettingsClick = { currentDestination = MainScreenDestination.SETTINGS },
+                                            onNavigateToNotes = { selectedTab = 2 },
+                                            onNavigateToCalendar = { selectedTab = 1 },
+                                            onNavigateToTasks = { selectedTab = 3 },
+                                            onReconfigureAcademicProfile = {
+                                                currentDestination = MainScreenDestination.SETTINGS
+                                                navState = AppNavState.FacultySelection
+                                            },
+                                            onOpenVacantRooms = { currentDestination = MainScreenDestination.VACANT_ROOMS }
+                                        )
+                                        1 -> CalendarScreen(
+                                            onBack = null,
+                                            onSettingsClick = { currentDestination = MainScreenDestination.SETTINGS },
+                                            onReconfigureAcademicProfile = {
+                                                currentDestination = MainScreenDestination.SETTINGS
+                                                navState = AppNavState.FacultySelection
+                                            },
+                                            onNavigateToTimetable = { selectedTab = 0 },
+                                            onPeekProgramme = onPeekProgrammeAndGoToTimetable,
+                                            onSetOfficialProgramme = onSetOfficialProgrammeAndGoToTimetable
+                                        )
+                                        2 -> NotesScreen(
+                                            onBack = null,
+                                            onSettingsClick = { currentDestination = MainScreenDestination.SETTINGS },
+                                            onReconfigureAcademicProfile = {
+                                                currentDestination = MainScreenDestination.SETTINGS
+                                                navState = AppNavState.FacultySelection
+                                            },
+                                            onNavigateToTimetable = { selectedTab = 0 },
+                                            onPeekProgramme = onPeekProgrammeAndGoToTimetable,
+                                            onSetOfficialProgramme = onSetOfficialProgrammeAndGoToTimetable,
+                                            onEditingChanged = { isNotesEditing = it }
+                                        )
+                                        3 -> TasksScreen(
+                                            onBack = null,
+                                            onSettingsClick = { currentDestination = MainScreenDestination.SETTINGS },
+                                            onReconfigureAcademicProfile = {
+                                                currentDestination = MainScreenDestination.SETTINGS
+                                                navState = AppNavState.FacultySelection
+                                            },
+                                            onNavigateToTimetable = { selectedTab = 0 },
+                                            onPeekProgramme = onPeekProgrammeAndGoToTimetable,
+                                            onSetOfficialProgramme = onSetOfficialProgrammeAndGoToTimetable,
+                                            highlightTaskId = pendingHighlightTaskId
+                                        )
+                                    }
+                                }
+
+                                // Real-time Foreground Heads-Up Alert Toast Banner
+                                AnimatedVisibility(
+                                    visible = activeForegroundAlert != null,
+                                    enter = slideInVertically(
+                                        initialOffsetY = { -it },
+                                        animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMedium)
+                                    ) + fadeIn(),
+                                    exit = slideOutVertically(
+                                        targetOffsetY = { -it },
+                                        animationSpec = tween(180)
+                                    ) + fadeOut(),
+                                    modifier = Modifier
+                                        .align(Alignment.TopCenter)
+                                        .statusBarsPadding()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                        .zIndex(100f)
+                                ) {
+                                    activeForegroundAlert?.let { alert ->
+                                        Surface(
+                                            shape = RoundedCornerShape(16.dp),
+                                            color = if (isDark) com.lectures.features.timetable.ui.DarkSurfaceCard else Color.White,
+                                            border = BorderStroke(1.dp, primaryBlue.copy(alpha = 0.4f)),
+                                            shadowElevation = 8.dp,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    alert.navTab?.let { selectedTab = it }
+                                                    activeForegroundAlert = null
+                                                }
                                         ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(36.dp)
-                                                    .background(primaryBlue.copy(alpha = 0.15f), CircleShape),
-                                                contentAlignment = Alignment.Center
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                                verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.NotificationsActive,
-                                                    contentDescription = null,
-                                                    tint = primaryBlue,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.width(10.dp))
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = alert.title,
-                                                    fontSize = 13.5.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = if (isDark) Color.White else Color(0xFF0F172A),
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                                Text(
-                                                    text = alert.message,
-                                                    fontSize = 12.sp,
-                                                    color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
-                                                    maxLines = 2,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                            }
-                                            IconButton(
-                                                onClick = { activeForegroundAlert = null },
-                                                modifier = Modifier.size(28.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Close,
-                                                    contentDescription = "Dismiss",
-                                                    tint = textMuted,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(36.dp)
+                                                        .background(primaryBlue.copy(alpha = 0.15f), CircleShape),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.NotificationsActive,
+                                                        contentDescription = null,
+                                                        tint = primaryBlue,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.width(10.dp))
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = alert.title,
+                                                        fontSize = 13.5.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (isDark) Color.White else Color(0xFF0F172A),
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                    Text(
+                                                        text = alert.message,
+                                                        fontSize = 12.sp,
+                                                        color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
+                                                        maxLines = 2,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                }
+                                                IconButton(
+                                                    onClick = { activeForegroundAlert = null }
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Close,
+                                                        contentDescription = "Dismiss",
+                                                        tint = textMuted,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
 
-                            val windowInfo = rememberLecturesWindow()
-
-                            // Floating Pill Dock with animated pill selection and icon spring scale
-                            if (!isNotesEditing && !windowInfo.isImeVisible) {
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .fillMaxWidth()
-                                        .navigationBarsPadding()
-                                        .padding(start = Chrome.DockSideInset, end = Chrome.DockSideInset, bottom = Chrome.DockBottomGap),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Surface(
-                                        shape = RoundedCornerShape(24.dp),
-                                        color = navBg.copy(alpha = 0.96f),
-                                        tonalElevation = 6.dp,
-                                        shadowElevation = 8.dp,
-                                        border = BorderStroke(1.dp, navBorder),
+                                // Mobile Floating Pill Dock: Rendered exclusively on phones when rail is inactive
+                                if (!windowInfo.useNavigationRail && !isNotesEditing && !windowInfo.isImeVisible) {
+                                    Box(
                                         modifier = Modifier
-                                            .widthIn(max = 440.dp)
+                                            .align(Alignment.BottomCenter)
                                             .fillMaxWidth()
-                                            .height(Chrome.DockHeight)
+                                            .navigationBarsPadding()
+                                            .padding(start = Chrome.DockSideInset, end = Chrome.DockSideInset, bottom = Chrome.DockBottomGap),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        Row(
+                                        Surface(
+                                            shape = RoundedCornerShape(24.dp),
+                                            color = navBg.copy(alpha = 0.96f),
+                                            tonalElevation = 6.dp,
+                                            shadowElevation = 8.dp,
+                                            border = BorderStroke(1.dp, navBorder),
                                             modifier = Modifier
+                                                .widthIn(max = 440.dp)
                                                 .fillMaxWidth()
-                                                .padding(horizontal = 4.dp, vertical = 6.dp),
-                                            horizontalArrangement = Arrangement.SpaceEvenly,
-                                            verticalAlignment = Alignment.CenterVertically
+                                                .height(Chrome.DockHeight)
                                         ) {
-                                            tabs.forEachIndexed { index, tab ->
-                                                val isSelected = selectedTab == index
-                                                val icon = if (isSelected) filledIcons[index] else outlinedIcons[index]
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 4.dp, vertical = 6.dp),
+                                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                tabs.forEachIndexed { index, tab ->
+                                                    val isSelected = selectedTab == index
+                                                    val icon = if (isSelected) filledIcons[index] else outlinedIcons[index]
 
-                                                val pillColor by animateColorAsState(
-                                                    targetValue = if (isSelected) primaryBlue.copy(alpha = 0.14f) else Color.Transparent,
-                                                    animationSpec = tween(180),
-                                                    label = "pill_color"
-                                                )
-                                                val iconScale by animateFloatAsState(
-                                                    targetValue = if (isSelected) 1.08f else 1.0f,
-                                                    animationSpec = spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessMedium),
-                                                    label = "icon_scale"
-                                                )
+                                                    val pillColor by animateColorAsState(
+                                                        targetValue = if (isSelected) primaryBlue.copy(alpha = 0.14f) else Color.Transparent,
+                                                        animationSpec = tween(180),
+                                                        label = "pill_color"
+                                                    )
+                                                    val iconScale by animateFloatAsState(
+                                                        targetValue = if (isSelected) 1.08f else 1.0f,
+                                                        animationSpec = spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessMedium),
+                                                        label = "icon_scale"
+                                                    )
 
-                                                Box(
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .fillMaxHeight()
-                                                        .clip(RoundedCornerShape(20.dp))
-                                                        .clickable {
-                                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                            selectedTab = index
-                                                        }
-                                                        .testTag("nav_${tab.lowercase()}"),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Column(
-                                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                                        verticalArrangement = Arrangement.Center
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .fillMaxHeight()
+                                                            .clip(RoundedCornerShape(20.dp))
+                                                            .clickable {
+                                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                                selectedTab = index
+                                                            }
+                                                            .testTag("nav_${tab.lowercase()}"),
+                                                        contentAlignment = Alignment.Center
                                                     ) {
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .clip(RoundedCornerShape(14.dp))
-                                                                .background(pillColor)
-                                                                .padding(horizontal = if (windowInfo.dockIconOnly) 16.dp else 10.dp, vertical = if (windowInfo.dockIconOnly) 6.dp else 2.dp),
-                                                            contentAlignment = Alignment.Center
+                                                        Column(
+                                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                                            verticalArrangement = Arrangement.Center
                                                         ) {
-                                                            Icon(
-                                                                imageVector = icon,
-                                                                contentDescription = tab,
-                                                                tint = if (isSelected) primaryBlue else textMuted,
+                                                            Box(
                                                                 modifier = Modifier
-                                                                    .size(if (windowInfo.dockIconOnly) 24.dp else 21.dp)
-                                                                    .graphicsLayer {
-                                                                        scaleX = iconScale
-                                                                        scaleY = iconScale
-                                                                    }
-                                                            )
-                                                        }
-                                                        if (!windowInfo.dockIconOnly) {
-                                                            Spacer(modifier = Modifier.height(1.dp))
-                                                            Text(
-                                                                text = tab,
-                                                                fontSize = 10.sp,
-                                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                                color = if (isSelected) primaryBlue else textMuted,
-                                                                maxLines = 1,
-                                                                overflow = TextOverflow.Ellipsis
-                                                            )
+                                                                    .clip(RoundedCornerShape(14.dp))
+                                                                    .background(pillColor)
+                                                                    .padding(horizontal = if (windowInfo.dockIconOnly) 16.dp else 10.dp, vertical = if (windowInfo.dockIconOnly) 6.dp else 2.dp),
+                                                                contentAlignment = Alignment.Center
+                                                            ) {
+                                                                Icon(
+                                                                    imageVector = icon,
+                                                                    contentDescription = tab,
+                                                                    tint = if (isSelected) primaryBlue else textMuted,
+                                                                    modifier = Modifier
+                                                                        .size(if (windowInfo.dockIconOnly) 24.dp else 21.dp)
+                                                                        .graphicsLayer {
+                                                                            scaleX = iconScale
+                                                                            scaleY = iconScale
+                                                                        }
+                                                                )
+                                                            }
+                                                            if (!windowInfo.dockIconOnly) {
+                                                                Spacer(modifier = Modifier.height(1.dp))
+                                                                Text(
+                                                                    text = tab,
+                                                                    fontSize = 10.sp,
+                                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                                    color = if (isSelected) primaryBlue else textMuted,
+                                                                    maxLines = 1,
+                                                                    overflow = TextOverflow.Ellipsis
+                                                                )
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -552,6 +554,140 @@ fun MainScaffold(
                                     }
                                 }
                             }
+                        }
+
+                        // Keep one content call site so resizing does not discard screen state.
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.background)
+                        ) {
+                            if (windowInfo.useNavigationRail) {
+                                Surface(
+                                    color = navBg.copy(alpha = 0.98f),
+                                    border = BorderStroke(1.dp, navBorder),
+                                    modifier = Modifier
+                                        .width(Chrome.NavigationRailWidth)
+                                        .fillMaxHeight()
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxHeight()
+                                            .statusBarsPadding()
+                                            .navigationBarsPadding()
+                                            .verticalScroll(rememberScrollState())
+                                            .padding(vertical = 12.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        // Header Brand Emblem
+                                        Box(
+                                            modifier = Modifier
+                                                .size(42.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(primaryBlue),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.School,
+                                                contentDescription = "Lectures",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(24.dp))
+
+                                        // Nav Rail Items
+                                        tabs.forEachIndexed { index, tab ->
+                                            val isSelected = selectedTab == index
+                                            val icon = if (isSelected) filledIcons[index] else outlinedIcons[index]
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .padding(vertical = 4.dp, horizontal = 6.dp)
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(16.dp))
+                                                    .clickable {
+                                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                        selectedTab = index
+                                                    }
+                                                    .testTag("nav_${tab.lowercase()}"),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Column(
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    modifier = Modifier.padding(vertical = 8.dp)
+                                                ) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(46.dp, 32.dp)
+                                                            .clip(RoundedCornerShape(16.dp))
+                                                            .background(if (isSelected) primaryBlue.copy(alpha = 0.16f) else Color.Transparent),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = icon,
+                                                            contentDescription = tab,
+                                                            tint = if (isSelected) primaryBlue else textMuted,
+                                                            modifier = Modifier.size(22.dp)
+                                                        )
+                                                    }
+                                                    Spacer(modifier = Modifier.height(4.dp))
+                                                    Text(
+                                                        text = tab,
+                                                        fontSize = 11.sp,
+                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                        color = if (isSelected) primaryBlue else textMuted,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(24.dp))
+
+                                        // Quick Navigation Shortcuts on Tablet
+                                        IconButton(
+                                            onClick = { currentDestination = MainScreenDestination.VACANT_ROOMS },
+                                            modifier = Modifier
+                                                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                                .testTag("nav_rail_vacant_rooms")
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.MeetingRoom,
+                                                contentDescription = "Vacant Rooms",
+                                                tint = textMuted,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        IconButton(
+                                            onClick = { currentDestination = MainScreenDestination.SETTINGS },
+                                            modifier = Modifier
+                                                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                                                .testTag("nav_rail_settings")
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Settings,
+                                                contentDescription = "Settings",
+                                                tint = textMuted,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                VerticalDivider(color = navBorder, thickness = 1.dp)
+                            }
+
+                            MainTabsContent(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                            )
                         }
                     }
                 }
