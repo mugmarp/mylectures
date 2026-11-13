@@ -216,7 +216,12 @@ class AlarmDeliveryTest {
     private fun alarms() = shadowOf(manager).scheduledAlarms
 
     private fun clearAlarms() {
-        alarms().toList().forEach { manager.cancel(it.operation); it.operation.cancel() }
+        alarms().toList().forEach { alarm ->
+            alarm.operation?.let { token ->
+                manager.cancel(token)
+                token.cancel()
+            }
+        }
     }
 
     private fun legacyAlarm(code: Int, intent: Intent) {
