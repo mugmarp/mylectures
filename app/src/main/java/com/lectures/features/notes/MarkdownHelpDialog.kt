@@ -90,6 +90,41 @@ fun MarkdownHelpBottomSheet(
             snippetToInsert = "1. First step\n2. Second step\n"
         ),
         MarkdownCheatItem(
+            title = "Callout",
+            visualResult = "📘 Note: Key Takeaway",
+            syntaxToType = "> [!NOTE] Title\n> Description text",
+            toolbarButton = "Tap [!Note] in toolbar",
+            snippetToInsert = "> [!NOTE] Key Takeaway\n> Core concept explained here\n"
+        ),
+        MarkdownCheatItem(
+            title = "Markdown Table",
+            visualResult = "Tabular data grid with columns",
+            syntaxToType = "| Col 1 | Col 2 |\n| --- | --- |\n| Val 1 | Val 2 |",
+            toolbarButton = "Tap Table in toolbar",
+            snippetToInsert = "\n| Topic | Key Concept | Status |\n| :--- | :--- | :---: |\n| Point 1 | Definition | Ready |\n| Point 2 | Example | Review |\n"
+        ),
+        MarkdownCheatItem(
+            title = "Highlight Text",
+            visualResult = "==Highlighted exam term==",
+            syntaxToType = "==Exam question==",
+            toolbarButton = "Tap == in toolbar",
+            snippetToInsert = "==Important exam topic=="
+        ),
+        MarkdownCheatItem(
+            title = "Formula Block",
+            visualResult = "Formula source in a styled block",
+            syntaxToType = "\$\$formula\$\$ or \$inline\$",
+            toolbarButton = "Tap \$\$ Math in toolbar",
+            snippetToInsert = "\$\$E = mc^2\$\$\n"
+        ),
+        MarkdownCheatItem(
+            title = "Note Reference",
+            visualResult = "Styled note reference (display only)",
+            syntaxToType = "[[Course Note Name]]",
+            toolbarButton = "Tap [[Link]] in toolbar",
+            snippetToInsert = "[[Course Note Title]]"
+        ),
+        MarkdownCheatItem(
             title = "Code / Formula Snippet",
             visualResult = "speed = distance / time",
             syntaxToType = "`speed = distance / time`",
@@ -146,7 +181,9 @@ fun MarkdownHelpBottomSheet(
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(bottom = 16.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = false)
             ) {
                 items(items) { item ->
                     Card(

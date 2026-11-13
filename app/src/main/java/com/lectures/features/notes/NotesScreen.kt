@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -80,16 +81,47 @@ fun NotesScreen(
 
     val uiState by viewModel.uiState.collectAsState()
 
-    // State for Note Editor flow
-    var isEditing by remember { mutableStateOf(false) }
-    var noteToEdit by remember { mutableStateOf<LectureNote?>(null) }
-    var noteToDelete by remember { mutableStateOf<LectureNote?>(null) }
-    var showProfileSheet by remember { mutableStateOf(false) }
+    // State for Note Editor flow (persisted via key so rotation never exits mid-edit)
+    var isEditing by rememberSaveable { mutableStateOf(false) }
+    var editingNoteKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var deleteNoteKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var showProfileSheet by rememberSaveable { mutableStateOf(false) }
+
+    val noteToEdit = remember(editingNoteKey, uiState.filteredNotes, uiState.notes) {
+        val targetKey = editingNoteKey ?: return@remember null
+        uiState.notes.firstOrNull { it.naturalKey == targetKey }
+            ?: uiState.filteredNotes.firstOrNull { it.naturalKey == targetKey }
+    }
+    val noteToDelete = remember(deleteNoteKey, uiState.filteredNotes, uiState.notes) {
+        val targetKey = deleteNoteKey ?: return@remember null
+        uiState.notes.firstOrNull { it.naturalKey == targetKey }
+            ?: uiState.filteredNotes.firstOrNull { it.naturalKey == targetKey }
+    }
 
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(isEditing) {
         onEditingChanged(isEditing)
+    }
+
+    if (isEditing && (uiState.isLoading || (editingNoteKey != null && noteToEdit == null))) {
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            AlertDialog(
+                onDismissRequest = { isEditing = false; editingNoteKey = null },
+                title = { Text("Note unavailable") },
+                text = { Text("This note is no longer available. Return to your notes to continue.") },
+                confirmButton = {
+                    TextButton(onClick = { isEditing = false; editingNoteKey = null }) {
+                        Text("Back to notes")
+                    }
+                }
+            )
+        }
+        return
     }
 
     if (isEditing) {
@@ -101,17 +133,17 @@ fun NotesScreen(
             onReconfigureAcademicProfile = onReconfigureAcademicProfile,
             onNavigateToTimetable = {
                 isEditing = false
-                noteToEdit = null
+                editingNoteKey = null
                 onNavigateToTimetable()
             },
             onPeekProgramme = { group ->
                 isEditing = false
-                noteToEdit = null
+                editingNoteKey = null
                 onPeekProgramme(group)
             },
             onSetOfficialProgramme = { group ->
                 isEditing = false
-                noteToEdit = null
+                editingNoteKey = null
                 onSetOfficialProgramme(group)
             },
             onAttachmentError = { message ->
@@ -134,11 +166,11 @@ fun NotesScreen(
                     attachmentPath = attachmentPath
                 )
                 isEditing = false
-                noteToEdit = null
+                editingNoteKey = null
             },
             onCancel = {
                 isEditing = false
-                noteToEdit = null
+                editingNoteKey = null
             }
         )
         return
@@ -158,7 +190,7 @@ fun NotesScreen(
                     onClick = {
                         focusManager.clearFocus()
                         keyboardController?.hide()
-                        noteToEdit = null
+                        editingNoteKey = null
                         isEditing = true
                     },
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -176,7 +208,7 @@ fun NotesScreen(
                     onClick = {
                         focusManager.clearFocus()
                         keyboardController?.hide()
-                        noteToEdit = null
+                        editingNoteKey = null
                         isEditing = true
                     },
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -437,7 +469,7 @@ fun NotesScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
                                 onClick = {
-                                    noteToEdit = null
+                                    editingNoteKey = null
                                     isEditing = true
                                 },
                                 shape = RoundedCornerShape(20.dp),
@@ -504,11 +536,11 @@ fun NotesScreen(
                                 onOpen = {
                                     focusManager.clearFocus()
                                     keyboardController?.hide()
-                                    noteToEdit = note
+                                    editingNoteKey = note.naturalKey
                                     isEditing = true
                                 },
                                 onTogglePin = { viewModel.togglePin(note.naturalKey) },
-                                onDelete = { noteToDelete = note }
+                                onDelete = { deleteNoteKey = note.naturalKey }
                             )
                         }
                     }
@@ -520,7 +552,7 @@ fun NotesScreen(
     if (noteToDelete != null) {
         val target = noteToDelete!!
         AlertDialog(
-            onDismissRequest = { noteToDelete = null },
+            onDismissRequest = { deleteNoteKey = null },
             icon = {
                 Icon(
                     Icons.Outlined.DeleteOutline,
@@ -541,7 +573,7 @@ fun NotesScreen(
                         // accumulate orphans after the note row is removed.
                         AttachmentStore.delete(context, target.attachmentPath)
                         viewModel.deleteNote(target.naturalKey)
-                        noteToDelete = null
+                        deleteNoteKey = null
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
@@ -549,7 +581,7 @@ fun NotesScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { noteToDelete = null }) {
+                TextButton(onClick = { deleteNoteKey = null }) {
                     Text("Cancel")
                 }
             }
