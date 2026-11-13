@@ -184,7 +184,7 @@ fun CalendarScreen(
 
     val windowInfo = rememberLecturesWindow()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val listBottomPadding = Chrome.listBottomPadding(navBarBottom)
+    val listBottomPadding = Chrome.listBottomPadding(navBarBottom, windowInfo.useNavigationRail)
     val listState = rememberLazyListState()
 
     Scaffold(
@@ -200,7 +200,7 @@ fun CalendarScreen(
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
                             .navigationBarsPadding()
-                            .padding(bottom = Chrome.fabBottomPadding())
+                            .padding(bottom = Chrome.fabBottomPadding(windowInfo.useNavigationRail))
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Schedule Activity")
                     }
@@ -214,7 +214,7 @@ fun CalendarScreen(
                         text = { Text("Schedule Activity", fontWeight = FontWeight.Bold) },
                         modifier = Modifier
                             .navigationBarsPadding()
-                            .padding(bottom = Chrome.fabBottomPadding())
+                            .padding(bottom = Chrome.fabBottomPadding(windowInfo.useNavigationRail))
                     )
                 }
             }
