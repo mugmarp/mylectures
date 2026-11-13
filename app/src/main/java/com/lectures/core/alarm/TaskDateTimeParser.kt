@@ -92,6 +92,12 @@ object TaskDateTimeParser {
         // An invalid explicit calendar date must not become an unrelated relative reminder.
         if (Regex("^\\d{4}-\\d{1,2}-\\d{1,2}|^\\d{1,2}/\\d{1,2}/\\d{4}").containsMatchIn(trimmed)) return null
 
+        val relativeDate = Regex(
+            "^(?:today|tomorrow|sun(?:day)?|mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?)(?:[ ,\\-]+(?:[01]?[0-9]|2[0-3]):[0-5][0-9])?$",
+            RegexOption.IGNORE_CASE
+        )
+        if (!relativeDate.matches(trimmed) && !TIME_REGEX.matcher(trimmed).matches()) return null
+
         // 2. Extract Time component (HH:mm)
         val timeMatcher = TIME_REGEX.matcher(trimmed)
         val hasExplicitTime = timeMatcher.find()

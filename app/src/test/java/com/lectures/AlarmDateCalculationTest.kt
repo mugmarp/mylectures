@@ -39,6 +39,7 @@ class AlarmDateCalculationTest {
     @Test
     fun invalidDatesAndDisabledRemindersDoNotProduceAlarmTimes() {
         assertNull(TaskDateTimeParser.calculateDueMillis("2050-02-30 14:00"))
+        assertNull(TaskDateTimeParser.calculateDueMillis("Monday, Feb 30, 2050 14:00"))
         assertNull(TaskDateTimeParser.calculateDueMillis("Tomorrow 25:00"))
         assertNull(TaskDateTimeParser.calculateDueMillis("unknown deadline"))
         assertNull(TaskDateTimeParser.calculateTriggerTimeMillis("2050-11-14 14:30", null))
