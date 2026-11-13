@@ -182,7 +182,7 @@ fun MainScaffold(
                         val enrolledClasses = repository.getLocalSchedule(chosenGroup).firstOrNull() ?: emptyList()
                         if (enrolledClasses.isNotEmpty() && repository.etagStore.isNotificationsEnabled()) {
                             val leadMinutes = repository.etagStore.getClassAlarmLeadMinutes()
-                            com.lectures.core.alarm.AlarmScheduler(context).scheduleAllEnrolledClassAlarms(enrolledClasses, leadMinutes)
+                            com.lectures.core.alarm.AlarmScheduler(context).scheduleAllEnrolledClassAlarms(enrolledClasses, leadMinutes, customAlarms = repository.getNotesWithAlarms())
                         }
                         navState = AppNavState.MainApp
                     }

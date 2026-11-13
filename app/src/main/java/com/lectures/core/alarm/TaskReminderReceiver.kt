@@ -4,7 +4,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.lectures.TimetableApplication
 import com.lectures.core.notification.NotificationHelper
+import com.lectures.features.timetable.data.ETagStore
 
 class TaskReminderReceiver : BroadcastReceiver() {
 
@@ -25,6 +27,14 @@ class TaskReminderReceiver : BroadcastReceiver() {
         val course = intent.getStringExtra(EXTRA_TASK_COURSE) ?: "Coursework"
         val due = intent.getStringExtra(EXTRA_TASK_DUE) ?: "Due Soon"
         val priority = intent.getStringExtra(EXTRA_TASK_PRIORITY) ?: "Medium"
+        val isTest = intent.getBooleanExtra("IS_TEST", false)
+
+        val etagStore = (context.applicationContext as? TimetableApplication)?.etagStore
+            ?: ETagStore(context)
+        if (!etagStore.isNotificationsEnabled() && !isTest) {
+            Log.d(TAG, "Notifications disabled in Quiet Mode; suppressing task reminder for Task #$taskId")
+            return
+        }
 
         Log.d(TAG, "AlarmManager triggered reminder for Task #$taskId: $title ($course)")
 

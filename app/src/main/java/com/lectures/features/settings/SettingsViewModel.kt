@@ -323,7 +323,7 @@ class SettingsViewModel(
                     if (prog.isNotEmpty()) {
                         val enrolledClasses = repository.getLocalSchedule(prog).firstOrNull() ?: emptyList()
                         val leadMinutes = _uiState.value.classAlarmLeadMinutes
-                        enrolledCount = classAlarmScheduler?.scheduleAllEnrolledClassAlarms(enrolledClasses, leadMinutes) ?: 0
+                        enrolledCount = classAlarmScheduler?.scheduleAllEnrolledClassAlarms(enrolledClasses, leadMinutes, customAlarms = repository.getNotesWithAlarms()) ?: 0
                     }
 
                     reminderScheduler?.scheduleDailyReminder()
@@ -360,7 +360,7 @@ class SettingsViewModel(
                 var reArmedCount = 0
                 if (prog.isNotEmpty() && _uiState.value.notificationsEnabled) {
                     val enrolledClasses = repository.getLocalSchedule(prog).firstOrNull() ?: emptyList()
-                    reArmedCount = classAlarmScheduler?.scheduleAllEnrolledClassAlarms(enrolledClasses, minutes) ?: 0
+                    reArmedCount = classAlarmScheduler?.scheduleAllEnrolledClassAlarms(enrolledClasses, minutes, customAlarms = repository.getNotesWithAlarms()) ?: 0
                 }
                 _uiState.value = _uiState.value.copy(
                     classAlarmLeadMinutes = minutes,
@@ -466,7 +466,7 @@ class SettingsViewModel(
                 if (prog.isNotEmpty() && _uiState.value.notificationsEnabled) {
                     val enrolledClasses = repository.getLocalSchedule(prog).firstOrNull() ?: emptyList()
                     val leadMinutes = _uiState.value.classAlarmLeadMinutes
-                    enrolledCount = classAlarmScheduler?.scheduleAllEnrolledClassAlarms(enrolledClasses, leadMinutes) ?: 0
+                    enrolledCount = classAlarmScheduler?.scheduleAllEnrolledClassAlarms(enrolledClasses, leadMinutes, customAlarms = repository.getNotesWithAlarms()) ?: 0
                 }
 
                 reminderScheduler?.scheduleDailyReminder()

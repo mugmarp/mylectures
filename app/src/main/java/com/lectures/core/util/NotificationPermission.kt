@@ -14,8 +14,32 @@ import androidx.core.app.NotificationManagerCompat
 
 object NotificationPermissionHelper {
 
+    private const val PREFS_NAME = "mustime_notification_prefs"
+    private const val KEY_HAS_PROMPTED = "has_prompted_post_notifications"
+    private const val KEY_TASK_BANNER_DISMISSED = "tasks_notification_banner_dismissed"
+
     fun areNotificationsEnabled(context: Context): Boolean {
         return NotificationManagerCompat.from(context).areNotificationsEnabled()
+    }
+
+    fun hasPromptedNotificationPermission(context: Context): Boolean {
+        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_HAS_PROMPTED, false)
+    }
+
+    fun setPromptedNotificationPermission(context: Context, prompted: Boolean = true) {
+        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_HAS_PROMPTED, prompted).apply()
+    }
+
+    fun isTaskBannerDismissed(context: Context): Boolean {
+        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_TASK_BANNER_DISMISSED, false)
+    }
+
+    fun setTaskBannerDismissed(context: Context, dismissed: Boolean = true) {
+        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_TASK_BANNER_DISMISSED, dismissed).apply()
     }
 
     fun canScheduleExactAlarms(context: Context): Boolean {

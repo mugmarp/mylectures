@@ -178,7 +178,9 @@ fun TasksScreen(
     var taskToEdit by remember { mutableStateOf<Assignment?>(null) }
     var showProfileSheet by remember { mutableStateOf(false) }
 
-    var isNotificationBannerDismissed by rememberSaveable { mutableStateOf(false) }
+    var isNotificationBannerDismissed by rememberSaveable {
+        mutableStateOf(com.lectures.core.util.NotificationPermissionHelper.isTaskBannerDismissed(context))
+    }
 
     var hasNotificationPermission by remember {
         mutableStateOf(
@@ -197,24 +199,21 @@ fun TasksScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasNotificationPermission = isGranted
-        if (!isGranted) {
-            try {
-                val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
-            } catch (_: Exception) {
-                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.fromParts("package", context.packageName, null)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
-            }
-        }
+        com.lectures.core.util.NotificationPermissionHelper.setPromptedNotificationPermission(context)
     }
 
     var taskToDelete by remember { mutableStateOf<Assignment?>(null) }
+
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                hasNotificationPermission = com.lectures.core.util.NotificationPermissionHelper.areNotificationsEnabled(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val filteredTasks = remember(assignments, uiState.searchQuery, uiState.selectedFilter) {
         assignments.filter { task ->
@@ -421,7 +420,7 @@ fun TasksScreen(
                                 val shouldShowRationale = if (activity != null) {
                                     ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.POST_NOTIFICATIONS)
                                 } else false
-                                if (!shouldShowRationale) {
+                                if (!shouldShowRationale && com.lectures.core.util.NotificationPermissionHelper.hasPromptedNotificationPermission(context)) {
                                     try {
                                         val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                                             putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
@@ -436,6 +435,7 @@ fun TasksScreen(
                                         context.startActivity(intent)
                                     }
                                 } else {
+                                    com.lectures.core.util.NotificationPermissionHelper.setPromptedNotificationPermission(context)
                                     permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                 }
                             }
@@ -447,7 +447,10 @@ fun TasksScreen(
                             )
                         }
                         IconButton(
-                            onClick = { isNotificationBannerDismissed = true },
+                            onClick = {
+                                isNotificationBannerDismissed = true
+                                com.lectures.core.util.NotificationPermissionHelper.setTaskBannerDismissed(context)
+                            },
                             modifier = Modifier.size(28.dp)
                         ) {
                             Icon(

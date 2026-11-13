@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -25,51 +26,62 @@ class DailyReminderReceiver : BroadcastReceiver() {
         val isTest = intent.getBooleanExtra("IS_TEST", false)
         Log.d(TAG, "Daily reminder broadcast received (isTest=$isTest)")
 
-        // Re-arm for tomorrow morning if this was an actual alarm trigger
-        if (!isTest) {
-            ReminderScheduler(context).scheduleDailyReminder()
-        }
-
         val app = context.applicationContext as? TimetableApplication ?: return
         val repository = app.repository
         val etagStore = app.etagStore
 
+        if (!etagStore.isNotificationsEnabled() && !isTest) {
+            ReminderScheduler(context).cancelDailyReminder()
+            return
+        }
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val notificationsEnabled = etagStore.notificationsEnabledPref.firstOrNull() ?: true
-                if (!notificationsEnabled && !isTest) {
-                    Log.d(TAG, "Notifications disabled; skipping daily digest")
-                    return@launch
-                }
+                withTimeout(8_500L) {
+                    val notificationsEnabled = etagStore.notificationsEnabledPref.firstOrNull()
+                        ?: etagStore.isNotificationsEnabled()
+                    if (!notificationsEnabled && !isTest) {
+                        Log.d(TAG, "Notifications disabled; skipping daily digest and cancelling future schedule")
+                        ReminderScheduler(context).cancelDailyReminder()
+                        return@withTimeout
+                    }
 
-                // Determine today's day of week
-                val cal = Calendar.getInstance()
-                val dayFormat = SimpleDateFormat("EEEE", Locale.US)
-                val dayOfWeek = dayFormat.format(cal.time)
+                    // Re-arm for tomorrow morning only when notifications are enabled and this was an actual alarm trigger
+                    if (!isTest) {
+                        ReminderScheduler(context).scheduleDailyReminder()
+                    }
 
-                val programme = etagStore.getSavedProgramme()?.trim() ?: repository.getInitialProgramme()?.trim() ?: ""
-                val classes = if (programme.isNotEmpty()) {
-                    repository.getLocalSchedule(programme).firstOrNull()?.filter {
-                        it.dayOfWeek.trim().equals(dayOfWeek, ignoreCase = true)
-                    }?.sortedBy { it.startTime } ?: emptyList()
-                } else {
-                    repository.getScheduleForDay(dayOfWeek).firstOrNull()?.sortedBy { it.startTime } ?: emptyList()
-                }
+                    // Determine today's day of week
+                    val cal = Calendar.getInstance()
+                    val dayFormat = SimpleDateFormat("EEEE", Locale.US)
+                    val dayOfWeek = dayFormat.format(cal.time)
 
-                NotificationHelper.showDailyDigestNotification(
-                    context = context,
-                    dayOfWeek = dayOfWeek,
-                    classes = classes
-                )
+                    val programme = etagStore.getSavedProgramme()?.trim()
+                        ?: repository.getInitialProgramme()?.trim()
+                        ?: ""
+                    val classes = if (programme.isNotEmpty()) {
+                        repository.getLocalSchedule(programme).firstOrNull()?.filter {
+                            it.dayOfWeek.trim().equals(dayOfWeek, ignoreCase = true) ||
+                                it.dayOfWeek.trim().startsWith(dayOfWeek.take(3), ignoreCase = true)
+                        }?.sortedBy { it.startTime } ?: emptyList()
+                    } else {
+                        repository.getScheduleForDay(dayOfWeek).firstOrNull()?.sortedBy { it.startTime } ?: emptyList()
+                    }
 
-                // Self-healing daily safety net: Ensure today's and this week's enrolled class alarms are armed
-                if (programme.isNotEmpty() && !isTest) {
-                    val allCohortClasses = repository.getLocalSchedule(programme).firstOrNull() ?: emptyList()
-                    if (allCohortClasses.isNotEmpty()) {
-                        val leadMinutes = etagStore.getClassAlarmLeadMinutes()
-                        AlarmScheduler(context).scheduleAllEnrolledClassAlarms(allCohortClasses, leadMinutes)
-                        Log.d(TAG, "Daily morning check armed enrolled class alarms with lead=$leadMinutes min")
+                    NotificationHelper.showDailyDigestNotification(
+                        context = context,
+                        dayOfWeek = dayOfWeek,
+                        classes = classes
+                    )
+
+                    // Self-healing daily safety net: Ensure today's and this week's enrolled class alarms are armed
+                    if (programme.isNotEmpty() && !isTest) {
+                        val allCohortClasses = repository.getLocalSchedule(programme).firstOrNull() ?: emptyList()
+                        if (allCohortClasses.isNotEmpty()) {
+                            val leadMinutes = etagStore.getClassAlarmLeadMinutes()
+                            AlarmScheduler(context).scheduleAllEnrolledClassAlarms(allCohortClasses, leadMinutes, customAlarms = repository.getNotesWithAlarms())
+                            Log.d(TAG, "Daily morning check armed enrolled class alarms with lead=$leadMinutes min")
+                        }
                     }
                 }
             } catch (e: Exception) {

@@ -138,7 +138,7 @@ class TimetableViewModel(
                 // When loading the official enrolled timetable, ensure recurring class alarms are active
                 if (!_uiState.value.isPeeking && entries.isNotEmpty() && repository.etagStore.isNotificationsEnabled()) {
                     val leadMinutes = repository.etagStore.getClassAlarmLeadMinutes()
-                    classAlarmScheduler?.scheduleAllEnrolledClassAlarms(entries, leadMinutes)
+                    classAlarmScheduler?.scheduleAllEnrolledClassAlarms(entries, leadMinutes, customAlarms = repository.getNotesWithAlarms())
                 }
             }
         }

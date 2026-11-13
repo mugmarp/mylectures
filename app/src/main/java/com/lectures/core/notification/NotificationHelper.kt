@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -201,6 +202,7 @@ object NotificationHelper {
         // 1. Content Intent: Launch app into Tasks tab
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            data = Uri.parse("lectures://nav/task/$taskId")
             putExtra("EXTRA_NAV_TAB", 3) // Tasks tab
             putExtra("EXTRA_TASK_ID", taskId)
         }
@@ -214,6 +216,7 @@ object NotificationHelper {
         // 2. Action Intent: Mark as Done directly from notification shade
         val markDoneIntent = Intent(context, TaskActionReceiver::class.java).apply {
             action = TaskActionReceiver.ACTION_MARK_TASK_DONE
+            data = Uri.parse("lectures://action/task_done/$taskId")
             putExtra(TaskActionReceiver.EXTRA_TASK_ID, taskId)
         }
         val markDonePendingIntent = PendingIntent.getBroadcast(
@@ -238,6 +241,7 @@ object NotificationHelper {
         // Dismiss action
         val dismissIntent = Intent(context, com.lectures.core.alarm.ClassAlarmReceiver::class.java).apply {
             action = com.lectures.core.alarm.ClassAlarmReceiver.ACTION_DISMISS_CLASS_ALARM
+            data = Uri.parse("lectures://action/dismiss/task/$notificationId")
             putExtra(com.lectures.core.alarm.ClassAlarmReceiver.EXTRA_NOTIFICATION_ID, notificationId)
         }
         val dismissPendingIntent = PendingIntent.getBroadcast(
@@ -271,8 +275,8 @@ object NotificationHelper {
                 relatedKey = taskId.toString(),
                 navTab = 3
             )
-        } catch (e: SecurityException) {
-            Log.e(TAG, "SecurityException while posting notification (POST_NOTIFICATIONS missing): ${e.message}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to post task reminder notification: ${e.message}")
         }
     }
 
@@ -298,6 +302,7 @@ object NotificationHelper {
 
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            data = Uri.parse("lectures://nav/class_reminder/$notificationId")
             putExtra("EXTRA_NAV_TAB", 0) // Timetable tab
         }
         val contentPendingIntent = PendingIntent.getActivity(
@@ -309,6 +314,7 @@ object NotificationHelper {
 
         val dismissIntent = Intent(context, com.lectures.core.alarm.ClassAlarmReceiver::class.java).apply {
             action = com.lectures.core.alarm.ClassAlarmReceiver.ACTION_DISMISS_CLASS_ALARM
+            data = Uri.parse("lectures://action/dismiss/class_reminder/$notificationId")
             putExtra(com.lectures.core.alarm.ClassAlarmReceiver.EXTRA_NOTIFICATION_ID, notificationId)
         }
         val dismissPendingIntent = PendingIntent.getBroadcast(
@@ -355,8 +361,8 @@ object NotificationHelper {
                 relatedKey = courseCode,
                 navTab = 0
             )
-        } catch (e: SecurityException) {
-            Log.e(TAG, "SecurityException while posting class notification: ${e.message}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to post class reminder notification: ${e.message}")
         }
     }
 
@@ -386,6 +392,7 @@ object NotificationHelper {
 
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            data = Uri.parse("lectures://nav/class_alarm/$notificationId")
             putExtra("EXTRA_NAV_TAB", 0) // Timetable tab
         }
         val contentPendingIntent = PendingIntent.getActivity(
@@ -397,6 +404,7 @@ object NotificationHelper {
 
         val dismissIntent = Intent(context, com.lectures.core.alarm.ClassAlarmReceiver::class.java).apply {
             action = com.lectures.core.alarm.ClassAlarmReceiver.ACTION_DISMISS_CLASS_ALARM
+            data = Uri.parse("lectures://action/dismiss/class_alarm/$notificationId")
             putExtra(com.lectures.core.alarm.ClassAlarmReceiver.EXTRA_NOTIFICATION_ID, notificationId)
         }
         val dismissPendingIntent = PendingIntent.getBroadcast(
@@ -408,6 +416,7 @@ object NotificationHelper {
 
         val snoozeIntent = Intent(context, com.lectures.core.alarm.ClassAlarmReceiver::class.java).apply {
             action = com.lectures.core.alarm.ClassAlarmReceiver.ACTION_SNOOZE_CLASS_ALARM
+            data = Uri.parse("lectures://action/snooze/class_alarm/$notificationId")
             putExtra(com.lectures.core.alarm.ClassAlarmReceiver.EXTRA_NOTIFICATION_ID, notificationId)
             putExtra("COURSE_CODE", courseCode)
             putExtra("COURSE_TITLE", courseTitle)
@@ -462,8 +471,8 @@ object NotificationHelper {
                 relatedKey = courseCode,
                 navTab = 0
             )
-        } catch (e: SecurityException) {
-            Log.e(TAG, "SecurityException while posting class alarm notification: ${e.message}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to post class alarm notification: ${e.message}")
         }
     }
 
@@ -481,6 +490,7 @@ object NotificationHelper {
 
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            data = Uri.parse("lectures://nav/daily_digest")
             putExtra("EXTRA_NAV_TAB", 0) // Timetable tab
         }
         val contentPendingIntent = PendingIntent.getActivity(
@@ -539,8 +549,8 @@ object NotificationHelper {
                 message = snippet,
                 navTab = 0
             )
-        } catch (e: SecurityException) {
-            Log.e(TAG, "SecurityException while posting daily digest: ${e.message}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to post daily digest notification: ${e.message}")
         }
     }
 
@@ -558,6 +568,7 @@ object NotificationHelper {
 
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            data = Uri.parse("lectures://nav/timetable_update/${Uri.encode(versionLabel)}")
             putExtra("EXTRA_NAV_TAB", 0) // Timetable tab
         }
         val contentPendingIntent = PendingIntent.getActivity(
@@ -597,8 +608,8 @@ object NotificationHelper {
                 relatedKey = versionLabel,
                 navTab = 0
             )
-        } catch (e: SecurityException) {
-            Log.e(TAG, "SecurityException while posting timetable update notification: ${e.message}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to post timetable update notification: ${e.message}")
         }
     }
 

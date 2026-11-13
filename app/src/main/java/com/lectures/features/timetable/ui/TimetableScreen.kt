@@ -108,7 +108,9 @@ fun TimetableScreen(
     // Prompt notification permission on app open if on Android 13+ (API 33+)
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-        onResult = { /* Permission handled */ }
+        onResult = {
+            com.lectures.core.util.NotificationPermissionHelper.setPromptedNotificationPermission(context)
+        }
     )
     LaunchedEffect(Unit) {
         val app = context.applicationContext as? TimetableApplication
@@ -118,7 +120,10 @@ fun TimetableScreen(
                 context,
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
-            if (!granted) {
+            if (granted) {
+                com.lectures.core.util.NotificationPermissionHelper.setPromptedNotificationPermission(context)
+            } else if (!com.lectures.core.util.NotificationPermissionHelper.hasPromptedNotificationPermission(context)) {
+                com.lectures.core.util.NotificationPermissionHelper.setPromptedNotificationPermission(context)
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
