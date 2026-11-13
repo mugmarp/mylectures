@@ -8,6 +8,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
 import com.lectures.TimetableApplication
+import com.lectures.ui.LocalAppTheme
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -86,6 +88,7 @@ fun NoteEditorScreen(
     ) -> Unit,
     onCancel: () -> Unit
 ) {
+    val noteKey = initialNote?.naturalKey ?: "__new__"
     val initialCourse = initialNote?.naturalKey?.split("|")?.firstOrNull()
         ?: availableCourses.firstOrNull()?.code
         ?: "GEN101"
@@ -97,9 +100,9 @@ fun NoteEditorScreen(
     val initialAttachment = initialNote?.attachmentName ?: ""
     val initialAttachmentPath = initialNote?.attachmentPath
 
-    var selectedCourse by remember { mutableStateOf(initialCourse) }
-    var title by remember { mutableStateOf(initialTitleVal) }
-    var contentValue by remember {
+    var selectedCourse by rememberSaveable(noteKey) { mutableStateOf(initialCourse) }
+    var title by rememberSaveable(noteKey) { mutableStateOf(initialTitleVal) }
+    var contentValue by rememberSaveable(noteKey, stateSaver = TextFieldValue.Saver) {
         mutableStateOf(
             TextFieldValue(
                 text = initialContentVal,
@@ -107,18 +110,21 @@ fun NoteEditorScreen(
             )
         )
     }
-    var selectedAlarmMinutes by remember { mutableStateOf<Int?>(initialAlarm) }
-    var tag by remember { mutableStateOf(initialTag) }
-    var attachedClassText by remember { mutableStateOf(initialClassText) }
-    var attachedLocation by remember { mutableStateOf("📍 Lecture Room") }
-    var lecturer by remember { mutableStateOf("Course Lecturer") }
-    var attachmentName by remember { mutableStateOf(initialAttachment) }
-    var attachmentPath by remember { mutableStateOf(initialAttachmentPath) }
+    var selectedAlarmMinutes by rememberSaveable(noteKey) { mutableStateOf<Int?>(initialAlarm) }
+    var tag by rememberSaveable(noteKey) { mutableStateOf(initialTag) }
+    var attachedClassText by rememberSaveable(noteKey) { mutableStateOf(initialClassText) }
+    var attachedLocation by rememberSaveable(noteKey) { mutableStateOf("📍 Lecture Room") }
+    var lecturer by rememberSaveable(noteKey) { mutableStateOf("Course Lecturer") }
+    var attachmentName by rememberSaveable(noteKey) { mutableStateOf(initialAttachment) }
+    var attachmentPath by rememberSaveable(noteKey) { mutableStateOf(initialAttachmentPath) }
 
     // Editor tab: Write vs Live Preview
-    var currentTab by remember { mutableStateOf(NoteEditorTab.WRITE) }
+    var currentTab by rememberSaveable(noteKey) { mutableStateOf(NoteEditorTab.WRITE) }
 
     val context = androidx.compose.ui.platform.LocalContext.current
+    val isDark = LocalAppTheme.current.isDark
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val windowInfo = com.lectures.ui.rememberLecturesWindow()
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -152,15 +158,15 @@ fun NoteEditorScreen(
     // A real implementation would require RECORD_AUDIO permission and MediaRecorder.
 
     // Modals
-    var showClassPicker by remember { mutableStateOf(false) }
-    var showCoursePickerModal by remember { mutableStateOf(false) }
-    var showTagPicker by remember { mutableStateOf(false) }
-    var showTemplatesSheet by remember { mutableStateOf(false) }
-    var showHelpSheet by remember { mutableStateOf(false) }
-    var showDiscardConfirmDialog by remember { mutableStateOf(false) }
-    var showProfileSheet by remember { mutableStateOf(false) }
-    var showCustomReminderDialog by remember { mutableStateOf(false) }
-    var customReminderText by remember { mutableStateOf(selectedAlarmMinutes?.toString() ?: "45") }
+    var showClassPicker by rememberSaveable(noteKey) { mutableStateOf(false) }
+    var showCoursePickerModal by rememberSaveable(noteKey) { mutableStateOf(false) }
+    var showTagPicker by rememberSaveable(noteKey) { mutableStateOf(false) }
+    var showTemplatesSheet by rememberSaveable(noteKey) { mutableStateOf(false) }
+    var showHelpSheet by rememberSaveable(noteKey) { mutableStateOf(false) }
+    var showDiscardConfirmDialog by rememberSaveable(noteKey) { mutableStateOf(false) }
+    var showProfileSheet by rememberSaveable(noteKey) { mutableStateOf(false) }
+    var showCustomReminderDialog by rememberSaveable(noteKey) { mutableStateOf(false) }
+    var customReminderText by rememberSaveable(noteKey) { mutableStateOf(selectedAlarmMinutes?.toString() ?: "45") }
 
     // Determine if form has unsaved modifications
     val isModified = selectedCourse != initialCourse ||
@@ -189,25 +195,7 @@ fun NoteEditorScreen(
 
     // Markdown insertion helper supporting selection wrapping
     val applyMarkdown: (prefix: String, suffix: String, defaultPlaceholder: String) -> Unit = { prefix, suffix, defaultPlaceholder ->
-        val text = contentValue.text
-        val selection = contentValue.selection
-        if (selection.start != selection.end) {
-            val selectedText = text.substring(selection.start, selection.end)
-            val newText = text.substring(0, selection.start) + prefix + selectedText + suffix + text.substring(selection.end)
-            val newCursor = selection.end + prefix.length + suffix.length
-            contentValue = TextFieldValue(
-                text = newText,
-                selection = TextRange(newCursor)
-            )
-        } else {
-            val newText = text.substring(0, selection.start) + prefix + defaultPlaceholder + suffix + text.substring(selection.start)
-            val newStart = selection.start + prefix.length
-            val newEnd = newStart + defaultPlaceholder.length
-            contentValue = TextFieldValue(
-                text = newText,
-                selection = TextRange(newStart, newEnd)
-            )
-        }
+        contentValue = wrapMarkdownSelection(contentValue, prefix, suffix, defaultPlaceholder)
     }
 
     val insertLinePrefix: (prefix: String) -> Unit = { linePrefix ->
@@ -249,6 +237,10 @@ fun NoteEditorScreen(
     val toggleChecklistInPreview: (Int) -> Unit = { lineIndex ->
         val updatedText = MarkdownUtils.toggleChecklistAt(contentValue.text, lineIndex)
         contentValue = contentValue.copy(text = updatedText)
+    }
+
+    val handleContentChange: (TextFieldValue) -> Unit = { value ->
+        contentValue = continueMarkdownLine(contentValue, value)
     }
 
     // Calculate word & char count & checklist progress
@@ -598,11 +590,14 @@ fun NoteEditorScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .padding(horizontal = if (windowInfo.isNarrow) 8.dp else 12.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f, fill = false)
+                    ) {
                         IconButton(onClick = handleBackPress) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
@@ -610,19 +605,25 @@ fun NoteEditorScreen(
                                 tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
+                        Spacer(modifier = Modifier.width(2.dp))
                         Text(
                             text = if (initialNote == null) "New Note" else "Edit Note",
-                            fontSize = 17.sp,
+                            fontSize = if (windowInfo.isNarrow) 15.sp else 17.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
+                    Spacer(modifier = Modifier.width(6.dp))
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(if (windowInfo.isNarrow) 6.dp else 8.dp)
                     ) {
-                        // Write vs Preview Segmented Control
+                        // Write vs Preview Segmented Control (compact on narrow/tight font screens)
+                        val isCompactToggle = windowInfo.isNarrow || windowInfo.isTightFont
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
@@ -634,30 +635,35 @@ fun NoteEditorScreen(
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(
                                             if (currentTab == NoteEditorTab.WRITE) MaterialTheme.colorScheme.primary
-                                            else Color.Transparent
+                                             else Color.Transparent
                                         )
                                         .clickable {
                                             focusManager.clearFocus()
                                             keyboardController?.hide()
                                             currentTab = NoteEditorTab.WRITE
                                         }
-                                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                                        .padding(
+                                            horizontal = if (isCompactToggle) 8.dp else 10.dp,
+                                            vertical = 4.dp
+                                        ),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(
                                             Icons.Default.Edit,
-                                            contentDescription = null,
+                                            contentDescription = "Write",
                                             tint = if (currentTab == NoteEditorTab.WRITE) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(13.dp)
                                         )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            "Write",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (currentTab == NoteEditorTab.WRITE) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+                                        if (!isCompactToggle) {
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                "Write",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (currentTab == NoteEditorTab.WRITE) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
                                 }
 
@@ -673,23 +679,28 @@ fun NoteEditorScreen(
                                             keyboardController?.hide()
                                             currentTab = NoteEditorTab.PREVIEW
                                         }
-                                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                                        .padding(
+                                            horizontal = if (isCompactToggle) 8.dp else 10.dp,
+                                            vertical = 4.dp
+                                        ),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(
                                             Icons.Default.Visibility,
-                                            contentDescription = null,
+                                            contentDescription = "Preview",
                                             tint = if (currentTab == NoteEditorTab.PREVIEW) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(13.dp)
                                         )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            "Preview",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (currentTab == NoteEditorTab.PREVIEW) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+                                        if (!isCompactToggle) {
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                "Preview",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (currentTab == NoteEditorTab.PREVIEW) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -709,14 +720,17 @@ fun NoteEditorScreen(
                                     attachedClassText,
                                     attachmentName,
                                     attachmentPath
-                                    )
+                                )
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary
                             ),
                             shape = RoundedCornerShape(14.dp),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                            contentPadding = PaddingValues(
+                                horizontal = if (windowInfo.isNarrow) 10.dp else 14.dp,
+                                vertical = 6.dp
+                            )
                         ) {
                             Text("Save ✓", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
@@ -728,16 +742,23 @@ fun NoteEditorScreen(
         }
     }
 ) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
                 .imePadding()
-                .navigationBarsPadding()
-                .verticalScroll(scrollState)
-                .padding(horizontal = 18.dp, vertical = 12.dp)
+                .navigationBarsPadding(),
+            contentAlignment = Alignment.TopCenter
         ) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 840.dp)
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 18.dp, vertical = 12.dp)
+            ) {
             // 1. TITLE INPUT
             BasicTextField(
                 value = title,
@@ -883,7 +904,7 @@ fun NoteEditorScreen(
                                     .fillMaxWidth()
                                     .horizontalScroll(rememberScrollState())
                                     .padding(horizontal = 10.dp, vertical = 6.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 // Bold
@@ -906,6 +927,23 @@ fun NoteEditorScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text("I", fontStyle = FontStyle.Italic, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                }
+
+                                // Obsidian Highlight (==text==)
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(if (isDark) Color(0xFF713F12) else Color(0xFFFEF08A))
+                                        .clickable { applyMarkdown("==", "==", "highlighted term") }
+                                        .padding(horizontal = 6.dp, vertical = 3.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "==",
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 12.sp,
+                                        color = if (isDark) Color(0xFFFEF08A) else Color(0xFF713F12)
+                                    )
                                 }
 
                                 // Heading 1
@@ -932,8 +970,7 @@ fun NoteEditorScreen(
 
                                 // Checklist / To-Do
                                 IconButton(
-                                    onClick = { insertLinePrefix("- [ ] ") },
-                                    modifier = Modifier.size(28.dp)
+                                    onClick = { insertLinePrefix("- [ ] ") }
                                 ) {
                                     Icon(
                                         Icons.Default.Checklist,
@@ -943,10 +980,72 @@ fun NoteEditorScreen(
                                     )
                                 }
 
+                                // Obsidian Callout (> [!NOTE])
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f),
+                                    modifier = Modifier.clickable {
+                                        insertSnippet("> [!NOTE] Key Takeaway\n> Core concept explained here\n")
+                                    }
+                                ) {
+                                    Text(
+                                        "[!Note]",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                    )
+                                }
+
+                                // Markdown Table
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f),
+                                    modifier = Modifier.clickable {
+                                        insertSnippet("\n| Topic | Key Concept | Status |\n| :--- | :--- | :---: |\n| Point 1 | Definition | Ready |\n| Point 2 | Example | Review |\n")
+                                    }
+                                ) {
+                                    Text(
+                                        "Table",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.secondary,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                    )
+                                }
+
+                                // Math Formula ($$ formula $$)
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                                    modifier = Modifier.clickable {
+                                        applyMarkdown("$$", "$$", "E = mc^2")
+                                    }
+                                ) {
+                                    Text(
+                                        "$$ Math",
+                                        fontSize = 11.sp,
+                                        fontStyle = FontStyle.Italic,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                    )
+                                }
+
+                                // Obsidian WikiLink ([[Note Title]])
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable { applyMarkdown("[[", "]]", "Course Note") }
+                                        .padding(horizontal = 6.dp, vertical = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("[[Link]]", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                                }
+
                                 // Bullet List
                                 IconButton(
-                                    onClick = { insertLinePrefix("- ") },
-                                    modifier = Modifier.size(28.dp)
+                                    onClick = { insertLinePrefix("- ") }
                                 ) {
                                     Icon(
                                         Icons.Default.FormatListBulleted,
@@ -958,8 +1057,7 @@ fun NoteEditorScreen(
 
                                 // Numbered List
                                 IconButton(
-                                    onClick = { insertLinePrefix("1. ") },
-                                    modifier = Modifier.size(28.dp)
+                                    onClick = { insertLinePrefix("1. ") }
                                 ) {
                                     Icon(
                                         Icons.Default.FormatListNumbered,
@@ -971,12 +1069,11 @@ fun NoteEditorScreen(
 
                                 // Quote / Callout
                                 IconButton(
-                                    onClick = { insertLinePrefix("> ") },
-                                    modifier = Modifier.size(28.dp)
+                                    onClick = { insertLinePrefix("> ") }
                                 ) {
                                     Icon(
                                         Icons.Default.FormatQuote,
-                                        contentDescription = "Quote / Callout",
+                                        contentDescription = "Quote",
                                         tint = MaterialTheme.colorScheme.tertiary,
                                         modifier = Modifier.size(19.dp)
                                     )
@@ -984,8 +1081,7 @@ fun NoteEditorScreen(
 
                                 // Code / Formula
                                 IconButton(
-                                    onClick = { applyMarkdown("`", "`", "formula") },
-                                    modifier = Modifier.size(28.dp)
+                                    onClick = { applyMarkdown("`", "`", "formula") }
                                 ) {
                                     Icon(
                                         Icons.Default.Code,
@@ -997,8 +1093,7 @@ fun NoteEditorScreen(
 
                                 // Divider Line
                                 IconButton(
-                                    onClick = { insertSnippet("\n---\n") },
-                                    modifier = Modifier.size(28.dp)
+                                    onClick = { insertSnippet("\n---\n") }
                                 ) {
                                     Icon(
                                         Icons.Default.HorizontalRule,
@@ -1010,8 +1105,7 @@ fun NoteEditorScreen(
 
                                 // Insert Date Stamp
                                 IconButton(
-                                    onClick = insertDateStamp,
-                                    modifier = Modifier.size(28.dp)
+                                    onClick = insertDateStamp
                                 ) {
                                     Icon(
                                         Icons.Outlined.Today,
@@ -1025,10 +1119,15 @@ fun NoteEditorScreen(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // Text Area with selection tracking
+                        // Text Area with selection tracking and Live Syntax Highlighting
+                        val liveTransformation = remember(isDark, primaryColor) {
+                            MarkdownLiveVisualTransformation(isDark, primaryColor)
+                        }
+
                         BasicTextField(
                             value = contentValue,
-                            onValueChange = { contentValue = it },
+                            onValueChange = handleContentChange,
+                            visualTransformation = liveTransformation,
                             textStyle = TextStyle(
                                 fontSize = 15.sp,
                                 lineHeight = 24.sp,
@@ -1041,7 +1140,7 @@ fun NoteEditorScreen(
                             decorationBox = { innerTextField ->
                                 if (contentValue.text.isEmpty()) {
                                     Text(
-                                        "Start taking lecture notes, revision points, or checklists...\n• Tap formatting buttons above to style without syntax\n• Tap 'Templates' for full academic note outlines\n• Switch to 'Preview' tab anytime to view formatted notes",
+                                        "Start taking lecture notes, revision points, or checklists...\n• Live Markdown highlighting in editor\n• Use ==highlight==, > [!NOTE], and | Tables |\n• Tap 'Templates' for full academic note outlines\n• Switch to 'Preview' tab anytime for rich rendered notes",
                                         fontSize = 14.sp,
                                         lineHeight = 22.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
@@ -1488,6 +1587,7 @@ fun NoteEditorScreen(
             Spacer(modifier = Modifier.height(36.dp))
         }
     }
+}
 
     if (showProfileSheet) {
         val enrolledProg = (LocalContext.current.applicationContext as? TimetableApplication)?.repository?.getInitialProgramme() ?: "EEE II"

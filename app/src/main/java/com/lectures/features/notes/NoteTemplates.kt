@@ -46,32 +46,31 @@ object NoteTemplatesRepository {
 **Course:** [Course Code] · **Date:** [Date]
 **Lecturer:** [Lecturer Name] · **Venue:** [Lecture Room]
 
-> **Core Objective:** What is the primary concept or theorem being studied today?
+> [!NOTE] Core Objective
+> What is the primary concept or theorem being studied today?
 
-## 📌 Key Cues & Questions
-- What problem does this solve?
-- What are the fundamental assumptions or properties?
-- How does this connect to previous topics?
-
-## 📝 Detailed Lecture Notes
-- **Definition:** Key definition explained in plain terms.
+## 📌 Key Cues & Definitions
+- ==Core Definition:== Key definition explained in plain terms.
 - **Mechanism / Concept 1:**
   - Sub-point A
   - Sub-point B
-- **Mechanism / Concept 2:**
-  - Details and edge cases
 
-## 🔬 Examples & Practice
-- Example 1: Walkthrough problem
-- Solution notes:
+## 📊 Summary Comparison Table
+| Mechanism | Primary Function | Complexity |
+| :--- | :--- | :---: |
+| Approach A | Direct calculation | O(1) |
+| Approach B | Iterative convergence | O(n) |
+
+## 📐 Key Equation / Law
+${'$'}${'$'}f(x) = \sum_{k=1}^n a_k \cdot \sin(k \omega t)${'$'}${'$'}
 
 ## ✅ Follow-up Checklist
 - [ ] Review lecture slides on Moodle
 - [ ] Attempt practice problem set
 - [ ] Ask question during office hours or tutorial
 
-## 💡 Summary (Key Takeaway)
-In 2-3 sentences, summarize the most important takeaway from this lecture.
+> [!TIP] Exam Strategy
+> Review this topic alongside [[Previous Lecture]] notes before the midterm.
 """.trimIndent()
         ),
         NoteTemplate(
@@ -246,7 +245,9 @@ fun NoteTemplatesBottomSheet(
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(bottom = 16.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = false)
             ) {
                 items(NoteTemplatesRepository.templates, key = { it.id }) { template ->
                     Card(
