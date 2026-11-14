@@ -9,6 +9,10 @@ import com.lectures.features.timetable.data.ETagStore
 import com.lectures.features.timetable.data.TimetableRepository
 import com.lectures.features.timetable.domain.*
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -170,11 +174,22 @@ class SyncReliabilityTest {
 
     @Test fun personalListsFollowAccountChangesAndRetainGuestVisibility() = runBlocking {
         db.timetableDao().upsertNotes(listOf(note("alice", "alice"), note("bob", "bob"), note("guest", null)))
-        assertEquals(setOf("alice", "guest"), repository.getAllNotes().first().map { it.naturalKey }.toSet())
-        uid.value = "bob"
-        assertEquals(setOf("bob", "guest"), repository.getAllNotes().first().map { it.naturalKey }.toSet())
-        uid.value = null
-        assertEquals(listOf("guest"), repository.getAllNotes().first().map { it.naturalKey })
+        val states = Channel<Set<String>>(Channel.UNLIMITED)
+        val observer = launch {
+            repository.getAllNotes().collect { rows -> states.send(rows.map { it.naturalKey }.toSet()) }
+        }
+        try {
+            withTimeout(5_000L) {
+                assertEquals(setOf("alice", "guest"), states.receive())
+                uid.value = "bob"
+                assertEquals(setOf("bob", "guest"), states.receive())
+                uid.value = null
+                assertEquals(setOf("guest"), states.receive())
+            }
+        } finally {
+            observer.cancelAndJoin()
+            states.close()
+        }
     }
 
     @Test fun localWritesStampCurrentOwnerAndRejectCrossAccountChanges() = runBlocking {

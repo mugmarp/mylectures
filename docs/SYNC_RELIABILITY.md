@@ -36,7 +36,7 @@ account-scoped Room, cleanup and settings revision regressions. The separate
 Firestore rules workflow validates owner access, payload validation and existing
 public timetable, anonymous telemetry and feedback contracts.
 
-Run rules tests locally with Node 22 and Java 21 or newer:
+Run rules tests locally with Node 24.12 or newer and Java 21 or newer:
 
 ```sh
 cd tests/firestore
