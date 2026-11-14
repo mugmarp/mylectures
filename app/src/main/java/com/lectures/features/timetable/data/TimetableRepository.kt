@@ -22,8 +22,25 @@ class TimetableRepository(
     val etagStore: ETagStore,
     val onboardingDataStore: OnboardingDataStore? = null,
     val syncRepository: com.lectures.core.sync.SyncRepository? = null,
-    val userSettingsSyncManager: com.lectures.core.sync.UserSettingsSyncManager = com.lectures.core.sync.UserSettingsSyncManager(etagStore, onboardingDataStore)
+    val userSettingsSyncManager: com.lectures.core.sync.UserSettingsSyncManager = com.lectures.core.sync.UserSettingsSyncManager(etagStore, onboardingDataStore),
+    private val currentUserIdProvider: () -> String? = {
+        com.lectures.core.auth.AuthRepository.getInstance().currentUser.value?.uid
+    },
+    private val currentUserIds: Flow<String?> = com.lectures.core.auth.AuthRepository.getInstance().currentUser.map { it?.uid }
 ) {
+    private fun canRead(ownerId: String?): Boolean = ownerId == null || ownerId == currentUserIdProvider()
+
+    private fun requireOwn(ownerId: String?): String? {
+        val userId = currentUserIdProvider()
+        if (ownerId != null && ownerId != userId) throw SecurityException("This record belongs to another account.")
+        return userId
+    }
+
+    private fun <T> scoped(records: Flow<List<T>>, owner: (T) -> String?): Flow<List<T>> =
+        combine(records, currentUserIds) { rows, userId ->
+            rows.filter { owner(it) == null || owner(it) == userId }
+        }.distinctUntilChanged()
+
     suspend fun performFullUserSync(userId: String): com.lectures.core.sync.SyncMergeStats? {
         return syncRepository?.performFullUserSync(userId, userSettingsSyncManager)
     }
@@ -82,28 +99,46 @@ class TimetableRepository(
     suspend fun getCohortCountsSync(programmeCode: String): Map<String, Int> =
         dao.getCohortCountsSync(programmeCode).associate { it.cohort to it.count }
 
-    fun getAllNotes(): Flow<List<LectureNote>> = dao.getAllNotes()
+    fun getAllNotes(): Flow<List<LectureNote>> = scoped(dao.getAllNotes()) { it.ownerId }
 
-    fun getNote(naturalKey: String): Flow<LectureNote?> = dao.getNoteForKey(naturalKey)
+    fun getNote(naturalKey: String): Flow<LectureNote?> = combine(dao.getNoteForKey(naturalKey), currentUserIds) { note, uid ->
+        note?.takeIf { it.ownerId == null || it.ownerId == uid }
+    }
 
-    fun getCustomEvents(): Flow<List<CustomEvent>> = eventDao.getAll()
+    fun getCustomEvents(): Flow<List<CustomEvent>> = scoped(eventDao.getAll()) { it.ownerId }
 
-    suspend fun saveCustomEvent(event: CustomEvent): Long =
-        eventDao.upsert(event.copy(updatedAt = System.currentTimeMillis()))
+    suspend fun saveCustomEvent(event: CustomEvent): Long {
+        val previous = eventDao.getAllRawSync().firstOrNull { it.clientUuid == event.clientUuid || (event.id != 0L && it.id == event.id) }
+        requireOwn(previous?.ownerId)
+        return eventDao.upsert(event.copy(updatedAt = System.currentTimeMillis(), ownerId = requireOwn(event.ownerId)))
+    }
 
-    suspend fun deleteCustomEvent(id: Long) = eventDao.softDelete(id)
+    suspend fun deleteCustomEvent(id: Long) {
+        requireOwn(eventDao.getAllRawSync().firstOrNull { it.id == id }?.ownerId)
+        eventDao.softDelete(id)
+    }
 
-    fun getAssignments(): Flow<List<Assignment>> = assignmentDao.getAll()
+    fun getAssignments(): Flow<List<Assignment>> = scoped(assignmentDao.getAll()) { it.ownerId }
 
-    suspend fun saveAssignment(assignment: Assignment): Long =
-        assignmentDao.upsert(assignment.copy(updatedAt = System.currentTimeMillis()))
+    suspend fun saveAssignment(assignment: Assignment): Long {
+        val previous = assignmentDao.getAllRawSync().firstOrNull { it.clientUuid == assignment.clientUuid || (assignment.id != 0L && it.id == assignment.id) }
+        requireOwn(previous?.ownerId)
+        return assignmentDao.upsert(assignment.copy(updatedAt = System.currentTimeMillis(), ownerId = requireOwn(assignment.ownerId)))
+    }
 
-    suspend fun updateAssignmentCompletion(id: Long, completed: Boolean) =
+    suspend fun updateAssignmentCompletion(id: Long, completed: Boolean) {
+        requireOwn(assignmentDao.getAllRawSync().firstOrNull { it.id == id }?.ownerId)
         assignmentDao.updateCompletion(id, completed, System.currentTimeMillis())
+    }
 
-    suspend fun deleteAssignment(id: Long) = assignmentDao.softDelete(id)
+    suspend fun deleteAssignment(id: Long) {
+        requireOwn(assignmentDao.getAllRawSync().firstOrNull { it.id == id }?.ownerId)
+        assignmentDao.softDelete(id)
+    }
 
-    suspend fun deleteAllNotes() = dao.deleteAllNotes()
+    suspend fun deleteAllNotes() {
+        dao.getAllNotesRawSync().filter { canRead(it.ownerId) }.forEach { dao.deleteNote(it.naturalKey) }
+    }
 
     val programmePref: Flow<String?> = combine(
         etagStore.programmePref,
@@ -191,7 +226,7 @@ class TimetableRepository(
     }
 
     suspend fun deleteAllAssignments() {
-        assignmentDao.deleteAll()
+        assignmentDao.getAllRawSync().filter { canRead(it.ownerId) }.forEach { assignmentDao.delete(it.id) }
     }
 
     suspend fun saveNote(
@@ -206,6 +241,7 @@ class TimetableRepository(
         colourTag: String? = null,
         isPinned: Boolean = false
     ) {
+        requireOwn(dao.getNoteRawDirect(naturalKey)?.ownerId)
         val note = LectureNote(
             naturalKey = naturalKey,
             content = content,
@@ -217,19 +253,21 @@ class TimetableRepository(
             attachedClass = attachedClass,
             attachmentName = attachmentName,
             attachmentPath = attachmentPath,
-            isPinned = isPinned
+            isPinned = isPinned,
+            ownerId = currentUserIdProvider()
         )
         dao.upsertNote(note)
     }
 
     suspend fun upsertNote(note: LectureNote) {
-        dao.upsertNote(note)
+        requireOwn(dao.getNoteRawDirect(note.naturalKey)?.ownerId)
+        dao.upsertNote(note.copy(ownerId = requireOwn(note.ownerId)))
     }
 
     suspend fun togglePinNote(naturalKey: String) {
         val existing = dao.getNoteDirect(naturalKey)
         if (existing != null) {
-            dao.upsertNote(existing.copy(isPinned = !existing.isPinned))
+            upsertNote(existing.copy(isPinned = !existing.isPinned, updatedAt = System.currentTimeMillis()))
         }
     }
 
@@ -250,11 +288,12 @@ class TimetableRepository(
                     isPinned = true
                 )
             )
-            sampleNotes.forEach { dao.upsertNote(it) }
+            sampleNotes.forEach { upsertNote(it) }
         }
     }
 
     suspend fun deleteNote(naturalKey: String) {
+        requireOwn(dao.getNoteRawDirect(naturalKey)?.ownerId)
         dao.softDeleteNote(naturalKey)
     }
 
@@ -263,7 +302,7 @@ class TimetableRepository(
     }
 
     suspend fun getNotesWithAlarms(): List<LectureNote> {
-        return dao.getNotesWithAlarms()
+        return dao.getNotesWithAlarms().filter { canRead(it.ownerId) }
     }
 
     val timetableMetadata: Flow<com.lectures.features.timetable.domain.TimetableMetadata?> = dao.getTimetableMetadata()

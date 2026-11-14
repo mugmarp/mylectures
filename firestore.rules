@@ -2,21 +2,25 @@ rules_version = '2';
 
 // Firestore security rules for the Lectures app (project: mustttdb).
 //
-// Design constraints, derived from the actual client code:
-//  * The app NEVER signs in to Firebase Auth. There is no signInAnonymously,
-//    signInWith*, or currentUser usage anywhere in app/src/main/java. Every
-//    request therefore arrives with request.auth == null, so any rule gated on
-//    request.auth != null is unsatisfiable by this client.
-//  * The app WRITES two collections and READS neither:
-//      - /user_telemetry/{installId}  (set + merge, one doc per install)
-//      - /feedback/{autoId}           (add, anonymous submissions)
-//  * The app READS /timetable via snapshot listeners. That path is currently
-//    denied, and the failure is silent because SyncRepository discards the
-//    listener's error parameter. The bundled asset and prepackaged database are
-//    what actually populate the schedule today.
+// Public university timetables remain read-only; telemetry and feedback keep
+// their existing bounded write-only contracts. Personal collections require
+// the authenticated account owner and validated payloads.
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isOptString(val, maxLen) {
+      return val == null || (val is string && val.size() <= maxLen);
+    }
+
+    function isOptInt(val) {
+      return val == null || val is int;
+    }
+
 
     // ---------------------------------------------------------------------
     // /timetable — published university teaching timetable.
@@ -127,11 +131,149 @@ service cloud.firestore {
     // Covers notes, events, assignments, settings, onboarding.
     // ---------------------------------------------------------------------
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
 
-      match /{allSubcollections=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /notes/{noteId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidNote(userId, noteId);
       }
+
+      match /events/{eventId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidEvent(userId, eventId);
+      }
+
+      match /assignments/{assignmentId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidAssignment(userId, assignmentId);
+      }
+
+      match /settings/{docId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && docId == 'preferences' && isValidSettings();
+      }
+    }
+
+    function isValidNote(userId, noteId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly([
+          'natural_key',
+          'title',
+          'content',
+          'colour_tag',
+          'alarm_minutes',
+          'tag',
+          'attached_class',
+          'attachment_name',
+          'attachment_path',
+          'is_pinned',
+          'is_deleted',
+          'owner_id',
+          'updated_at'
+        ])
+        && d.natural_key is string && d.natural_key == noteId && d.natural_key.size() > 0 && d.natural_key.size() <= 256
+        && isOptString(d.get("title", null), 300)
+        && d.content is string && d.content.size() <= 100000
+        && isOptString(d.get("colour_tag", null), 32)
+        && isOptInt(d.get("alarm_minutes", null))
+        && isOptString(d.get("tag", null), 64)
+        && isOptString(d.get("attached_class", null), 256)
+        && isOptString(d.get("attachment_name", null), 256)
+        && isOptString(d.get("attachment_path", null), 512)
+        && d.is_pinned is bool
+        && d.is_deleted is bool
+        && d.owner_id is string && d.owner_id == userId
+        && (d.updated_at is int || d.updated_at is timestamp);
+    }
+
+    function isValidEvent(userId, eventId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly([
+          'client_uuid',
+          'title',
+          'day_of_week',
+          'start_time',
+          'end_time',
+          'location',
+          'notes',
+          'repeat_weekly',
+          'alarm_minutes',
+          'category',
+          'color_tag',
+          'owner_id',
+          'updated_at',
+          'is_deleted'
+        ])
+        && d.client_uuid is string && d.client_uuid == eventId && d.client_uuid.size() > 0 && d.client_uuid.size() <= 128
+        && d.title is string && d.title.size() > 0 && d.title.size() <= 300
+        && d.day_of_week is string && d.day_of_week.size() <= 32
+        && d.start_time is string && d.start_time.size() <= 32
+        && d.end_time is string && d.end_time.size() <= 32
+        && d.location is string && d.location.size() <= 200
+        && d.notes is string && d.notes.size() <= 10000
+        && d.repeat_weekly is bool
+        && isOptInt(d.get("alarm_minutes", null))
+        && d.category is string && d.category.size() <= 64
+        && d.color_tag is string && d.color_tag.size() <= 32
+        && d.owner_id is string && d.owner_id == userId
+        && d.updated_at is int
+        && d.is_deleted is bool;
+    }
+
+    function isValidAssignment(userId, assignmentId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly([
+          'client_uuid',
+          'title',
+          'course_code',
+          'due_date',
+          'reminder_minutes',
+          'priority',
+          'notes',
+          'completed',
+          'owner_id',
+          'updated_at',
+          'is_deleted'
+        ])
+        && d.client_uuid is string && d.client_uuid == assignmentId && d.client_uuid.size() > 0 && d.client_uuid.size() <= 128
+        && d.title is string && d.title.size() > 0 && d.title.size() <= 300
+        && d.course_code is string && d.course_code.size() <= 64
+        && d.due_date is string && d.due_date.size() <= 64
+        && isOptInt(d.get("reminder_minutes", null))
+        && d.priority is string && d.priority.size() <= 32
+        && d.notes is string && d.notes.size() <= 10000
+        && d.completed is bool
+        && d.owner_id is string && d.owner_id == userId
+        && d.updated_at is int
+        && d.is_deleted is bool;
+    }
+
+    function isValidSettings() {
+      let d = request.resource.data;
+      return d.keys().hasOnly([
+          'programme',
+          'theme_mode',
+          'theme_accent',
+          'notifications_enabled',
+          'class_alarm_lead_minutes',
+          'task_reminder_lead_hours',
+          'alarm_vibration',
+          'alarm_sound',
+          'academic_year',
+          'semester',
+          'updated_at'
+        ])
+        && isOptString(d.get("programme", null), 128)
+        && d.theme_mode is string && d.theme_mode.size() <= 32
+        && d.theme_accent is int
+        && d.notifications_enabled is bool
+        && d.class_alarm_lead_minutes is int
+        && d.task_reminder_lead_hours is int
+        && d.alarm_vibration is bool
+        && d.alarm_sound is string && d.alarm_sound.size() <= 64
+        && d.academic_year is string && d.academic_year.size() <= 32
+        && d.semester is string && d.semester.size() <= 32
+        && d.updated_at is int;
     }
 
     // Default deny for anything not matched above.
