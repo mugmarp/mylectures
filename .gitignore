@@ -36,3 +36,6 @@ firepit-log.txt
 # Isolated Firestore emulator tests
 /tests/firestore/node_modules/
 /tests/firestore/*debug.log
+
+/firebase-debug.log
+/firestore-debug.log
