@@ -1,7 +1,14 @@
 package com.lectures.core.sync
 
+import android.util.Log
+import androidx.room.withTransaction
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
 import com.google.firebase.firestore.DocumentChange
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
@@ -10,8 +17,13 @@ import com.lectures.features.timetable.domain.Assignment
 import com.lectures.features.timetable.domain.CustomEvent
 import com.lectures.features.timetable.domain.LectureNote
 import com.lectures.features.timetable.domain.TimetableEntry
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -22,21 +34,41 @@ class SyncRepository(
         FirebaseFirestore.getInstance()
     } catch (e: Throwable) {
         null
-    }
+    },
+    private val currentUserIdProvider: () -> String? = {
+        runCatching { com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid }.getOrNull()
+    },
+    private val beforeUserDataPurge: suspend (List<Assignment>, List<LectureNote>) -> Unit = { _, _ -> }
 ) {
-    private val listeners = mutableListOf<ListenerRegistration>()
+    private val sessions = UserSyncSession()
+    private val personalDataMutex = Mutex()
+    private val fullSyncMutex = Mutex()
+    private var userScope: CoroutineScope? = null
+    private val listenerLock = Any()
+    private val timetableListeners = mutableListOf<ListenerRegistration>()
+    private val userListeners = mutableListOf<ListenerRegistration>()
+    private var activeUserId: String? = null
+
+    private val _lastSyncError = MutableStateFlow<String?>(null)
+    val lastSyncError: StateFlow<String?> = _lastSyncError.asStateFlow()
 
     /**
      * Starts observation of the central university timetable and version metadata.
-     * Operates for all students without requiring personal account sign-in.
+     * Idempotent: retains the existing public listeners when already running.
      */
     fun startTimetableSync(scope: CoroutineScope) {
-        val store = firestore ?: return
+        synchronized(listenerLock) {
+            val store = firestore ?: return
+            if (timetableListeners.isNotEmpty()) return
 
-        // 1. Sync global Timetable collection (Read-Only)
-        listeners.add(
-            store.collection("timetable")
-                .addSnapshotListener { snap, _ ->
+            // 1. Sync global Timetable collection (Read-Only)
+            val entriesListener = store.collection("timetable")
+                .addSnapshotListener { snap, error ->
+                    if (error != null) {
+                        Log.w(TAG, "Timetable snapshot listener error: ${error.message}")
+                        _lastSyncError.value = error.localizedMessage ?: error.code.name
+                        return@addSnapshotListener
+                    }
                     val changes = snap?.documentChanges ?: return@addSnapshotListener
                     val toUpsert = mutableListOf<TimetableEntry>()
                     val toRemove = mutableListOf<String>()
@@ -62,12 +94,14 @@ class SyncRepository(
                         }
                     }
                 }
-        )
 
-        // 1b. Sync dynamic Timetable Release & Version Metadata (Read-Only)
-        listeners.add(
-            store.collection("timetable").document("metadata")
-                .addSnapshotListener { doc, _ ->
+            // 1b. Sync dynamic Timetable Release & Version Metadata (Read-Only)
+            val metadataListener = store.collection("timetable").document("metadata")
+                .addSnapshotListener { doc, error ->
+                    if (error != null) {
+                        Log.w(TAG, "Timetable metadata listener error: ${error.message}")
+                        return@addSnapshotListener
+                    }
                     if (doc != null && doc.exists()) {
                         val versionLabel = doc.getString("version_label") ?: doc.getString("version") ?: "Final Timetable"
                         val isFinal = doc.getBoolean("is_final") ?: (doc.getString("status")?.equals("FINAL", ignoreCase = true) == true)
@@ -89,7 +123,10 @@ class SyncRepository(
                         }
                     }
                 }
-        )
+
+            timetableListeners.add(entriesListener)
+            timetableListeners.add(metadataListener)
+        }
     }
 
     /**
@@ -117,6 +154,7 @@ class SyncRepository(
                 )
             } else null
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             null
         }
     }
@@ -128,43 +166,63 @@ class SyncRepository(
      * - Coursework Assignments
      * - User Settings / Preferences
      *
-     * Safely executes an Additive Union with Last-Write-Wins and non-destructive note preservation.
+     * Reports explicit success, partial failure, or hard failure state without silently swallowing errors.
      */
     suspend fun performFullUserSync(
         userId: String,
         settingsManager: UserSettingsSyncManager
     ): SyncMergeStats = withContext(Dispatchers.IO) {
+        fullSyncMutex.withLock {
+            try {
+                withTimeout(30_000L) { performUserSync(userId, settingsManager) }
+            } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+                SyncMergeStats(status = SyncState.ERROR, failedCount = 1, errorMessage = "Cloud sync timed out. Local data is preserved.")
+            }
+        }
+    }
+
+    private suspend fun performUserSync(userId: String, settingsManager: UserSettingsSyncManager): SyncMergeStats {
+        if (userId.isBlank() || currentUserIdProvider() != userId) {
+            return SyncMergeStats(status = SyncState.ERROR, errorMessage = "Sign in to the matching account before syncing.")
+        }
+        val token = beginSession(userId)
+
         // 1. Promote any un-scoped local Guest data to this authenticated user account
-        db.timetableDao().promoteGuestNotes(userId)
-        db.customEventDao().promoteGuestData(userId)
-        db.assignmentDao().promoteGuestData(userId)
+        withSession(token) {
+            db.withTransaction {
+                db.timetableDao().promoteGuestNotes(userId)
+                db.customEventDao().promoteGuestData(userId)
+                db.assignmentDao().promoteGuestData(userId)
+            }
+        }
 
         // 2. Load strictly user-scoped records from Room SQLite
         val localNotes = db.timetableDao().getAllNotesRawSyncForUser(userId)
         val localEvents = db.customEventDao().getAllRawSyncForUser(userId)
         val localAssignments = db.assignmentDao().getAllRawSyncForUser(userId)
-        val localSettings = settingsManager.exportCurrentSettings()
 
-        val store = firestore ?: return@withContext SyncMergeStats(
+        val store = firestore ?: return SyncMergeStats(
             notesCount = localNotes.count { !it.isDeleted },
             eventsCount = localEvents.count { !it.isDeleted },
-            assignmentsCount = localAssignments.count { !it.isDeleted }
+            assignmentsCount = localAssignments.count { !it.isDeleted },
+            status = SyncState.ERROR,
+            errorMessage = "Cloud sync service is unavailable."
         )
 
         val userDoc = store.collection("users").document(userId)
 
-        try {
+        return try {
             // 3. Fetch Remote Notes
             val remoteNotesSnap = userDoc.collection("notes").get().await()
-            val remoteNotes = remoteNotesSnap.documents.mapNotNull { it.toLectureNote() }
+            val remoteNotes = remoteNotesSnap.documents.mapNotNull { it.toLectureNote(userId) }
 
             // 4. Fetch Remote Custom Events
             val remoteEventsSnap = userDoc.collection("events").get().await()
-            val remoteEvents = remoteEventsSnap.documents.mapNotNull { it.toCustomEvent() }
+            val remoteEvents = remoteEventsSnap.documents.mapNotNull { it.toCustomEvent(userId) }
 
             // 5. Fetch Remote Assignments
             val remoteAssignmentsSnap = userDoc.collection("assignments").get().await()
-            val remoteAssignments = remoteAssignmentsSnap.documents.mapNotNull { it.toAssignment() }
+            val remoteAssignments = remoteAssignmentsSnap.documents.mapNotNull { it.toAssignment(userId) }
 
             // 6. Fetch Remote Settings
             val remoteSettingsDoc = userDoc.collection("settings").document("preferences").get().await()
@@ -173,55 +231,132 @@ class SyncRepository(
             } else null
 
             // 7. Non-destructive merge Notes (keeping slot naturalKey intact with conflict drafts)
-            val noteMerge = SyncConflictResolver.mergeNotes(localNotes, remoteNotes)
-            db.timetableDao().upsertNotes(noteMerge.mergedList)
+            ensureSession(token)
+            val noteMerge = withSession(token) {
+                db.withTransaction {
+                    val owned = db.timetableDao().getAllNotesRawSyncForUser(userId)
+                    val safeRemote = remoteNotes.filter { incoming ->
+                        val owner = db.timetableDao().getNoteRawDirect(incoming.naturalKey)?.ownerId
+                        owner == null || owner == userId
+                    }
+                    check(safeRemote.size == remoteNotes.size) { "A note slot belongs to another local account. Sign out of that account before syncing this slot." }
+                    SyncConflictResolver.mergeNotes(owned, safeRemote).also { result ->
+                        db.timetableDao().upsertNotes(result.mergedList.map { it.copy(ownerId = userId) })
+                    }
+                }
+            }
+
+            var pushedSuccess = 0
+            var pushFailures = (remoteNotesSnap.size() - remoteNotes.size) +
+                (remoteEventsSnap.size() - remoteEvents.size) + (remoteAssignmentsSnap.size() - remoteAssignments.size)
+            var firstPushError: String? = if (pushFailures > 0) "Some cloud records could not be read safely." else null
+
             noteMerge.toPushToRemote.forEach { note ->
-                pushNoteToCloud(note, userId)
+                ensureSession(token)
+                val result = pushNoteToCloud(note.copy(ownerId = note.ownerId ?: userId), userId)
+                if (result.isSuccess) pushedSuccess++ else {
+                    pushFailures++
+                    if (firstPushError == null) firstPushError = result.exceptionOrNull()?.localizedMessage
+                }
             }
 
             // 8. Merge Events
-            val eventMerge = SyncConflictResolver.mergeEvents(localEvents, remoteEvents)
-            db.customEventDao().upsertAll(eventMerge.mergedList)
+            val eventMerge = withSession(token) {
+                db.withTransaction {
+                    check(remoteEvents.all { incoming ->
+                        val owner = db.customEventDao().getByUuid(incoming.clientUuid)?.ownerId
+                        owner == null || owner == userId
+                    }) { "An activity belongs to another local account." }
+                    SyncConflictResolver.mergeEvents(db.customEventDao().getAllRawSyncForUser(userId), remoteEvents).also { result ->
+                        db.customEventDao().upsertAll(result.mergedList.map { it.copy(ownerId = userId) })
+                    }
+                }
+            }
             eventMerge.toPushToRemote.forEach { event ->
-                pushEventToCloud(event, userId)
+                ensureSession(token)
+                val result = pushEventToCloud(event.copy(ownerId = event.ownerId ?: userId), userId)
+                if (result.isSuccess) pushedSuccess++ else {
+                    pushFailures++
+                    if (firstPushError == null) firstPushError = result.exceptionOrNull()?.localizedMessage
+                }
             }
 
             // 9. Merge Assignments
-            val assignmentMerge = SyncConflictResolver.mergeAssignments(localAssignments, remoteAssignments)
-            db.assignmentDao().upsertAll(assignmentMerge.mergedList)
+            val assignmentMerge = withSession(token) {
+                db.withTransaction {
+                    check(remoteAssignments.all { incoming ->
+                        val owner = db.assignmentDao().getByUuid(incoming.clientUuid)?.ownerId
+                        owner == null || owner == userId
+                    }) { "A task belongs to another local account." }
+                    SyncConflictResolver.mergeAssignments(db.assignmentDao().getAllRawSyncForUser(userId), remoteAssignments).also { result ->
+                        db.assignmentDao().upsertAll(result.mergedList.map { it.copy(ownerId = userId) })
+                    }
+                }
+            }
             assignmentMerge.toPushToRemote.forEach { assignment ->
-                pushAssignmentToCloud(assignment, userId)
+                ensureSession(token)
+                val result = pushAssignmentToCloud(assignment.copy(ownerId = assignment.ownerId ?: userId), userId)
+                if (result.isSuccess) pushedSuccess++ else {
+                    pushFailures++
+                    if (firstPushError == null) firstPushError = result.exceptionOrNull()?.localizedMessage
+                }
             }
 
             // 10. Merge Settings
-            val (resolvedSettings, shouldPushSettings) = SyncConflictResolver.mergeSettings(localSettings, remoteSettings)
-            settingsManager.applySettings(resolvedSettings)
+            val (resolvedSettings, shouldPushSettings) = SyncConflictResolver.mergeSettings(settingsManager.exportCurrentSettings(), remoteSettings)
+            withSession(token) { settingsManager.applySettings(resolvedSettings) }
             if (shouldPushSettings) {
-                pushSettingsToCloud(resolvedSettings, userId)
+                val result = pushSettingsToCloud(resolvedSettings, userId)
+                if (result.isSuccess) pushedSuccess++ else {
+                    pushFailures++
+                    if (firstPushError == null) firstPushError = result.exceptionOrNull()?.localizedMessage
+                }
             }
 
-            // 11. Vacuum old tombstones (> 30 days old) to prevent unbounded SQLite and memory growth
-            val thirtyDaysAgo = System.currentTimeMillis() - (30L * 24 * 60 * 60 * 1000L)
-            db.timetableDao().purgeNoteTombstones(thirtyDaysAgo)
-            db.customEventDao().purgeTombstones(thirtyDaysAgo)
-            db.assignmentDao().purgeTombstones(thirtyDaysAgo)
+            // 11. Vacuum old tombstones (> 30 days old) only when all pushes succeeded
+            if (pushFailures == 0) {
+                val thirtyDaysAgo = System.currentTimeMillis() - (30L * 24 * 60 * 60 * 1000L)
+                withSession(token) {
+                    db.withTransaction {
+                        db.timetableDao().purgeNoteTombstonesForUser(userId, thirtyDaysAgo)
+                        db.customEventDao().purgeTombstonesForUser(userId, thirtyDaysAgo)
+                        db.assignmentDao().purgeTombstonesForUser(userId, thirtyDaysAgo)
+                    }
+                }
+            }
 
-            val totalPushed = noteMerge.toPushToRemote.size + eventMerge.toPushToRemote.size + assignmentMerge.toPushToRemote.size + (if (shouldPushSettings) 1 else 0)
+            ensureSession(token)
             val totalPulled = remoteNotes.size + remoteEvents.size + remoteAssignments.size
+            val finalStatus = if (pushFailures == 0) SyncState.SUCCESS else SyncState.ERROR
+            if (pushFailures > 0) {
+                _lastSyncError.value = firstPushError ?: "Some items failed to upload to cloud."
+            } else {
+                _lastSyncError.value = null
+            }
 
             SyncMergeStats(
-                pushedCount = totalPushed,
+                pushedCount = pushedSuccess,
                 pulledCount = totalPulled,
                 conflictsResolvedCount = noteMerge.conflictsForkedCount,
                 notesCount = noteMerge.mergedList.count { !it.isDeleted },
                 eventsCount = eventMerge.mergedList.count { !it.isDeleted },
-                assignmentsCount = assignmentMerge.mergedList.count { !it.isDeleted }
+                assignmentsCount = assignmentMerge.mergedList.count { !it.isDeleted },
+                status = finalStatus,
+                failedCount = pushFailures,
+                errorMessage = if (pushFailures > 0) (firstPushError ?: "$pushFailures item(s) could not sync to cloud.") else null
             )
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            val errMsg = e.localizedMessage ?: "Cloud sync failed."
+            _lastSyncError.value = errMsg
+            Log.w(TAG, "performFullUserSync failed: $errMsg", e)
             SyncMergeStats(
                 notesCount = localNotes.count { !it.isDeleted },
                 eventsCount = localEvents.count { !it.isDeleted },
-                assignmentsCount = localAssignments.count { !it.isDeleted }
+                assignmentsCount = localAssignments.count { !it.isDeleted },
+                status = SyncState.ERROR,
+                failedCount = 1,
+                errorMessage = errMsg
             )
         }
     }
@@ -230,74 +365,105 @@ class SyncRepository(
      * Starts continuous real-time sync for a signed-in user across devices.
      */
     fun startAllSync(userId: String, scope: CoroutineScope) {
-        val store = firestore ?: return
-        stopAllSync()
-        startTimetableSync(scope)
+        synchronized(listenerLock) {
+            if (userId.isBlank() || currentUserIdProvider() != userId) return
+            val store = firestore ?: return
+            val token = beginSession(userId)
+            if (activeUserId == userId && userListeners.isNotEmpty()) return
+            if (timetableListeners.isEmpty()) {
+                startTimetableSync(scope)
+            }
 
-        val userDoc = store.collection("users").document(userId)
+            val accountScope = CoroutineScope(scope.coroutineContext + SupervisorJob(scope.coroutineContext[Job]))
+            userScope?.cancel()
+            userScope = accountScope
+            activeUserId = userId
+            val userDoc = store.collection("users").document(userId)
 
-        // Notes Listener
-        listeners.add(
-            userDoc.collection("notes")
-                .addSnapshotListener { snap, _ ->
-                    val changes = snap?.documentChanges ?: return@addSnapshotListener
-                    val toUpsert = mutableListOf<LectureNote>()
-                    changes.forEach { change ->
-                        val note = change.document.toLectureNote() ?: return@forEach
-                        toUpsert.add(note)
+            val notesListener = userDoc.collection("notes")
+                .addSnapshotListener { snap, error ->
+                    if (!isSessionCurrent(token)) return@addSnapshotListener
+                    if (error != null) {
+                        _lastSyncError.value = error.localizedMessage ?: error.code.name
+                        return@addSnapshotListener
                     }
-                    if (toUpsert.isNotEmpty()) {
-                        scope.launch(Dispatchers.IO) {
-                            db.timetableDao().upsertNotes(toUpsert)
+                    val changes = snap?.documentChanges?.mapNotNull { change ->
+                        change.document.toLectureNote(userId)?.let {
+                            RemoteRecordChange(it, change.type == DocumentChange.Type.REMOVED)
                         }
-                    }
+                    } ?: return@addSnapshotListener
+                    launchUserWork(accountScope, token) { applyRemoteNotes(token, changes) }
                 }
-        )
 
-        // Events Listener
-        listeners.add(
-            userDoc.collection("events")
-                .addSnapshotListener { snap, _ ->
-                    val changes = snap?.documentChanges ?: return@addSnapshotListener
-                    val toUpsert = mutableListOf<CustomEvent>()
-                    changes.forEach { change ->
-                        val event = change.document.toCustomEvent() ?: return@forEach
-                        toUpsert.add(event)
+            val eventsListener = userDoc.collection("events")
+                .addSnapshotListener { snap, error ->
+                    if (!isSessionCurrent(token)) return@addSnapshotListener
+                    if (error != null) {
+                        _lastSyncError.value = error.localizedMessage ?: error.code.name
+                        return@addSnapshotListener
                     }
-                    if (toUpsert.isNotEmpty()) {
-                        scope.launch(Dispatchers.IO) {
-                            db.customEventDao().upsertAll(toUpsert)
+                    val changes = snap?.documentChanges?.mapNotNull { change ->
+                        change.document.toCustomEvent(userId)?.let {
+                            RemoteRecordChange(it, change.type == DocumentChange.Type.REMOVED)
                         }
-                    }
+                    } ?: return@addSnapshotListener
+                    launchUserWork(accountScope, token) { applyRemoteEvents(token, changes) }
                 }
-        )
 
-        // Assignments Listener
-        listeners.add(
-            userDoc.collection("assignments")
-                .addSnapshotListener { snap, _ ->
-                    val changes = snap?.documentChanges ?: return@addSnapshotListener
-                    val toUpsert = mutableListOf<Assignment>()
-                    changes.forEach { change ->
-                        val assignment = change.document.toAssignment() ?: return@forEach
-                        toUpsert.add(assignment)
+            val assignmentsListener = userDoc.collection("assignments")
+                .addSnapshotListener { snap, error ->
+                    if (!isSessionCurrent(token)) return@addSnapshotListener
+                    if (error != null) {
+                        _lastSyncError.value = error.localizedMessage ?: error.code.name
+                        return@addSnapshotListener
                     }
-                    if (toUpsert.isNotEmpty()) {
-                        scope.launch(Dispatchers.IO) {
-                            db.assignmentDao().upsertAll(toUpsert)
+                    val changes = snap?.documentChanges?.mapNotNull { change ->
+                        change.document.toAssignment(userId)?.let {
+                            RemoteRecordChange(it, change.type == DocumentChange.Type.REMOVED)
                         }
-                    }
+                    } ?: return@addSnapshotListener
+                    launchUserWork(accountScope, token) { applyRemoteAssignments(token, changes) }
                 }
-        )
+
+            if (!isSessionCurrent(token)) {
+                notesListener.remove()
+                eventsListener.remove()
+                assignmentsListener.remove()
+                accountScope.cancel()
+                return
+            }
+            userListeners.add(notesListener)
+            userListeners.add(eventsListener)
+            userListeners.add(assignmentsListener)
+        }
+    }
+
+    fun stopTimetableSync() {
+        synchronized(listenerLock) {
+            timetableListeners.forEach { it.remove() }
+            timetableListeners.clear()
+        }
+    }
+
+    fun stopUserSync() {
+        synchronized(listenerLock) {
+            sessions.stop()
+            userScope?.cancel()
+            userScope = null
+            userListeners.forEach { it.remove() }
+            userListeners.clear()
+            activeUserId = null
+        }
     }
 
     fun stopAllSync() {
-        listeners.forEach { it.remove() }
-        listeners.clear()
+        stopTimetableSync()
+        stopUserSync()
     }
 
-    suspend fun pushNoteToCloud(note: LectureNote, userId: String) {
-        val store = firestore ?: return
+    suspend fun pushNoteToCloud(note: LectureNote, userId: String): Result<Unit> {
+        if (!canPush(userId, note.ownerId)) return Result.failure(SecurityException("Account does not own this record."))
+        val store = firestore ?: return Result.failure(IllegalStateException("Firestore unavailable"))
         val noteMap = mapOf(
             "natural_key" to note.naturalKey,
             "title" to note.title,
@@ -307,22 +473,27 @@ class SyncRepository(
             "tag" to note.tag,
             "attached_class" to note.attachedClass,
             "attachment_name" to note.attachmentName,
-            "attachment_path" to note.attachmentPath,
+            "attachment_path" to null,
             "is_pinned" to note.isPinned,
             "is_deleted" to note.isDeleted,
             "owner_id" to (note.ownerId ?: userId),
             "updated_at" to note.updatedAt
         )
-        try {
+        return try {
             store.collection("users").document(userId)
                 .collection("notes").document(note.naturalKey)
                 .set(noteMap, SetOptions.merge())
                 .await()
-        } catch (_: Exception) { /* offline queue */ }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            Result.failure(e)
+        }
     }
 
-    suspend fun pushEventToCloud(event: CustomEvent, userId: String) {
-        val store = firestore ?: return
+    suspend fun pushEventToCloud(event: CustomEvent, userId: String): Result<Unit> {
+        if (!canPush(userId, event.ownerId)) return Result.failure(SecurityException("Account does not own this record."))
+        val store = firestore ?: return Result.failure(IllegalStateException("Firestore unavailable"))
         val eventMap = mapOf(
             "client_uuid" to event.clientUuid,
             "title" to event.title,
@@ -339,16 +510,21 @@ class SyncRepository(
             "updated_at" to event.updatedAt,
             "is_deleted" to event.isDeleted
         )
-        try {
+        return try {
             store.collection("users").document(userId)
                 .collection("events").document(event.clientUuid)
                 .set(eventMap, SetOptions.merge())
                 .await()
-        } catch (_: Exception) { /* offline queue */ }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            Result.failure(e)
+        }
     }
 
-    suspend fun pushAssignmentToCloud(assignment: Assignment, userId: String) {
-        val store = firestore ?: return
+    suspend fun pushAssignmentToCloud(assignment: Assignment, userId: String): Result<Unit> {
+        if (!canPush(userId, assignment.ownerId)) return Result.failure(SecurityException("Account does not own this record."))
+        val store = firestore ?: return Result.failure(IllegalStateException("Firestore unavailable"))
         val assignmentMap = mapOf(
             "client_uuid" to assignment.clientUuid,
             "title" to assignment.title,
@@ -362,32 +538,156 @@ class SyncRepository(
             "updated_at" to assignment.updatedAt,
             "is_deleted" to assignment.isDeleted
         )
-        try {
+        return try {
             store.collection("users").document(userId)
                 .collection("assignments").document(assignment.clientUuid)
                 .set(assignmentMap, SetOptions.merge())
                 .await()
-        } catch (_: Exception) { /* offline queue */ }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            Result.failure(e)
+        }
     }
 
-    suspend fun pushSettingsToCloud(settings: UserSettingsSyncPayload, userId: String) {
-        val store = firestore ?: return
-        try {
+    suspend fun pushSettingsToCloud(settings: UserSettingsSyncPayload, userId: String): Result<Unit> {
+        if (!canPush(userId, userId)) return Result.failure(SecurityException("Account changed before sync."))
+        val store = firestore ?: return Result.failure(IllegalStateException("Firestore unavailable"))
+        return try {
             store.collection("users").document(userId)
                 .collection("settings").document("preferences")
                 .set(settings.toMap(), SetOptions.merge())
                 .await()
-        } catch (_: Exception) { /* offline queue */ }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            Result.failure(e)
+        }
     }
 
     /**
-     * Cleanly purges an account's personal data from local SQLite upon explicit sign-out,
-     * preventing cross-user data leakage when another user signs in on the same device.
+     * Stops user cloud listeners and cleanly purges an account's personal data from local SQLite
+     * upon explicit sign-out, preventing cross-user data leakage on the same device.
      */
-    suspend fun purgeUserDataOnSignOut(userId: String) = withContext(Dispatchers.IO) {
-        db.timetableDao().purgeUserNotes(userId)
-        db.customEventDao().purgeUserData(userId)
-        db.assignmentDao().purgeUserData(userId)
+    suspend fun purgeUserDataOnSignOut(userId: String) = withContext(NonCancellable + Dispatchers.IO) {
+        require(userId.isNotBlank())
+        synchronized(listenerLock) {
+            if (activeUserId == userId || sessions.currentUserId() == userId) stopUserSync()
+        }
+        personalDataMutex.withLock {
+            val tasks = db.assignmentDao().getAllRawSyncForUser(userId).filter { it.ownerId == userId }
+            val notes = db.timetableDao().getAllNotesRawSyncForUser(userId).filter { it.ownerId == userId }
+            beforeUserDataPurge(tasks, notes)
+            db.withTransaction {
+                db.timetableDao().purgeUserNotes(userId)
+                db.customEventDao().purgeUserData(userId)
+                db.assignmentDao().purgeUserData(userId)
+            }
+        }
+    }
+
+    internal suspend fun applyRemoteNotes(
+        token: UserSyncSession.Token,
+        changes: List<RemoteRecordChange<LectureNote>>
+    ) = withSession(token) {
+        db.withTransaction {
+            for (change in changes) {
+                val remote = change.record
+                if (remote.ownerId != null && remote.ownerId != token.userId) continue
+                val existing = db.timetableDao().getNoteRawDirect(remote.naturalKey)
+                if (existing?.ownerId != null && existing.ownerId != token.userId) continue
+                if (change.removed) {
+                    if (existing != null && remote.updatedAt >= existing.updatedAt) {
+                        db.timetableDao().upsertNotes(listOf(existing.copy(isDeleted = true, updatedAt = remote.updatedAt)))
+                    }
+                } else {
+                    val merged = SyncConflictResolver.mergeNotes(listOfNotNull(existing), listOf(remote.copy(ownerId = token.userId)))
+                    db.timetableDao().upsertNotes(merged.mergedList)
+                }
+            }
+        }
+    }
+
+    internal suspend fun applyRemoteEvents(
+        token: UserSyncSession.Token,
+        changes: List<RemoteRecordChange<CustomEvent>>
+    ) = withSession(token) {
+        db.withTransaction {
+            for (change in changes) {
+                val remote = change.record
+                if (remote.ownerId != null && remote.ownerId != token.userId) continue
+                val existing = db.customEventDao().getByUuid(remote.clientUuid)
+                if (existing?.ownerId != null && existing.ownerId != token.userId) continue
+                if (change.removed) {
+                    if (existing != null && remote.updatedAt >= existing.updatedAt) {
+                        db.customEventDao().upsertAll(listOf(existing.copy(isDeleted = true, updatedAt = remote.updatedAt)))
+                    }
+                } else {
+                    val merged = SyncConflictResolver.mergeEvents(listOfNotNull(existing), listOf(remote.copy(ownerId = token.userId)))
+                    db.customEventDao().upsertAll(merged.mergedList)
+                }
+            }
+        }
+    }
+
+    internal suspend fun applyRemoteAssignments(
+        token: UserSyncSession.Token,
+        changes: List<RemoteRecordChange<Assignment>>
+    ) = withSession(token) {
+        db.withTransaction {
+            for (change in changes) {
+                val remote = change.record
+                if (remote.ownerId != null && remote.ownerId != token.userId) continue
+                val existing = db.assignmentDao().getByUuid(remote.clientUuid)
+                if (existing?.ownerId != null && existing.ownerId != token.userId) continue
+                if (change.removed) {
+                    if (existing != null && remote.updatedAt >= existing.updatedAt) {
+                        db.assignmentDao().upsertAll(listOf(existing.copy(isDeleted = true, updatedAt = remote.updatedAt)))
+                    }
+                } else {
+                    val merged = SyncConflictResolver.mergeAssignments(listOfNotNull(existing), listOf(remote.copy(ownerId = token.userId)))
+                    db.assignmentDao().upsertAll(merged.mergedList)
+                }
+            }
+        }
+    }
+
+    private fun launchUserWork(scope: CoroutineScope, token: UserSyncSession.Token, block: suspend () -> Unit) {
+        scope.launch(Dispatchers.IO) {
+            try {
+                block()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (isSessionCurrent(token)) _lastSyncError.value = e.localizedMessage ?: "Could not apply cloud changes."
+                Log.w(TAG, "Cloud update could not be applied", e)
+            }
+        }
+    }
+
+    internal fun beginSession(userId: String): UserSyncSession.Token = synchronized(listenerLock) {
+        if (activeUserId != null && activeUserId != userId) stopUserSync()
+        sessions.begin(userId)
+    }
+
+    private fun canPush(userId: String, ownerId: String?): Boolean =
+        userId.isNotBlank() && currentUserIdProvider() == userId && (ownerId == null || ownerId == userId)
+
+    private fun isSessionCurrent(token: UserSyncSession.Token): Boolean =
+        sessions.isCurrent(token) && currentUserIdProvider() == token.userId
+
+    private fun ensureSession(token: UserSyncSession.Token) {
+        if (!isSessionCurrent(token)) throw CancellationException("Account sync session ended.")
+    }
+
+    private suspend fun <T> withSession(token: UserSyncSession.Token, action: suspend () -> T): T =
+        personalDataMutex.withLock {
+            ensureSession(token)
+            action()
+        }
+
+    companion object {
+        private const val TAG = "SyncRepository"
     }
 }
 
@@ -413,7 +713,9 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toTimetableEntry(): T
     } catch (e: Exception) { null }
 }
 
-private fun com.google.firebase.firestore.DocumentSnapshot.toLectureNote(): LectureNote? {
+private fun com.google.firebase.firestore.DocumentSnapshot.toLectureNote(fallbackOwnerId: String? = null): LectureNote? {
+    if (fallbackOwnerId != null && getString("owner_id") != null && getString("owner_id") != fallbackOwnerId) return null
+    if (getString("natural_key") != null && getString("natural_key") != id) return null
     return try {
         LectureNote(
             naturalKey = getString("natural_key") ?: id,
@@ -425,15 +727,17 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toLectureNote(): Lect
             tag = getString("tag"),
             attachedClass = getString("attached_class"),
             attachmentName = getString("attachment_name"),
-            attachmentPath = getString("attachment_path"),
+            attachmentPath = null,
             isPinned = getBoolean("is_pinned") ?: false,
             isDeleted = getBoolean("is_deleted") ?: false,
-            ownerId = getString("owner_id")
+            ownerId = getString("owner_id") ?: fallbackOwnerId
         )
     } catch (e: Exception) { null }
 }
 
-private fun com.google.firebase.firestore.DocumentSnapshot.toCustomEvent(): CustomEvent? {
+private fun com.google.firebase.firestore.DocumentSnapshot.toCustomEvent(fallbackOwnerId: String? = null): CustomEvent? {
+    if (fallbackOwnerId != null && getString("owner_id") != null && getString("owner_id") != fallbackOwnerId) return null
+    if (getString("client_uuid") != null && getString("client_uuid") != id) return null
     return try {
         CustomEvent(
             clientUuid = getString("client_uuid") ?: id,
@@ -449,12 +753,14 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toCustomEvent(): Cust
             colorTag = getString("color_tag") ?: "#2563EB",
             updatedAt = getLong("updated_at") ?: System.currentTimeMillis(),
             isDeleted = getBoolean("is_deleted") ?: false,
-            ownerId = getString("owner_id")
+            ownerId = getString("owner_id") ?: fallbackOwnerId
         )
     } catch (e: Exception) { null }
 }
 
-private fun com.google.firebase.firestore.DocumentSnapshot.toAssignment(): Assignment? {
+private fun com.google.firebase.firestore.DocumentSnapshot.toAssignment(fallbackOwnerId: String? = null): Assignment? {
+    if (fallbackOwnerId != null && getString("owner_id") != null && getString("owner_id") != fallbackOwnerId) return null
+    if (getString("client_uuid") != null && getString("client_uuid") != id) return null
     return try {
         Assignment(
             clientUuid = getString("client_uuid") ?: id,
@@ -467,7 +773,7 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toAssignment(): Assig
             completed = getBoolean("completed") ?: false,
             updatedAt = getLong("updated_at") ?: System.currentTimeMillis(),
             isDeleted = getBoolean("is_deleted") ?: false,
-            ownerId = getString("owner_id")
+            ownerId = getString("owner_id") ?: fallbackOwnerId
         )
     } catch (e: Exception) { null }
 }

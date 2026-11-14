@@ -67,11 +67,11 @@ fun AccountScreen(
     var showSignOutDialog by remember { mutableStateOf(false) }
 
     // Live counts
-    val notesCount by (app?.database?.timetableDao()?.getAllNotes()?.collectAsState(initial = emptyList())
+    val notesCount by (app?.repository?.getAllNotes()?.collectAsState(initial = emptyList())
         ?: remember { mutableStateOf(emptyList()) })
-    val eventsCount by (app?.database?.customEventDao()?.getAll()?.collectAsState(initial = emptyList())
+    val eventsCount by (app?.repository?.getCustomEvents()?.collectAsState(initial = emptyList())
         ?: remember { mutableStateOf(emptyList()) })
-    val tasksCount by (app?.database?.assignmentDao()?.getAll()?.collectAsState(initial = emptyList())
+    val tasksCount by (app?.repository?.getAssignments()?.collectAsState(initial = emptyList())
         ?: remember { mutableStateOf(emptyList()) })
 
     val savedProgramme = remember {
@@ -247,28 +247,35 @@ fun AccountScreen(
                                     isAuthenticating = true
                                     errorMessage = null
                                     syncMessage = null
-                                    val result = authRepo.signInWithGoogle(context)
-                                    isAuthenticating = false
-                                    result.fold(
-                                        onSuccess = { user ->
-                                            syncMessage = "Signed in as ${user.email ?: user.displayName}! Syncing your data..."
-                                            // Auto-promote and sync
-                                            app?.let { application ->
-                                                val settingsMgr = UserSettingsSyncManager(
-                                                    application.etagStore,
-                                                    application.onboardingDataStore
-                                                )
-                                                val stats = application.syncRepository.performFullUserSync(
-                                                    user.uid,
-                                                    settingsMgr
-                                                )
-                                                syncMessage = "Connected to ${user.email}! Synced ${stats.notesCount} notes, ${stats.assignmentsCount} tasks to cloud."
+                                    try {
+                                        val result = authRepo.signInWithGoogle(context)
+                                        result.fold(
+                                            onSuccess = { user ->
+                                                isSyncing = true
+                                                syncMessage = "Signed in as ${user.email ?: user.displayName}. Syncing your data..."
+                                                app?.let { application ->
+                                                    val settingsMgr = UserSettingsSyncManager(application.etagStore, application.onboardingDataStore)
+                                                    val stats = application.syncRepository.performFullUserSync(user.uid, settingsMgr)
+                                                    if (stats.status == com.lectures.core.sync.SyncState.ERROR || stats.failedCount > 0) {
+                                                        syncMessage = null
+                                                        errorMessage = stats.errorMessage ?: "Signed in, but cloud sync is incomplete. Local data is preserved."
+                                                    } else {
+                                                        syncMessage = "Cloud sync completed: ${stats.notesCount} notes, ${stats.assignmentsCount} tasks."
+                                                    }
+                                                }
+                                            },
+                                            onFailure = { err ->
+                                                errorMessage = "Sign-in issue: ${err.localizedMessage ?: "User cancelled or Google Play services unavailable"}"
                                             }
-                                        },
-                                        onFailure = { err ->
-                                            errorMessage = "Sign-in issue: ${err.localizedMessage ?: "User cancelled or Google Play services unavailable"}"
-                                        }
-                                    )
+                                        )
+                                    } catch (e: Exception) {
+                                        if (e is kotlinx.coroutines.CancellationException) throw e
+                                        syncMessage = null
+                                        errorMessage = "Cloud sync issue: ${e.localizedMessage ?: "Please try again"}"
+                                    } finally {
+                                        isAuthenticating = false
+                                        isSyncing = false
+                                    }
                                 }
                             },
                             enabled = !isAuthenticating,
@@ -411,19 +418,29 @@ fun AccountScreen(
                                         isSyncing = true
                                         errorMessage = null
                                         syncMessage = null
-                                        app?.let { application ->
-                                            val settingsMgr = UserSettingsSyncManager(
-                                                application.etagStore,
-                                                application.onboardingDataStore
-                                            )
-                                            val stats = application.syncRepository.performFullUserSync(
-                                                user.uid,
-                                                settingsMgr
-                                            )
-                                            val format = SimpleDateFormat("h:mm a", Locale.getDefault())
-                                            syncMessage = "Synced at ${format.format(Date())}: ${stats.notesCount} notes, ${stats.assignmentsCount} tasks up to date."
+                                        try {
+                                            app?.let { application ->
+                                                val settingsMgr = UserSettingsSyncManager(
+                                                    application.etagStore,
+                                                    application.onboardingDataStore
+                                                )
+                                                val stats = application.syncRepository.performFullUserSync(
+                                                    user.uid,
+                                                    settingsMgr
+                                                )
+                                                val format = SimpleDateFormat("h:mm a", Locale.getDefault())
+                                                if (stats.status == com.lectures.core.sync.SyncState.ERROR || stats.failedCount > 0) {
+                                                    errorMessage = stats.errorMessage ?: "Cloud sync is incomplete. Local data is preserved."
+                                                } else {
+                                                    syncMessage = "Synced at ${format.format(Date())}: ${stats.notesCount} notes, ${stats.assignmentsCount} tasks up to date."
+                                                }
+                                            }
+                                        } catch (e: Exception) {
+                                            if (e is kotlinx.coroutines.CancellationException) throw e
+                                            errorMessage = e.localizedMessage ?: "Cloud sync failed."
+                                        } finally {
+                                            isSyncing = false
                                         }
-                                        isSyncing = false
                                     }
                                 },
                                 enabled = !isSyncing,
@@ -570,7 +587,7 @@ fun AccountScreen(
             title = { Text("Sign Out of Account?", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
             text = {
                 Text(
-                    "Your personal data will remain safely backed up in the cloud. You can sign in anytime on this or another device to restore it.",
+                    "This account's local notes, tasks, and activities will be removed. Sync first to preserve any changes that have not reached the cloud.",
                     fontSize = 13.sp,
                     lineHeight = 18.sp
                 )
@@ -580,12 +597,21 @@ fun AccountScreen(
                     onClick = {
                         showSignOutDialog = false
                         scope.launch {
-                            currentUser?.uid?.let { uid ->
-                                // Clean up local personal data to prevent cross-account pollution
-                                app?.syncRepository?.purgeUserDataOnSignOut(uid)
+                            isSyncing = true
+                            errorMessage = null
+                            val userId = currentUser?.uid
+                            app?.syncRepository?.stopUserSync()
+                            try {
+                                authRepo.signOut(context) {
+                                    userId?.let { app?.syncRepository?.purgeUserDataOnSignOut(it) }
+                                }
+                                syncMessage = "Signed out. App reverted to guest mode."
+                            } catch (e: Exception) {
+                                if (e is kotlinx.coroutines.CancellationException) throw e
+                                errorMessage = "Sign-out could not finish: ${e.localizedMessage}"
+                            } finally {
+                                isSyncing = false
                             }
-                            authRepo.signOut(context)
-                            syncMessage = "Signed out. App reverted to guest mode."
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
