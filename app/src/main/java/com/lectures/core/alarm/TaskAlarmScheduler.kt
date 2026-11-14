@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import com.lectures.features.timetable.domain.Assignment
@@ -12,6 +13,13 @@ class TaskAlarmScheduler(private val context: Context) {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
     private val TAG = "TaskAlarmScheduler"
+
+    private fun taskAlarmUri(taskId: Long, isTest: Boolean): Uri =
+        Uri.parse(if (isTest) "lectures://alarm/task_test/$taskId" else "lectures://alarm/task/$taskId")
+
+    private fun taskRequestCode(taskId: Long, isTest: Boolean): Int =
+        if (isTest) ((taskId + 500_000_000L) % Int.MAX_VALUE).toInt()
+        else (taskId % Int.MAX_VALUE).toInt()
 
     /**
      * Schedules an AlarmManager alarm for an upcoming academic task reminder.
@@ -23,67 +31,23 @@ class TaskAlarmScheduler(private val context: Context) {
             return false
         }
 
-        if (task.completed) {
+        if (task.completed || task.isDeleted || task.reminderMinutes == null ||
+            !com.lectures.features.timetable.data.ETagStore(context).isNotificationsEnabled()) {
             cancelTaskReminder(task.id)
             return false
         }
 
         val triggerAtMillis = TaskDateTimeParser.calculateTriggerTimeMillis(task.dueDate, task.reminderMinutes)
         if (triggerAtMillis == null || triggerAtMillis <= System.currentTimeMillis()) {
+            cancelTaskReminder(task.id)
             Log.d(TAG, "Task ${task.id} due date has already passed or cannot be resolved: ${task.dueDate}")
             return false
         }
 
-        val pendingIntent = createReminderPendingIntent(task)
-
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (alarmManager.canScheduleExactAlarms()) {
-                    alarmManager.setExactAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerAtMillis,
-                        pendingIntent
-                    )
-                    Log.d(TAG, "Scheduled EXACT idle alarm for task ${task.id} at $triggerAtMillis")
-                } else {
-                    alarmManager.setAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerAtMillis,
-                        pendingIntent
-                    )
-                    Log.d(TAG, "Scheduled INEXACT idle alarm (exact permission not granted) for task ${task.id}")
-                }
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    pendingIntent
-                )
-                Log.d(TAG, "Scheduled EXACT idle alarm for task ${task.id} at $triggerAtMillis")
-            } else {
-                alarmManager.setExact(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    pendingIntent
-                )
-            }
-            return true
-        } catch (e: SecurityException) {
-            Log.w(TAG, "SecurityException scheduling exact alarm, falling back to setAndAllowWhileIdle: ${e.message}")
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    alarmManager.setAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerAtMillis,
-                        pendingIntent
-                    )
-                }
-                return true
-            } catch (fallbackEx: Exception) {
-                Log.e(TAG, "Fallback alarm scheduling also failed: ${fallbackEx.message}")
-                return false
-            }
-        }
+        val pendingIntent = createReminderPendingIntent(task, isTest = false)
+        val scheduled = scheduleTaskAlarmInternal(triggerAtMillis, pendingIntent, "task ${task.id}")
+        if (scheduled) cancelLegacyTask(task.id)
+        return scheduled
     }
 
     /**
@@ -94,39 +58,68 @@ class TaskAlarmScheduler(private val context: Context) {
         if (alarmManager == null) return
 
         val triggerAtMillis = System.currentTimeMillis() + (delaySeconds.coerceAtLeast(1) * 1000L)
-        val pendingIntent = createReminderPendingIntent(task)
+        val pendingIntent = createReminderPendingIntent(task, isTest = true)
+        scheduleTaskAlarmInternal(triggerAtMillis, pendingIntent, "test task ${task.id}")
+    }
 
-        try {
+    private fun scheduleTaskAlarmInternal(
+        triggerAtMillis: Long,
+        pendingIntent: PendingIntent,
+        label: String
+    ): Boolean {
+        val manager = alarmManager ?: return false
+        return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (alarmManager.canScheduleExactAlarms()) {
-                    alarmManager.setExactAndAllowWhileIdle(
+                if (manager.canScheduleExactAlarms()) {
+                    manager.setExactAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
                         triggerAtMillis,
                         pendingIntent
                     )
+                    Log.d(TAG, "Scheduled EXACT idle alarm for $label at $triggerAtMillis")
                 } else {
-                    alarmManager.setAndAllowWhileIdle(
+                    manager.setAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
                         triggerAtMillis,
                         pendingIntent
                     )
+                    Log.d(TAG, "Scheduled INEXACT idle alarm (exact permission not granted) for $label")
                 }
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(
+                manager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     triggerAtMillis,
                     pendingIntent
                 )
+                Log.d(TAG, "Scheduled EXACT idle alarm for $label at $triggerAtMillis")
             } else {
-                alarmManager.setExact(
+                manager.setExact(
                     AlarmManager.RTC_WAKEUP,
                     triggerAtMillis,
                     pendingIntent
                 )
             }
-            Log.d(TAG, "Scheduled test reminder alarm in ${delaySeconds}s for task ${task.id}")
+            true
+        } catch (e: SecurityException) {
+            Log.w(TAG, "SecurityException scheduling exact alarm for $label, falling back to setAndAllowWhileIdle: ${e.message}")
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    manager.setAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerAtMillis,
+                        pendingIntent
+                    )
+                } else {
+                    manager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+                }
+                true
+            } catch (fallbackEx: Exception) {
+                Log.e(TAG, "Fallback alarm scheduling also failed for $label: ${fallbackEx.message}")
+                false
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to schedule test alarm: ${e.message}")
+            Log.e(TAG, "Failed to schedule alarm for $label: ${e.message}")
+            false
         }
     }
 
@@ -134,20 +127,22 @@ class TaskAlarmScheduler(private val context: Context) {
      * Cancels any scheduled AlarmManager alarm for the given task.
      */
     fun cancelTaskReminder(taskId: Long) {
-        if (alarmManager == null) return
+        val manager = alarmManager ?: return
+        cancelLegacyTask(taskId)
 
         val intent = Intent(context, TaskReminderReceiver::class.java).apply {
             action = TaskReminderReceiver.ACTION_TRIGGER_TASK_REMINDER
+            data = taskAlarmUri(taskId, isTest = false)
         }
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            (taskId % Int.MAX_VALUE).toInt(),
+            taskRequestCode(taskId, isTest = false),
             intent,
             PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
         )
 
         if (pendingIntent != null) {
-            alarmManager.cancel(pendingIntent)
+            manager.cancel(pendingIntent)
             pendingIntent.cancel()
             Log.d(TAG, "Cancelled alarm for task $taskId")
         }
@@ -160,19 +155,28 @@ class TaskAlarmScheduler(private val context: Context) {
         tasks.forEach { cancelTaskReminder(it.id) }
     }
 
-    private fun createReminderPendingIntent(task: Assignment): PendingIntent {
+    private fun cancelLegacyTask(taskId: Long) {
+        val manager = alarmManager ?: return
+        cancelAlarmToken(context, manager, taskRequestCode(taskId, false), Intent(context, TaskReminderReceiver::class.java).apply {
+            action = TaskReminderReceiver.ACTION_TRIGGER_TASK_REMINDER
+        })
+    }
+
+    private fun createReminderPendingIntent(task: Assignment, isTest: Boolean = false): PendingIntent {
         val intent = Intent(context, TaskReminderReceiver::class.java).apply {
             action = TaskReminderReceiver.ACTION_TRIGGER_TASK_REMINDER
+            data = taskAlarmUri(task.id, isTest = isTest)
             putExtra(TaskReminderReceiver.EXTRA_TASK_ID, task.id)
             putExtra(TaskReminderReceiver.EXTRA_TASK_TITLE, task.title)
             putExtra(TaskReminderReceiver.EXTRA_TASK_COURSE, task.courseCode)
             putExtra(TaskReminderReceiver.EXTRA_TASK_DUE, task.dueDate)
             putExtra(TaskReminderReceiver.EXTRA_TASK_PRIORITY, task.priority)
+            putExtra("IS_TEST", isTest)
         }
 
         return PendingIntent.getBroadcast(
             context,
-            (task.id % Int.MAX_VALUE).toInt(),
+            taskRequestCode(task.id, isTest = isTest),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

@@ -9,6 +9,7 @@ import com.lectures.TimetableApplication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 class TaskActionReceiver : BroadcastReceiver() {
 
@@ -36,9 +37,11 @@ class TaskActionReceiver : BroadcastReceiver() {
                     val pendingResult = goAsync()
                     CoroutineScope(Dispatchers.IO).launch {
                         try {
-                            repository.updateAssignmentCompletion(taskId, true)
-                            TaskAlarmScheduler(context).cancelTaskReminder(taskId)
-                            Log.d(TAG, "Task #$taskId marked completed and alarms cancelled")
+                            withTimeout(8_500L) {
+                                repository.updateAssignmentCompletion(taskId, true)
+                                TaskAlarmScheduler(context).cancelTaskReminder(taskId)
+                                Log.d(TAG, "Task #$taskId marked completed and alarms cancelled")
+                            }
                         } catch (e: Exception) {
                             Log.e(TAG, "Error updating task completion: ${e.message}")
                         } finally {

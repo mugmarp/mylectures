@@ -104,13 +104,13 @@ class TimetableApplication : Application() {
             feedbackManager.flushPendingSubmissions()
             val prog = etagStore.getSavedProgramme() ?: ""
             analyticsManager.recordAppLaunch(prog, this)
-            if (etagStore.isOnboardingCompleted()) {
+            if (repository.checkIsOnboardingCompleted() && etagStore.isNotificationsEnabled()) {
                 com.lectures.core.alarm.ReminderScheduler(this@TimetableApplication).scheduleDailyReminder()
                 if (prog.isNotEmpty() && etagStore.isNotificationsEnabled()) {
                     val enrolledClasses = repository.getLocalSchedule(prog).firstOrNull() ?: emptyList()
                     if (enrolledClasses.isNotEmpty()) {
                         val leadMinutes = etagStore.getClassAlarmLeadMinutes()
-                        com.lectures.core.alarm.AlarmScheduler(this@TimetableApplication).scheduleAllEnrolledClassAlarms(enrolledClasses, leadMinutes)
+                        com.lectures.core.alarm.AlarmScheduler(this@TimetableApplication).scheduleAllEnrolledClassAlarms(enrolledClasses, leadMinutes, customAlarms = repository.getNotesWithAlarms())
                     }
                 }
             }

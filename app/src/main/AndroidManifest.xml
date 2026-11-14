@@ -44,6 +44,10 @@
             android:name=".core.alarm.ClassAlarmReceiver"
             android:exported="false" />
 
+        <receiver
+            android:name=".core.alarm.DailyReminderReceiver"
+            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
