@@ -50,4 +50,11 @@ class SyncConflictPreservationTest {
         val settings = UserSettingsSyncPayload(updatedAt = 123)
         assertFalse(SyncConflictResolver.mergeSettings(settings, settings).second)
     }
+    @Test fun legacySettingsWithoutRevisionAreNotTreatedAsFreshEdits() {
+        val remote = UserSettingsSyncPayload.fromMap(mapOf("theme_mode" to "DARK"))
+        val local = UserSettingsSyncPayload(themeMode = "LIGHT", updatedAt = 123)
+        assertEquals(0L, remote.updatedAt)
+        assertEquals(local, SyncConflictResolver.mergeSettings(local, remote).first)
+    }
+
 }

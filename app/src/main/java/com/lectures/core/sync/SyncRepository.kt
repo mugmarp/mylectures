@@ -388,9 +388,9 @@ class SyncRepository(
                         return@addSnapshotListener
                     }
                     val changes = snap?.documentChanges?.mapNotNull { change ->
-                        change.document.toLectureNote(userId)?.let {
-                            RemoteRecordChange(it, change.type == DocumentChange.Type.REMOVED)
-                        }
+                        val record = change.document.toLectureNote(userId)
+                        if (record == null) _lastSyncError.value = "Some cloud records could not be read safely."
+                        record?.let { RemoteRecordChange(it, change.type == DocumentChange.Type.REMOVED) }
                     } ?: return@addSnapshotListener
                     launchUserWork(accountScope, token) { applyRemoteNotes(token, changes) }
                 }
@@ -403,9 +403,9 @@ class SyncRepository(
                         return@addSnapshotListener
                     }
                     val changes = snap?.documentChanges?.mapNotNull { change ->
-                        change.document.toCustomEvent(userId)?.let {
-                            RemoteRecordChange(it, change.type == DocumentChange.Type.REMOVED)
-                        }
+                        val record = change.document.toCustomEvent(userId)
+                        if (record == null) _lastSyncError.value = "Some cloud records could not be read safely."
+                        record?.let { RemoteRecordChange(it, change.type == DocumentChange.Type.REMOVED) }
                     } ?: return@addSnapshotListener
                     launchUserWork(accountScope, token) { applyRemoteEvents(token, changes) }
                 }
@@ -418,9 +418,9 @@ class SyncRepository(
                         return@addSnapshotListener
                     }
                     val changes = snap?.documentChanges?.mapNotNull { change ->
-                        change.document.toAssignment(userId)?.let {
-                            RemoteRecordChange(it, change.type == DocumentChange.Type.REMOVED)
-                        }
+                        val record = change.document.toAssignment(userId)
+                        if (record == null) _lastSyncError.value = "Some cloud records could not be read safely."
+                        record?.let { RemoteRecordChange(it, change.type == DocumentChange.Type.REMOVED) }
                     } ?: return@addSnapshotListener
                     launchUserWork(accountScope, token) { applyRemoteAssignments(token, changes) }
                 }
@@ -714,14 +714,19 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toTimetableEntry(): T
 }
 
 private fun com.google.firebase.firestore.DocumentSnapshot.toLectureNote(fallbackOwnerId: String? = null): LectureNote? {
-    if (fallbackOwnerId != null && getString("owner_id") != null && getString("owner_id") != fallbackOwnerId) return null
-    if (getString("natural_key") != null && getString("natural_key") != id) return null
     return try {
+        if (fallbackOwnerId != null && getString("owner_id") != null && getString("owner_id") != fallbackOwnerId) return null
+        if (getString("natural_key") != null && getString("natural_key") != id) return null
         LectureNote(
             naturalKey = getString("natural_key") ?: id,
             title = getString("title"),
             content = getString("content") ?: "",
-            updatedAt = getLong("updated_at") ?: getTimestamp("updated_at")?.toDate()?.time ?: System.currentTimeMillis(),
+            updatedAt = when (val revision = get("updated_at")) {
+                is Number -> revision.toLong()
+                is com.google.firebase.Timestamp -> revision.toDate().time
+                null -> 0L
+                else -> return null
+            },
             colourTag = getString("colour_tag"),
             alarmMinutes = getLong("alarm_minutes")?.toInt(),
             tag = getString("tag"),
@@ -736,9 +741,9 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toLectureNote(fallbac
 }
 
 private fun com.google.firebase.firestore.DocumentSnapshot.toCustomEvent(fallbackOwnerId: String? = null): CustomEvent? {
-    if (fallbackOwnerId != null && getString("owner_id") != null && getString("owner_id") != fallbackOwnerId) return null
-    if (getString("client_uuid") != null && getString("client_uuid") != id) return null
     return try {
+        if (fallbackOwnerId != null && getString("owner_id") != null && getString("owner_id") != fallbackOwnerId) return null
+        if (getString("client_uuid") != null && getString("client_uuid") != id) return null
         CustomEvent(
             clientUuid = getString("client_uuid") ?: id,
             title = getString("title") ?: return null,
@@ -751,7 +756,7 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toCustomEvent(fallbac
             alarmMinutes = getLong("alarm_minutes")?.toInt(),
             category = getString("category") ?: "Study",
             colorTag = getString("color_tag") ?: "#2563EB",
-            updatedAt = getLong("updated_at") ?: System.currentTimeMillis(),
+            updatedAt = getLong("updated_at") ?: 0L,
             isDeleted = getBoolean("is_deleted") ?: false,
             ownerId = getString("owner_id") ?: fallbackOwnerId
         )
@@ -759,9 +764,9 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toCustomEvent(fallbac
 }
 
 private fun com.google.firebase.firestore.DocumentSnapshot.toAssignment(fallbackOwnerId: String? = null): Assignment? {
-    if (fallbackOwnerId != null && getString("owner_id") != null && getString("owner_id") != fallbackOwnerId) return null
-    if (getString("client_uuid") != null && getString("client_uuid") != id) return null
     return try {
+        if (fallbackOwnerId != null && getString("owner_id") != null && getString("owner_id") != fallbackOwnerId) return null
+        if (getString("client_uuid") != null && getString("client_uuid") != id) return null
         Assignment(
             clientUuid = getString("client_uuid") ?: id,
             title = getString("title") ?: return null,
@@ -771,7 +776,7 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toAssignment(fallback
             priority = getString("priority") ?: "Medium",
             notes = getString("notes") ?: "",
             completed = getBoolean("completed") ?: false,
-            updatedAt = getLong("updated_at") ?: System.currentTimeMillis(),
+            updatedAt = getLong("updated_at") ?: 0L,
             isDeleted = getBoolean("is_deleted") ?: false,
             ownerId = getString("owner_id") ?: fallbackOwnerId
         )
