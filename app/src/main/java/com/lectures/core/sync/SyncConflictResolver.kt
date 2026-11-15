@@ -141,7 +141,12 @@ object SyncConflictResolver {
 
         for (key in allKeys) {
             val local = localByKey[key]
-            val remote = remoteByKey[key]
+            val remote = remoteByKey[key]?.let { incoming ->
+                incoming.copy(
+                    attachmentPath = local?.attachmentPath,
+                    attachmentName = if (local?.attachmentPath != null) local.attachmentName else incoming.attachmentName
+                )
+            }
 
             when {
                 local != null && remote == null -> {
@@ -173,8 +178,28 @@ object SyncConflictResolver {
                             "\n\n--- [Conflicting Revision from Remote Device] ---\n"
                         }
 
+                        val primaryParts = preservedSections(primary.content)
+                        val secondaryParts = preservedSections(secondary.content)
+                        if (primaryParts.containsAll(secondaryParts)) {
+                            val enriched = primary.copy(
+                                title = primary.title?.takeIf { it.isNotBlank() } ?: secondary.title,
+                                tag = primary.tag?.takeIf { it.isNotBlank() } ?: secondary.tag,
+                                attachedClass = primary.attachedClass?.takeIf { it.isNotBlank() } ?: secondary.attachedClass
+                            )
+                            val preserved = if (enriched == primary) primary else enriched.copy(
+                                updatedAt = maxOf(local.updatedAt, remote.updatedAt) + 1L
+                            )
+                            merged.add(preserved)
+                            if (preserved != primary || (primary == local && local.updatedAt > remote.updatedAt)) toPush.add(preserved)
+                            continue
+                        }
                         val mergedContent = "${primary.content.trim()}$conflictDivider${secondary.content.trim()}"
                         val unifiedNote = primary.copy(
+                            title = primary.title?.takeIf { it.isNotBlank() } ?: secondary.title,
+                            tag = primary.tag?.takeIf { it.isNotBlank() } ?: secondary.tag,
+                            attachedClass = primary.attachedClass?.takeIf { it.isNotBlank() } ?: secondary.attachedClass,
+                            attachmentName = primary.attachmentName ?: secondary.attachmentName,
+                            attachmentPath = primary.attachmentPath ?: secondary.attachmentPath,
                             content = mergedContent,
                             ownerId = local.ownerId ?: remote.ownerId,
                             updatedAt = maxOf(primary.updatedAt, secondary.updatedAt) + 1000L
@@ -216,7 +241,11 @@ object SyncConflictResolver {
         return if (remote.updatedAt > local.updatedAt) {
             Pair(remote, false) // Adopt remote
         } else {
-            Pair(local, true) // Keep local and push
+            Pair(local, local != remote) // Equal data does not need another upload.
         }
     }
+
+    private fun preservedSections(content: String): Set<String> = content.split(
+        Regex("\\n\\n--- \\[(?:Offline Draft from This Device|Conflicting Revision from Remote Device)\\] ---\\n")
+    ).map { it.trim() }.filter { it.isNotEmpty() }.toSet()
 }

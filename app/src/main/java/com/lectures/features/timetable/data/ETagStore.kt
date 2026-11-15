@@ -10,6 +10,12 @@ class ETagStore(context: Context) {
     private val prefs: SharedPreferences =
         context.applicationContext.getSharedPreferences("mustime_settings", Context.MODE_PRIVATE)
 
+    private val SETTINGS_UPDATED_AT_KEY = "settings_updated_at"
+    fun getSettingsUpdatedAt(): Long = prefs.getLong(SETTINGS_UPDATED_AT_KEY, 0L)
+    fun setSettingsUpdatedAt(timestamp: Long) {
+        prefs.edit().putLong(SETTINGS_UPDATED_AT_KEY, timestamp).apply()
+    }
+
     private val PROGRAMME_KEY = "must_programme"
     private val THEME_DARK_KEY = "theme_dark"
     private val THEME_ACCENT_KEY = "theme_accent"
@@ -73,6 +79,7 @@ class ETagStore(context: Context) {
     fun getSemester(): String = prefs.getString(SEMESTER_KEY, "Semester 1") ?: "Semester 1"
 
     suspend fun setAcademicSession(academicYear: String, semester: String) {
+        setSettingsUpdatedAt(System.currentTimeMillis())
         prefs.edit()
             .putString(ACADEMIC_YEAR_KEY, academicYear)
             .putString(SEMESTER_KEY, semester)
@@ -120,11 +127,13 @@ class ETagStore(context: Context) {
     val lastSyncPref: Flow<String?> = _lastSyncPref.asStateFlow()
 
     suspend fun setProgrammePref(programme: String) {
+        setSettingsUpdatedAt(System.currentTimeMillis())
         prefs.edit().putString(PROGRAMME_KEY, programme).commit()
         _programmePref.value = programme
     }
 
     suspend fun setThemeMode(mode: String) {
+        setSettingsUpdatedAt(System.currentTimeMillis())
         val isDark = mode == "DARK"
         prefs.edit()
             .putString(THEME_MODE_KEY, mode)
@@ -135,6 +144,7 @@ class ETagStore(context: Context) {
     }
 
     suspend fun setThemeDark(dark: Boolean) {
+        setSettingsUpdatedAt(System.currentTimeMillis())
         val mode = if (dark) "DARK" else "LIGHT"
         prefs.edit()
             .putString(THEME_MODE_KEY, mode)
@@ -145,26 +155,31 @@ class ETagStore(context: Context) {
     }
 
     suspend fun setThemeAccent(accent: Int) {
+        setSettingsUpdatedAt(System.currentTimeMillis())
         prefs.edit().putInt(THEME_ACCENT_KEY, accent).apply()
         _themeAccentPref.value = accent
     }
 
     suspend fun setNotificationsEnabled(enabled: Boolean) {
+        setSettingsUpdatedAt(System.currentTimeMillis())
         prefs.edit().putBoolean(NOTIFICATIONS_ENABLED_KEY, enabled).apply()
         _notificationsEnabledPref.value = enabled
     }
 
     suspend fun setClassAlarmLeadMinutes(minutes: Int) {
+        setSettingsUpdatedAt(System.currentTimeMillis())
         prefs.edit().putInt(CLASS_ALARM_LEAD_KEY, minutes).apply()
         _classAlarmLeadPref.value = minutes
     }
 
     suspend fun setTaskReminderLeadHours(hours: Int) {
+        setSettingsUpdatedAt(System.currentTimeMillis())
         prefs.edit().putInt(TASK_REMINDER_LEAD_KEY, hours).apply()
         _taskReminderLeadPref.value = hours
     }
 
     suspend fun setAlarmVibration(vibrate: Boolean) {
+        setSettingsUpdatedAt(System.currentTimeMillis())
         prefs.edit().putBoolean(ALARM_VIBRATION_KEY, vibrate).apply()
         _alarmVibrationPref.value = vibrate
     }
@@ -172,6 +187,7 @@ class ETagStore(context: Context) {
     fun getAlarmSound(): String = prefs.getString(ALARM_SOUND_KEY, "Chime") ?: "Chime"
 
     suspend fun setAlarmSound(sound: String) {
+        setSettingsUpdatedAt(System.currentTimeMillis())
         prefs.edit().putString(ALARM_SOUND_KEY, sound).apply()
         _alarmSoundPref.value = sound
     }

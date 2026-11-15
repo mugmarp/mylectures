@@ -10,8 +10,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.lifecycleScope
-import com.lectures.core.auth.AuthRepository
-import com.lectures.core.sync.SyncRepository
 import com.lectures.ui.AppTheme
 import com.lectures.ui.MainScaffold
 import com.lectures.ui.ThemeMode
@@ -35,24 +33,6 @@ class MainActivity : ComponentActivity() {
 
         // Process notification intent extras on cold start.
         handleNotificationIntent(intent)
-
-        // Observe authentication state and start/stop user sync accordingly.
-        lifecycleScope.launch {
-            val authRepo = AuthRepository.getInstance()
-            val app = application as? TimetableApplication
-            val syncRepo = app?.syncRepository
-
-            authRepo.currentUser.collect { user ->
-                if (user != null) {
-                    // User signed in — start full user sync
-                    syncRepo?.startAllSync(user.uid, lifecycleScope)
-                } else {
-                    // User signed out — stop user sync and purge local user data
-                    syncRepo?.stopAllSync()
-                    // Note: purgeUserDataOnSignOut is called explicitly from AccountScreen on sign-out
-                }
-            }
-        }
 
         setContent {
             val app = application as? TimetableApplication

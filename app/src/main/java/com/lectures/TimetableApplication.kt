@@ -82,7 +82,14 @@ class TimetableApplication : Application() {
         onboardingDataStore = OnboardingDataStore(this)
         dataLoader = DataLoader(this, database)
         
-        syncRepository = SyncRepository(database)
+        syncRepository = SyncRepository(database, beforeUserDataPurge = { tasks, notes ->
+            val taskScheduler = com.lectures.core.alarm.TaskAlarmScheduler(this)
+            tasks.forEach { taskScheduler.cancelTaskReminder(it.id) }
+            val classScheduler = com.lectures.core.alarm.AlarmScheduler(this)
+            notes.forEach { classScheduler.cancelClassAlarm(it.naturalKey) }
+            androidx.core.app.NotificationManagerCompat.from(this).cancelAll()
+            com.lectures.core.notification.InAppNotificationStore.getInstance(this).clearAll()
+        })
         repository = TimetableRepository(
             dao = database.timetableDao(),
             eventDao = database.customEventDao(),
@@ -100,7 +107,7 @@ class TimetableApplication : Application() {
         // Initial load, sync, and telemetry heartbeat
         applicationScope.launch {
             dataLoader.loadInitialDataIfNeeded()
-            syncRepository.startTimetableSync(this)
+            syncRepository.startTimetableSync(applicationScope)
             feedbackManager.flushPendingSubmissions()
             val prog = etagStore.getSavedProgramme() ?: ""
             analyticsManager.recordAppLaunch(prog, this)
@@ -113,6 +120,12 @@ class TimetableApplication : Application() {
                         com.lectures.core.alarm.AlarmScheduler(this@TimetableApplication).scheduleAllEnrolledClassAlarms(enrolledClasses, leadMinutes, customAlarms = repository.getNotesWithAlarms())
                     }
                 }
+            }
+        }
+        applicationScope.launch {
+            com.lectures.core.auth.AuthRepository.getInstance().currentUser.collect { user ->
+                if (user == null) syncRepository.stopUserSync()
+                else syncRepository.startAllSync(user.uid, applicationScope)
             }
         }
     }

@@ -26,7 +26,7 @@ class UserSettingsSyncManager(
             alarmSound = etagStore.getAlarmSound(),
             academicYear = etagStore.getAcademicYear(),
             semester = etagStore.getSemester(),
-            updatedAt = System.currentTimeMillis()
+            updatedAt = etagStore.getSettingsUpdatedAt()
         )
     }
 
@@ -34,6 +34,7 @@ class UserSettingsSyncManager(
         payload.programme?.let { prog ->
             if (prog.isNotBlank()) {
                 etagStore.setProgrammePref(prog)
+                etagStore.setOnboardingCompleted(true)
                 onboardingDataStore?.setProgramme(prog)
                 onboardingDataStore?.setOnboardingCompleted(true)
             }
@@ -47,5 +48,6 @@ class UserSettingsSyncManager(
         etagStore.setAlarmVibration(payload.alarmVibration)
         etagStore.setAlarmSound(payload.alarmSound)
         etagStore.setAcademicSession(payload.academicYear, payload.semester)
+        etagStore.setSettingsUpdatedAt(payload.updatedAt)
     }
 }

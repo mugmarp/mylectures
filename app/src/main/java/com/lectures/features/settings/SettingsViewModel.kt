@@ -218,7 +218,7 @@ class SettingsViewModel(
                     if (currentUid != null) {
                         repository.performFullUserSync(currentUid)
                     } else {
-                        val notes = repository.dao.getAllNotesSync()
+                        val notes = repository.getAllNotes().firstOrNull() ?: emptyList()
                         val events = repository.getCustomEvents().firstOrNull() ?: emptyList()
                         val assignments = repository.getAssignments().firstOrNull() ?: emptyList()
                         com.lectures.core.sync.SyncMergeStats(
@@ -232,20 +232,37 @@ class SettingsViewModel(
                 val format = SimpleDateFormat("h:mm a, MMM d", Locale.getDefault())
                 val timeString = format.format(Date())
 
-                _uiState.value = _uiState.value.copy(
-                    isBackingUpUserData = false,
-                    userDataBackupStatus = if (currentUid != null) "Synced with Cloud at $timeString" else "Preserved locally · Verified at $timeString",
-                    successMessage = if (stats != null && stats.pushedCount > 0) {
-                        "Cloud sync completed: ${stats.pushedCount} records synced, ${stats.conflictsResolvedCount} conflicts safely resolved."
-                    } else {
-                        "Data secure: ${stats?.notesCount ?: 0} notes, ${stats?.eventsCount ?: 0} events, ${stats?.assignmentsCount ?: 0} coursework tasks ready to sync."
-                    }
+                val syncFailed = currentUid != null && (
+                    stats == null ||
+                    stats.status == com.lectures.core.sync.SyncState.ERROR ||
+                    stats.failedCount > 0
                 )
+
+                _uiState.value = if (syncFailed) {
+                    _uiState.value.copy(
+                        isBackingUpUserData = false,
+                        userDataBackupStatus = "Sync issue at $timeString",
+                        errorMessage = stats?.errorMessage ?: "Cloud sync could not be completed. Local data remains safe."
+                    )
+                } else {
+                    _uiState.value.copy(
+                        isBackingUpUserData = false,
+                        userDataBackupStatus = if (currentUid != null) "Synced with Cloud at $timeString" else "Preserved locally · Verified at $timeString",
+                        successMessage = if (stats != null && stats.pushedCount > 0) {
+                            "Cloud sync completed: ${stats.pushedCount} records synced, ${stats.conflictsResolvedCount} conflicts safely resolved."
+                        } else {
+                            "Data secure: ${stats?.notesCount ?: 0} notes, ${stats?.eventsCount ?: 0} events, ${stats?.assignmentsCount ?: 0} coursework tasks ready to sync."
+                        }
+                    )
+                }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 _uiState.value = _uiState.value.copy(
                     isBackingUpUserData = false,
                     errorMessage = "User sync error: ${e.localizedMessage ?: "Unknown error"}"
                 )
+            } finally {
+                _uiState.value = _uiState.value.copy(isBackingUpUserData = false)
             }
         }
     }

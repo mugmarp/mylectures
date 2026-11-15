@@ -31,6 +31,9 @@ data class SyncMergeStats(
     val notesCount: Int = 0,
     val eventsCount: Int = 0,
     val assignmentsCount: Int = 0,
+    val status: SyncState = SyncState.SUCCESS,
+    val failedCount: Int = 0,
+    val errorMessage: String? = null,
     val timestamp: Long = System.currentTimeMillis()
 )
 
@@ -77,7 +80,7 @@ data class UserSettingsSyncPayload(
                 alarmSound = (map["alarm_sound"] as? String) ?: "Chime",
                 academicYear = (map["academic_year"] as? String) ?: "2026/2027",
                 semester = (map["semester"] as? String) ?: "Semester 1",
-                updatedAt = (map["updated_at"] as? Number)?.toLong() ?: System.currentTimeMillis()
+                updatedAt = (map["updated_at"] as? Number)?.toLong() ?: 0L
             )
         }
     }

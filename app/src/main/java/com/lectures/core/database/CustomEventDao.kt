@@ -38,6 +38,9 @@ interface CustomEventDao {
     @Query("DELETE FROM custom_events WHERE isDeleted = 1 AND updatedAt < :cutoffTimestamp")
     suspend fun purgeTombstones(cutoffTimestamp: Long): Int
 
+    @Query("DELETE FROM custom_events WHERE ownerId = :userId AND isDeleted = 1 AND updatedAt < :cutoffTimestamp")
+    suspend fun purgeTombstonesForUser(userId: String, cutoffTimestamp: Long): Int
+
     @Query("DELETE FROM custom_events WHERE ownerId = :userId")
     suspend fun purgeUserData(userId: String)
 
