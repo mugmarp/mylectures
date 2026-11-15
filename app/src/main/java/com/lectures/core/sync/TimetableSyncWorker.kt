@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
  * Background WorkManager worker that periodically polls remote timetable metadata,
  * detects published updates or revisions, updates local Room cache,
  * and posts a system notification to inform students.
- * Also checks for app version updates (APK) and notifies via InAppUpdateManager.
+ * Also checks published app releases and notifies via InAppUpdateManager.
  */
 class TimetableSyncWorker(
     appContext: Context,
@@ -72,11 +72,12 @@ class TimetableSyncWorker(
                 }
             }
 
-            // 4. Check for app version updates (APK)
+            // 4. Check published app releases
             checkForAppUpdate()
 
             Result.success()
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             Log.e(TAG, "Error executing TimetableSyncWorker: ${e.message}", e)
             if (runAttemptCount < 3) Result.retry() else Result.failure()
         }
@@ -87,35 +88,32 @@ class TimetableSyncWorker(
             val prefs = applicationContext.getSharedPreferences("mustime_sync_prefs", Context.MODE_PRIVATE)
             val versionJsonUrl = prefs.getString("app_version_json_url", DEFAULT_VERSION_JSON_URL) ?: return
 
-            val versionInfo = InAppUpdateManager.fetchVersionInfo(versionJsonUrl, BuildConfig.VERSION_CODE)
+            val result = InAppUpdateManager.checkForUpdate(applicationContext, customUrl = versionJsonUrl)
+            val error = result.exceptionOrNull()
+            if (error != null) {
+                Log.w(TAG, "App version check failed: ${error.message}")
+                return
+            }
+            val versionInfo = result.getOrNull()
+            val updatePrefs = applicationContext.getSharedPreferences("app_update_prefs", Context.MODE_PRIVATE)
             if (versionInfo != null) {
-                Log.i(TAG, "New app version available: ${versionInfo.versionName} (code ${versionInfo.versionCode})")
-                
-                // Store update info for UI to pick up
-                val updatePrefs = applicationContext.getSharedPreferences("app_update_prefs", Context.MODE_PRIVATE)
-                updatePrefs.edit().apply {
-                    putInt("available_version_code", versionInfo.versionCode)
-                    putString("available_version_name", versionInfo.versionName)
-                    putString("release_notes", versionInfo.releaseNotes)
-                    putString("download_url", versionInfo.downloadUrl)
-                    putLong("file_size_bytes", versionInfo.fileSizeBytes)
-                    putString("sha256", versionInfo.sha256)
-                    putBoolean("is_mandatory", versionInfo.isMandatory)
-                    putLong("checked_at", System.currentTimeMillis())
-                    apply()
+                val signature = "${BuildConfig.VERSION_CODE}|${versionInfo.versionName}|${versionInfo.versionCode}"
+                if (updatePrefs.getString("last_notified_release", null) != signature) {
+                    val posted = NotificationHelper.showAppUpdateNotification(
+                        context = applicationContext,
+                        versionName = versionInfo.versionName,
+                        releaseNotes = versionInfo.releaseNotes,
+                        isMandatory = versionInfo.isMandatory
+                    )
+                    if (posted) updatePrefs.edit().clear().putString("last_notified_release", signature).apply()
                 }
-
-                // Show notification about available update
-                NotificationHelper.showAppUpdateNotification(
-                    context = applicationContext,
-                    versionName = versionInfo.versionName,
-                    releaseNotes = versionInfo.releaseNotes,
-                    isMandatory = versionInfo.isMandatory
-                )
             } else {
-                Log.d(TAG, "App is up to date (v${BuildConfig.VERSION_NAME}, code ${BuildConfig.VERSION_CODE})")
+                updatePrefs.edit().clear().apply()
+                NotificationHelper.cancelNotification(applicationContext, 998866)
+                Log.d(TAG, "No newer published release (v${BuildConfig.VERSION_NAME}, code ${BuildConfig.VERSION_CODE})")
             }
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             Log.w(TAG, "App version check failed: ${e.message}")
         }
     }

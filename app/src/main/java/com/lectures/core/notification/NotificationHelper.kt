@@ -614,17 +614,16 @@ object NotificationHelper {
     }
 
     /**
-     * Builds and displays a notification when a new app version (APK) is available.
+     * Builds and displays a notification linking to a published app release.
      */
     fun showAppUpdateNotification(
         context: Context,
         versionName: String,
         releaseNotes: String? = null,
         isMandatory: Boolean = false
-    ) {
+    ): Boolean {
+        if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return false
         createNotificationChannels(context)
-
-        val notificationId = 998866
 
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -638,41 +637,41 @@ object NotificationHelper {
         )
 
         val title = "App Update Available"
-        val content = "Version $versionName is ready to install"
         val detailedText = if (!releaseNotes.isNullOrBlank()) {
             "Version $versionName is available.\n$releaseNotes"
         } else {
-            "A new version ($versionName) is available. Tap to update now."
+            "A new version ($versionName) is available. View the release page for installation instructions."
         }
 
-        val channelId = if (isMandatory) CHANNEL_CLASSES else CHANNEL_APP_UPDATES
+        val channelId = CHANNEL_APP_UPDATES
         val priority = if (isMandatory) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT
-        val color = if (isMandatory) Color.parseColor("#EF4444") else Color.parseColor("#4F46E5")
 
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_stat_notification)
             .setContentTitle(title)
-            .setContentText("Version $versionName is ready")
+            .setContentText("Version $versionName is available")
             .setStyle(NotificationCompat.BigTextStyle().bigText(detailedText))
             .setPriority(priority)
             .setCategory("sys_update")
             .setAutoCancel(true)
             .setContentIntent(contentPendingIntent)
             .setColor(if (isMandatory) Color.parseColor("#EF4444") else Color.parseColor("#4F46E5"))
-            .addAction(R.drawable.ic_stat_notification, "Update Now", contentPendingIntent)
+            .addAction(R.drawable.ic_stat_notification, "View Release", contentPendingIntent)
 
-        try {
+        return try {
             NotificationManagerCompat.from(context).notify(998866, builder.build())
             Log.d(TAG, "App update notification posted: v$versionName")
             InAppNotificationStore.getInstance(context).recordNotification(
                 type = NotificationItemType.SYSTEM,
                 title = "App Update: v$versionName",
-                message = releaseNotes ?: "New version $versionName is ready to install.",
+                message = releaseNotes ?: "New version $versionName is available.",
                 relatedKey = "app_update_$versionName",
                 navTab = 4
             )
+            true
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException while posting app update notification: ${e.message}")
+            false
         }
     }
 
