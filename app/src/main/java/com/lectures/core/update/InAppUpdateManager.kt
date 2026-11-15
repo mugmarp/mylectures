@@ -1,295 +1,101 @@
 package com.lectures.core.update
 
-import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.Settings
-import androidx.core.content.FileProvider
-import androidx.lifecycle.LifecycleOwner
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.CoroutineScope
+import com.lectures.BuildConfig
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileOutputStream
-import java.net.HttpURLConnection
-import java.net.URL
-import java.security.MessageDigest
-import java.util.regex.Pattern
+import java.io.IOException
+import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
-/**
- * Manages in-app updates for sideloaded APK distribution.
- * 
- * Flow: Check version → Download APK to cache → Verify SHA-256 → 
- * Launch native install intent via FileProvider → System handles install.
- */
+/** Checks published releases and opens their installation instructions in a browser. */
 object InAppUpdateManager {
+    const val DEFAULT_VERSION_METADATA_URL = "https://raw.githubusercontent.com/mugmarp/mylectures/main/version.json"
+    const val GITHUB_RELEASES_API_URL = "https://api.github.com/repos/mugmarp/mylectures/releases/latest"
+    const val FALLBACK_RELEASES_WEB_URL = ReleaseMetadata.RELEASES_PAGE
+    private const val MAX_METADATA_BYTES = 1_048_576
 
-    /** Current update state observed by UI. */
-    sealed interface UpdateState {
-        data class Idle(val hasUpdate: Boolean = false, val versionInfo: VersionInfo? = null) : UpdateState
-        data class Downloading(val progress: Float, val versionInfo: VersionInfo) : UpdateState
-        data class Downloaded(val apkFile: File, val versionInfo: VersionInfo) : UpdateState
-        data class Installing(val versionInfo: VersionInfo) : UpdateState
-        data class Error(val message: String) : UpdateState
+    private val httpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(12, TimeUnit.SECONDS)
+            .readTimeout(20, TimeUnit.SECONDS)
+            .callTimeout(30, TimeUnit.SECONDS)
+            .followRedirects(true)
+            .followSslRedirects(false)
+            .build()
     }
+    private val checker by lazy { ReleaseUpdateChecker(::fetchJson) }
 
-    /** Version metadata from remote source. */
-    data class VersionInfo(
-        val versionCode: Int,
-        val versionName: String,
-        val releaseNotes: String,
-        val downloadUrl: String,
-        val fileSizeBytes: Long,
-        val sha256: String,
-        val isMandatory: Boolean = false
-    )
-
-    private const val UPDATE_DIR_NAME = "updates"
-    private const val APK_FILENAME = "update.apk"
-    private const val SHA256_ALGORITHM = "SHA-256"
-    private const val BUFFER_SIZE = 8192
-
-    /** Checks if app has permission to install packages. */
-    fun canInstallApks(context: Context): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.packageManager.canRequestPackageInstalls()
-        } else {
-            true
-        }
-    }
-
-    /** Opens system settings for "Install unknown apps" permission. */
-    fun openInstallPermissionSettings(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                data = Uri.parse("package:${context.packageName}")
-            }
-            context.startActivity(intent)
-        }
-    }
-
-    /**
-     * Fetches version metadata from remote JSON endpoint.
-     * Returns VersionInfo if newer version available, null if up to date or error.
-     */
-    suspend fun fetchVersionInfo(versionJsonUrl: String, currentVersionCode: Int): VersionInfo? = withContext(Dispatchers.IO) {
-        try {
-            val connection = URL(versionJsonUrl).openConnection() as HttpURLConnection
-            connection.connectTimeout = 10000
-            connection.readTimeout = 10000
-
-            val jsonString = connection.inputStream.bufferedReader().use { it.readText() }
-            val versionInfo = parseVersionJson(jsonString)
-            
-            if (versionInfo.versionCode > currentVersionCode) {
-                versionInfo
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun parseVersionJson(json: String): VersionInfo {
-        val versionCode = extractJsonInt(json, "versionCode") ?: 0
-        val versionName = extractJsonString(json, "versionName") ?: ""
-        val releaseNotes = extractJsonString(json, "releaseNotes") ?: ""
-        val downloadUrl = extractJsonString(json, "downloadUrl") ?: ""
-        val fileSizeBytes = extractJsonLong(json, "fileSizeBytes") ?: 0
-        val sha256 = extractJsonString(json, "sha256") ?: ""
-        val isMandatory = extractJsonBoolean(json, "isMandatory") ?: false
-
-        return VersionInfo(
-            versionCode = versionCode,
-            versionName = versionName,
-            releaseNotes = releaseNotes,
-            downloadUrl = downloadUrl,
-            fileSizeBytes = fileSizeBytes,
-            sha256 = sha256,
-            isMandatory = isMandatory
-        )
-    }
-
-    private fun extractJsonInt(json: String, key: String): Int? {
-        val pattern = Pattern.compile("\"$key\"\\s*:\\s*(\\d+)")
-        val matcher = pattern.matcher(json)
-        return if (matcher.find()) matcher.group(1).toIntOrNull() else null
-    }
-
-    private fun extractJsonLong(json: String, key: String): Long? {
-        val pattern = Pattern.compile("\"$key\"\\s*:\\s*(\\d+)")
-        val matcher = pattern.matcher(json)
-        return if (matcher.find()) matcher.group(1).toLongOrNull() else null
-    }
-
-    private fun extractJsonString(json: String, key: String): String? {
-        val pattern = Pattern.compile("\"$key\"\\s*:\\s*\"([^\"]*)\"")
-        val matcher = pattern.matcher(json)
-        return if (matcher.find()) matcher.group(1) else null
-    }
-
-    private fun extractJsonBoolean(json: String, key: String): Boolean? {
-        val pattern = Pattern.compile("\"$key\"\\s*:\\s*(true|false)")
-        val matcher = pattern.matcher(json)
-        return if (matcher.find()) matcher.group(1).toBoolean() else null
-    }
-
-    /**
-     * Downloads APK to cache directory with progress callback.
-     * Returns File if successful, null if failed.
-     */
-    suspend fun downloadApk(
+    suspend fun checkForUpdate(
         context: Context,
-        downloadUrl: String,
-        expectedSha256: String,
-        onProgress: (Float) -> Unit
-    ): File? = withContext(Dispatchers.IO) {
-        try {
-            val updateDir = File(context.cacheDir, UPDATE_DIR_NAME).apply { mkdirs() }
-            val apkFile = File(updateDir, APK_FILENAME)
-            if (apkFile.exists()) apkFile.delete()
+        customUrl: String? = null,
+        forceRefresh: Boolean = false
+    ): Result<AppUpdateInfo?> = withContext(Dispatchers.IO) {
+        purgeStaleUpdateFiles(context)
+        checker.check(BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE,
+            customUrl ?: DEFAULT_VERSION_METADATA_URL, forceRefresh)
+    }
 
-            val connection = URL(downloadUrl).openConnection() as HttpURLConnection
-            connection.connectTimeout = 30000
-            connection.readTimeout = 30000
-            connection.instanceFollowRedirects = true
+    fun openUpdatePage(context: Context, updateInfo: AppUpdateInfo): Result<Unit> = try {
+        require(ReleaseMetadata.isReleasePage(updateInfo.releaseUrl)) { "Invalid Lectures release page." }
+        require(ReleaseMetadata.isNewer(updateInfo, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)) { "This release is not newer than the installed app." }
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(updateInfo.releaseUrl)).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        })
+        Result.success(Unit)
+    } catch (e: Exception) { Result.failure(e) }
 
-            val contentLength = connection.contentLengthLong
-            if (contentLength <= 0) return@withContext null
+    /** Old builds could leave an incomplete APK in this cache directory. */
+    fun purgeStaleUpdateFiles(context: Context) {
+        runCatching { File(context.cacheDir, "updates").takeIf { it.isDirectory }?.deleteRecursively() }
+    }
 
-            connection.inputStream.use { input ->
-                FileOutputStream(apkFile).use { output ->
-                    val buffer = ByteArray(BUFFER_SIZE)
-                    var total = 0L
-                    var count = input.read(buffer)
-                    while (count != -1) {
-                        output.write(buffer, 0, count)
-                        total += count.toLong()
-                        onProgress(total.toFloat() / contentLength.toFloat())
-                        count = input.read(buffer)
+    private suspend fun fetchJson(url: String): String = suspendCancellableCoroutine { continuation ->
+        val request = Request.Builder().url(url)
+            .header("Accept", "application/json")
+            .header("User-Agent", "Lectures-Updater/${BuildConfig.VERSION_NAME}")
+            .build()
+        val call = httpClient.newCall(request)
+        continuation.invokeOnCancellation { call.cancel() }
+        call.enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                if (continuation.isActive) continuation.resumeWithException(e)
+            }
+            override fun onResponse(call: Call, response: Response) {
+                try {
+                    val json = response.use {
+                        check(it.isSuccessful) { "Update endpoint returned HTTP ${it.code}." }
+                        check(it.request.url.isHttps) { "Update endpoint must use HTTPS." }
+                        val body = checkNotNull(it.body) { "Empty update response." }
+                        check(body.contentLength() <= MAX_METADATA_BYTES) { "Update metadata is too large." }
+                        body.byteStream().use { input ->
+                            val output = ByteArrayOutputStream()
+                            val buffer = ByteArray(8192)
+                            var count = input.read(buffer)
+                            while (count != -1) {
+                                check(output.size() + count <= MAX_METADATA_BYTES) { "Update metadata is too large." }
+                                output.write(buffer, 0, count)
+                                count = input.read(buffer)
+                            }
+                            output.toString(Charsets.UTF_8.name())
+                        }
                     }
+                    if (continuation.isActive) continuation.resume(json)
+                } catch (e: Exception) {
+                    if (continuation.isActive) continuation.resumeWithException(e)
                 }
             }
-
-            // Verify SHA-256
-            if (!verifySha256(apkFile, expectedSha256)) {
-                apkFile.delete()
-                return@withContext null
-            }
-
-            apkFile
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun verifySha256(file: File, expectedSha256: String): Boolean {
-        return try {
-            val digest = MessageDigest.getInstance(SHA256_ALGORITHM)
-            file.inputStream().use { input ->
-                val buffer = ByteArray(BUFFER_SIZE)
-                var bytesRead = input.read()
-                while (bytesRead != -1) {
-                    digest.update(buffer, 0, bytesRead)
-                    bytesRead = input.read()
-                }
-            }
-            val actualSha256 = digest.digest().joinToString("") { "%02x".format(it) }
-            actualSha256.equals(expectedSha256, ignoreCase = true)
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    /** Triggers system package installer for the downloaded APK. */
-    fun triggerInstall(context: Context, apkFile: File) {
-        val authority = "${context.packageName}.fileprovider"
-        val contentUri = FileProvider.getUriForFile(context, authority, apkFile)
-
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(contentUri, "application/vnd.android.package-archive")
-            addFlags(
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                Intent.FLAG_ACTIVITY_NEW_TASK
-            )
-        }
-
-        try {
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    /** Cleans up any existing downloaded APK. */
-    fun cleanup(context: Context) {
-        val updateDir = File(context.cacheDir, UPDATE_DIR_NAME)
-        if (updateDir.exists()) {
-            updateDir.deleteRecursively()
-        }
-    }
-}
-
-/**
- * UI helper for observing update state in Compose.
- */
-class UpdateViewModel(private val scope: CoroutineScope) {
-    private val _state = MutableStateFlow<InAppUpdateManager.UpdateState>(InAppUpdateManager.UpdateState.Idle())
-    val state = _state.asStateFlow()
-
-    private var job: Job? = null
-
-    fun checkForUpdate(
-        versionJsonUrl: String,
-        currentVersionCode: Int
-    ) {
-        job?.cancel()
-        job = scope.launch {
-            val versionInfo = InAppUpdateManager.fetchVersionInfo(versionJsonUrl, currentVersionCode)
-            _state.update { if (versionInfo != null) {
-                InAppUpdateManager.UpdateState.Idle(true, versionInfo)
-            } else {
-                InAppUpdateManager.UpdateState.Idle(false, null)
-            } }
-        }
-    }
-
-    fun startDownload(versionInfo: InAppUpdateManager.VersionInfo, context: Context) {
-        _state.update { InAppUpdateManager.UpdateState.Downloading(0f, versionInfo) }
-        job?.cancel()
-        job = scope.launch {
-            val apkFile = InAppUpdateManager.downloadApk(
-                context = context,
-                downloadUrl = versionInfo.downloadUrl,
-                expectedSha256 = versionInfo.sha256,
-                onProgress = { progress ->
-                    _state.update { InAppUpdateManager.UpdateState.Downloading(progress, versionInfo) }
-                }
-            )
-            _state.update { if (apkFile != null) {
-                InAppUpdateManager.UpdateState.Downloaded(apkFile, versionInfo)
-            } else {
-                InAppUpdateManager.UpdateState.Error("Download failed or checksum mismatch")
-            } }
-        }
-    }
-
-    fun install(context: Context, apkFile: File, versionInfo: InAppUpdateManager.VersionInfo) {
-        _state.update { InAppUpdateManager.UpdateState.Installing(versionInfo) }
-        InAppUpdateManager.triggerInstall(context, apkFile)
-    }
-
-    fun clearError() {
-        _state.update { InAppUpdateManager.UpdateState.Idle() }
+        })
     }
 }
